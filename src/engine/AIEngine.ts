@@ -6,6 +6,9 @@ import { IntentEngine, intentEngine } from "./IntentEngine";
 import { WorkflowEngine } from "./WorkflowEngine";
 import { buildPrompt } from "@/prompts";
 import { prisma } from "@/lib/prisma";
+import { usageGuard } from "@/services/UsageGuard";
+import { modelRegistry } from "@/services/ModelRegistry";
+import { type PlanTier, getPlanConfig } from "@/config/plans";
 
 export class AIEngine {
   private providerRouter: ProviderRouter;
@@ -57,6 +60,15 @@ export class AIEngine {
       intentConfig
     );
 
+    // Check credits before execution
+    if (options.userId && options.plan) {
+      const minCost = minCreditCost(options.plan, options.modelId);
+      const canProceed = await usageGuard.canAfford(options.userId, minCost);
+      if (!canProceed) {
+        throw new Error("Insufficient credits");
+      }
+    }
+
     // Route to provider
     const providerResult = await this.providerRouter.route({
       system: built.systemMessage,
@@ -64,6 +76,19 @@ export class AIEngine {
       modelId: options.modelId,
       plan: options.plan,
     });
+
+    // Deduct credits after success
+    if (options.userId && options.plan) {
+      const cost = modelRegistry.getCreditCost(providerResult.model);
+      if (cost === undefined) {
+        throw new Error(`Unknown credit cost for model: ${providerResult.model}`);
+      }
+      await usageGuard.record({
+        userId: options.userId,
+        modelId: providerResult.model,
+        credits: cost,
+      });
+    }
 
     // Track usage
     if (options.userId) {
@@ -122,6 +147,16 @@ export class AIEngine {
     let finalModel = "";
     let finalProvider = "";
 
+    // Check credits before execution
+    if (options.userId && options.plan) {
+      const minCost = minCreditCost(options.plan, options.modelId);
+      const canProceed = await usageGuard.canAfford(options.userId, minCost);
+      if (!canProceed) {
+        yield { type: "error", message: "Insufficient credits" };
+        return;
+      }
+    }
+
     try {
       const stream = this.providerRouter.stream({
         system: built.systemMessage,
@@ -140,6 +175,19 @@ export class AIEngine {
           fullContent += chunk.content;
           yield { type: "token", content: chunk.content };
         }
+      }
+
+      // Deduct credits after successful stream completion
+      if (options.userId && options.plan) {
+        const cost = modelRegistry.getCreditCost(finalModel);
+        if (cost === undefined) {
+          throw new Error(`Unknown credit cost for model: ${finalModel}`);
+        }
+        await usageGuard.record({
+          userId: options.userId,
+          modelId: finalModel,
+          credits: cost,
+        });
       }
 
       const result = this.responseFormatter.format(
@@ -210,6 +258,16 @@ export class AIEngine {
       }),
     ]);
   }
+}
+
+function minCreditCost(plan: PlanTier, modelId?: string): number {
+  if (modelId && modelId !== "auto") {
+    const cost = modelRegistry.getCreditCost(modelId);
+    if (cost !== undefined) return cost;
+  }
+  const models = modelRegistry.resolve(getPlanConfig(plan));
+  const costs = models.map((m) => m.creditCost).filter((c) => c > 0);
+  return costs.length > 0 ? Math.min(...costs) : 1;
 }
 
 export const aiEngine = new AIEngine();

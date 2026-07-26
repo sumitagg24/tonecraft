@@ -127,6 +127,9 @@ model Usage {
   lastDailyReset   DateTime @default(now())
   lastMonthlyReset DateTime @default(now())
   resetDate    DateTime @default(now())
+  creditsUsed  Int      @default(0)
+  periodStart  DateTime @default(now())
+  periodEnd    DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

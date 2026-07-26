@@ -1,0 +1,4 @@
+-- AlterTable: Add credit tracking fields to Usage
+ALTER TABLE "Usage" ADD COLUMN "creditsUsed" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "Usage" ADD COLUMN "periodStart" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE "Usage" ADD COLUMN "periodEnd" TIMESTAMPTZ;
