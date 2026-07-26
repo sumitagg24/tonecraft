@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Comprehensive User Configuration Guide for ToneCraft
 
-## Getting Started
+## 1. Environment Configuration
 
-First, run the development server:
+### 1.1 Create .env.local File
+Create a file named `.env.local` in the root directory with the following structure:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+```env
+# ==========================================
+# APP CONFIGURATION
+# ==========================================
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+# ==========================================
+# DATABASE CONFIGURATION (Neon PostgreSQL)
+# ==========================================
+DATABASE_URL="postgresql://<username>:<password>@<neondb-endpoint>/<database>?sslmode=require"
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+# ==========================================
+# CLERK AUTHENTICATION
+# ==========================================
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="your-clerk-publishable-key"
+CLERK_SECRET_KEY="your-clerk-secret-key"
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/login
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/register
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/chat
+NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/onboarding
+CLERK_WEBHOOK_SECRET="your-clerk-webhook-secret"
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# ==========================================
+# AI PROVIDER CONFIGURATION
+# ==========================================
+# Groq (Primary - fastest free tier)
+GROQ_API_KEY="your-groq-api-key"
 
-## Learn More
+# OpenRouter (Fallback - multiple models)
+OPENROUTER_API_KEY="your-openrouter-api-key"
+# Base URL is fixed: https://openrouter.ai/api/v1
 
-To learn more about Next.js, take a look at the following resources:
+# Google AI (Secondary)
+GOOGLE_AI_API_KEY="your-google-ai-api-key"
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Optional Pro-tier fallback providers
+OPENAI_API_KEY="your-openai-api-key"  # For Pro tier
+ANTHROPIC_API_KEY="your-anthropic-api-key"  # For Pro tier
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# ==========================================
+# STRIPE PAYMENTS
+# ==========================================
+STRIPE_SECRET_KEY="your-stripe-secret-key"
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="your-stripe-publishable-key"
+STRIPE_WEBHOOK_SECRET="your-stripe-webhook-secret"
+STRIPE_PRICE_ID_PRO="price_..."  # Replace with actual price ID
+STRIPE_PRICE_ID_ENTERPRISE="price_..."  # Replace with actual price ID
+NEXT_PUBLIC_STRIPE_PRICE_ID_PRO="price_..."  # Replace with actual price ID
+NEXT_PUBLIC_STRIPE_PRICE_ID_ENTERPRISE="price_..."  # Replace with actual price ID
 
-## Deploy on Vercel
+# ==========================================
+# UPSTASH REDIS (Rate Limiting)
+# ==========================================
+UPSTASH_REDIS_REST_URL="https://<your-upstash-instance>.upstash.io"
+UPSTASH_REDIS_REST_TOKEN="your-upstash-secret-token"
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# ==========================================
+# CLOUDFLARE R2 (File Storage)
+# ==========================================
+R2_ACCOUNT_ID="your-cloudflare-account-id"
+R2_ACCESS_KEY_ID="your-cloudflare-access-key-id"
+R2_SECRET_ACCESS_KEY="your-cloudflare-secret-access-key"
+R2_BUCKET_NAME="tonecraft-uploads"
+R2_PUBLIC_URL="https://<your-bucket>.r2.dev"
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# ==========================================
+# ADDITIONAL SETTINGS
+# ==========================================
+# For development, you can use localhost for R2 if needed
+# R2_PUBLIC_URL="http://localhost:3000/uploads/<key>"

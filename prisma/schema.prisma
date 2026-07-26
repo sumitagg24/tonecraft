@@ -1,0 +1,166 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  clerkId       String    @unique
+  name          String?
+  email         String    @unique
+  image         String?
+  preferredLanguage String @default("english")
+  defaultTone   String    @default("professional")
+  preferredPlatform String? @default("email")
+  preferredStyle   String? @default("standard")
+  preferredModel   String? @default("auto")
+  creativityLevel  Int?    @default(70)
+  responseLength   String? @default("medium")
+  autoSave         Boolean @default(true)
+  streamingEnabled Boolean @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  chats        Chat[]
+  personas     Persona[]
+  subscription Subscription?
+  usage        Usage?
+  usageRecords UsageRecord[]
+
+  @@index([clerkId])
+  @@index([email])
+}
+
+model Chat {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String   @default("New Chat")
+  tone      String   @default("professional")
+  model     String   @default("auto")
+  platform  String?
+  language  String?
+  isPinned  Boolean  @default(false)
+  isFavorite Boolean @default(false)
+  isArchived Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@index([userId, updatedAt])
+  @@index([userId, isPinned])
+  @@index([userId, isFavorite])
+  @@index([userId, isArchived])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  chatId    String
+  role      String
+  content   String   @db.Text
+  tone      String?
+  tokens    Int?
+  latency   Int?
+  model     String?
+  platform  String?
+  language  String?
+  isEdited  Boolean  @default(false)
+  editedAt  DateTime?
+  feedback  String?
+  parentId  String?
+  createdAt DateTime @default(now())
+
+  chat     Chat      @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  parent   Message?  @relation("MessageChain", fields: [parentId], references: [id])
+  children Message[] @relation("MessageChain")
+  attachments Attachment[]
+
+  @@index([chatId, createdAt])
+  @@index([chatId, feedback])
+}
+
+model Attachment {
+  id         String   @id @default(cuid())
+  messageId  String
+  fileName   String
+  fileType   String
+  fileSize   Int
+  storageKey String
+  createdAt  DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+}
+
+model Persona {
+  id           String   @id @default(cuid())
+  userId       String
+  name         String
+  description  String?
+  systemPrompt String   @db.Text
+  icon         String?
+  color        String   @default("#6366F1")
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Usage {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  messagesSent  Int      @default(0)
+  tokensUsed    Int      @default(0)
+  filesUploaded Int      @default(0)
+  storageUsed   Int      @default(0)
+  dailyMessages  Int     @default(0)
+  monthlyMessages Int    @default(0)
+  dailyTokens    Int     @default(0)
+  monthlyTokens  Int     @default(0)
+  lastDailyReset   DateTime @default(now())
+  lastMonthlyReset DateTime @default(now())
+  resetDate    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UsageRecord {
+  id        String   @id @default(cuid())
+  userId    String
+  provider  String
+  model     String
+  tokens    Int      @default(0)
+  latency   Int      @default(0)
+  success   Boolean  @default(true)
+  error     String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, provider])
+}
+
+model Subscription {
+  id                   String    @id @default(cuid())
+  userId               String    @unique
+  stripeCustomerId     String    @unique
+  stripeSubscriptionId String?   @unique
+  stripePriceId        String?
+  status               String
+  plan                 String    @default("free")
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean   @default(false)
+  createdAt            DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

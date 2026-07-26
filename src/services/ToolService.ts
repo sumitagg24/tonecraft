@@ -1,0 +1,47 @@
+import { aiEngine } from "@/engine/AIEngine";
+import { intentEngine } from "@/engine/IntentEngine";
+import type { EngineResult } from "@/types";
+
+export class ToolService {
+  async execute(options: {
+    toolId: string;
+    input: string;
+    tone?: string;
+    platform?: string;
+    language?: string;
+    audience?: string;
+    length?: string;
+    creativity?: number;
+    formality?: string;
+    modelId?: string;
+    userId?: string;
+  }): Promise<EngineResult> {
+    const config = intentEngine.resolve(options.toolId, {
+      tone: options.tone as any,
+      platform: options.platform as any,
+      language: options.language,
+      audience: options.audience,
+      length: options.length as any,
+      creativity: options.creativity,
+      formality: options.formality as any,
+    });
+
+    const result = await aiEngine.generate({
+      intent: config.intent,
+      prompt: options.input,
+      tone: config.tone,
+      platform: config.platform,
+      language: config.language,
+      audience: config.audience,
+      length: config.length,
+      creativity: config.creativity,
+      formality: config.formality,
+      modelId: options.modelId,
+      userId: options.userId,
+    });
+
+    return result;
+  }
+}
+
+export const toolService = new ToolService();
