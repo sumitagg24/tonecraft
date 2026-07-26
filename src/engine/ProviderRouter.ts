@@ -2,10 +2,14 @@ import { streamText } from "ai";
 import { createGroq } from "@ai-sdk/groq";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { type PlanTier, getPlanConfig } from "@/config/plans";
+import { modelRegistry } from "@/services/ModelRegistry";
 import type { ProviderConfig, ProviderResult } from "./types";
+import type { ModelEntry } from "@/config/models";
 
 const TIMEOUT_MS = 60000;
 
+// ponytail: PROVIDERS retained for backward compat with isPro path. Remove when isPro is removed in Phase 7.
 const PROVIDERS: ProviderConfig[] = [
   { id: "groq-llama3-70b", name: "Llama 3.1 70B", provider: "groq", model: "llama-3.1-70b-versatile", temperature: 0.7, isFree: true },
   { id: "groq-mixtral-8x7b", name: "Mixtral 8x7B", provider: "groq", model: "mixtral-8x7b-32768", temperature: 0.7, isFree: true },
@@ -35,10 +39,12 @@ export class ProviderRouter {
     system: string;
     messages: { role: "user" | "assistant" | "system"; content: string }[];
     modelId?: string;
+    /** @deprecated Use plan instead. Remove in Phase 7. */
     isPro?: boolean;
+    plan?: PlanTier;
   }): Promise<ProviderResult> {
-    const { system, messages, modelId, isPro } = options;
-    const queue = this.resolveQueue(modelId, isPro);
+    const { system, messages, modelId, isPro, plan } = options;
+    const queue = this.resolveQueue(modelId, isPro, plan);
     const startTime = Date.now();
     let lastError: Error | null = null;
 
@@ -84,10 +90,12 @@ export class ProviderRouter {
     system: string;
     messages: { role: "user" | "assistant" | "system"; content: string }[];
     modelId?: string;
+    /** @deprecated Use plan instead. Remove in Phase 7. */
     isPro?: boolean;
+    plan?: PlanTier;
   }): AsyncGenerator<ProviderResult> {
-    const { system, messages, modelId, isPro } = options;
-    const queue = this.resolveQueue(modelId, isPro);
+    const { system, messages, modelId, isPro, plan } = options;
+    const queue = this.resolveQueue(modelId, isPro, plan);
     const startTime = Date.now();
     let lastError: Error | null = null;
 
@@ -130,12 +138,31 @@ export class ProviderRouter {
     throw lastError || new Error("All providers exhausted");
   }
 
-  private resolveQueue(modelId?: string, isPro?: boolean): ProviderConfig[] {
+  private resolveQueue(modelId?: string, isPro?: boolean, plan?: PlanTier): ProviderConfig[] {
+    if (plan) {
+      if (modelId && modelId !== "auto") {
+        const entry = modelRegistry.getModelById(modelId);
+        if (entry) return [this.toProviderConfig(entry)];
+      }
+      return modelRegistry.resolve(getPlanConfig(plan)).map(this.toProviderConfig);
+    }
+    // Backward compat: isPro-based routing
     if (modelId && modelId !== "auto") {
       const found = PROVIDERS.find(p => p.id === modelId);
       if (found) return [found];
     }
     return isPro ? PROVIDERS : PROVIDERS.filter(p => p.isFree);
+  }
+
+  private toProviderConfig(entry: ModelEntry): ProviderConfig {
+    return {
+      id: entry.id,
+      name: entry.displayName,
+      provider: entry.provider,
+      model: entry.modelId,
+      temperature: entry.temperature,
+      isFree: entry.tier === "free",
+    };
   }
 
   private isRetryable(error: unknown): boolean {

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getR2Client } from "@/lib/r2";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { v4 as uuidv4 } from "uuid";
-import { FREE_TIER_LIMITS, PRO_TIER_LIMITS } from "@/lib/constants";
+import { capabilities } from "@/lib/capabilities";
 
 const ALLOWED_MIME_TYPES = new Set([
   "image/jpeg",
@@ -81,13 +81,8 @@ export async function POST(req: NextRequest) {
     const safeMimeType = mimeType; // Already validated above
 
     // Plan-aware size limit
-    const subscription = await prisma.subscription.findUnique({
-      where: { userId: session.user.id },
-    });
-    const isPro = subscription?.plan === "pro" || subscription?.plan === "enterprise";
-    const maxSize = isPro
-      ? PRO_TIER_LIMITS.maxFileSize
-      : FREE_TIER_LIMITS.maxFileSize;
+    const plan = await capabilities.require({ userId: session.user.id, action: "upload-file" });
+    const maxSize = plan.limits.maxFileSize;
 
     if (file.size > maxSize) {
       return NextResponse.json(

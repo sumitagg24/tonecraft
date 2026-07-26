@@ -1,5 +1,6 @@
 import { aiEngine } from "@/engine/AIEngine";
 import { intentEngine } from "@/engine/IntentEngine";
+import { planService } from "@/services/PlanService";
 import type { EngineResult } from "@/types";
 
 export class ToolService {
@@ -16,6 +17,7 @@ export class ToolService {
     modelId?: string;
     userId?: string;
   }): Promise<EngineResult> {
+    const plan = options.userId ? await planService.getPlan(options.userId) : undefined;
     const config = intentEngine.resolve(options.toolId, {
       tone: options.tone as any,
       platform: options.platform as any,
@@ -38,6 +40,7 @@ export class ToolService {
       formality: config.formality,
       modelId: options.modelId,
       userId: options.userId,
+      plan: plan?.tier,
     });
 
     return result;

@@ -75,6 +75,8 @@ export interface Workflow {
   steps: WorkflowStep[];
 }
 
+import type { PlanTier } from "@/config/plans";
+
 export interface ConversationMessage {
   id: string;
   role: "user" | "assistant" | "system";
@@ -99,6 +101,7 @@ export interface EngineOptions {
   context?: Record<string, unknown>;
   modelId?: string;
   userId?: string;
+  plan?: PlanTier;
 }
 
 export interface ProviderConfig {

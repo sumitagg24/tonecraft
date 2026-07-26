@@ -2,6 +2,7 @@ import { messageRepository } from "@/repositories/MessageRepository";
 import { chatRepository } from "@/repositories/ChatRepository";
 import { aiEngine } from "@/engine/AIEngine";
 import { prisma } from "@/lib/prisma";
+import { planService } from "@/services/PlanService";
 import type { Message } from "@/types";
 import type { Platform, ResponseLength } from "@/engine/types";
 
@@ -14,7 +15,10 @@ export class MessageService {
     content: string; tone?: string; model?: string;
     context?: Record<string, any>;
   }) {
-    const chat = await chatRepository.findByIdAndUser(chatId, userId);
+    const [plan, chat] = await Promise.all([
+      planService.getPlan(userId),
+      chatRepository.findByIdAndUser(chatId, userId),
+    ]);
     if (!chat) throw new Error("Chat not found");
 
     await messageRepository.create({
@@ -46,13 +50,17 @@ export class MessageService {
       creativity: data.context?.creativity,
       history: history.slice(0, -1),
       userId,
+      plan: plan.tier,
     });
 
     return { stream, assistantMessage };
   }
 
   async regenerateMessage(messageId: string, userId: string) {
-    const original = await messageRepository.findById(messageId);
+    const [plan, original] = await Promise.all([
+      planService.getPlan(userId),
+      messageRepository.findById(messageId),
+    ]);
     if (!original || original.role !== "assistant") throw new Error("Message not found or not an assistant message");
 
     const chat = await chatRepository.findByIdAndUser(original.chatId, userId);
@@ -69,6 +77,7 @@ export class MessageService {
       history,
       prompt: original.content,
       userId,
+      plan: plan.tier,
     });
 
     const regenerated = await messageRepository.regenerate(
@@ -82,7 +91,10 @@ export class MessageService {
   }
 
   async continueMessage(messageId: string, userId: string) {
-    const original = await messageRepository.findById(messageId);
+    const [plan, original] = await Promise.all([
+      planService.getPlan(userId),
+      messageRepository.findById(messageId),
+    ]);
     if (!original) throw new Error("Message not found");
 
     const result = await aiEngine.generate({
@@ -90,6 +102,7 @@ export class MessageService {
       prompt: `Continue the following:\n\n${original.content}`,
       tone: (original.tone || "professional") as any,
       userId,
+      plan: plan.tier,
     });
 
     return messageRepository.create({

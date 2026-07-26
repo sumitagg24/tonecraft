@@ -62,7 +62,7 @@ export class AIEngine {
       system: built.systemMessage,
       messages: built.messages,
       modelId: options.modelId,
-      isPro: false,
+      plan: options.plan,
     });
 
     // Track usage
@@ -127,7 +127,7 @@ export class AIEngine {
         system: built.systemMessage,
         messages: built.messages,
         modelId: options.modelId,
-        isPro: false,
+        plan: options.plan,
       });
 
       for await (const chunk of stream) {

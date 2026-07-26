@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { FREE_TIER_LIMITS, PRO_TIER_LIMITS } from "@/lib/constants";
+import { capabilities } from "@/lib/capabilities";
 
 export async function GET() {
   const session = await auth();
@@ -12,12 +12,7 @@ export async function GET() {
   const usage = await prisma.usage.findUnique({
     where: { userId: session.user.id },
   });
-  const subscription = await prisma.subscription.findUnique({
-    where: { userId: session.user.id },
-  });
-
-  const isPro = subscription?.plan === "pro" || subscription?.plan === "enterprise";
-  const limits = isPro ? PRO_TIER_LIMITS : FREE_TIER_LIMITS;
+  const plan = await capabilities.require({ userId: session.user.id });
 
   return NextResponse.json({
     usage: usage || {
@@ -26,10 +21,10 @@ export async function GET() {
       filesUploaded: 0,
       storageUsed: 0,
     },
-    plan: subscription?.plan || "free",
+    plan: plan.tier,
     limits: {
-      messagesPerDay: limits.messagesPerDay,
-      messagesPerHour: limits.messagesPerHour,
+      messagesPerDay: plan.limits.messagesPerDay,
+      messagesPerHour: plan.limits.messagesPerHour,
     },
   });
 }

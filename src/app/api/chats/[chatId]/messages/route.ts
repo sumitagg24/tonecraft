@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { checkMessageLimit } from "@/lib/ratelimit";
+import { capabilities } from "@/lib/capabilities";
 import { aiEngine } from "@/engine/AIEngine";
 import { messageRepository } from "@/repositories/MessageRepository";
 import { chatRepository } from "@/repositories/ChatRepository";
@@ -32,11 +33,9 @@ export async function POST(
   }
   const userId = session.user.id;
 
-  const subscription = await prisma.subscription.findUnique({ where: { userId } });
-  const plan = subscription?.plan || "free";
-  const isPro = plan === "pro" || plan === "enterprise";
+  const plan = await capabilities.require({ userId, action: "send-message" });
 
-  const limitCheck = await checkMessageLimit(userId, plan);
+  const limitCheck = await checkMessageLimit(userId, plan.tier);
   if (!limitCheck.allowed) {
     return NextResponse.json({
       error: "Rate limit exceeded",
@@ -88,6 +87,7 @@ export async function POST(
           audience,
           history,
           userId,
+          plan: plan.tier,
         });
 
         for await (const chunk of gen) {
