@@ -1,18 +1,18 @@
 "use client";
 import { useState } from "react";
-import { motion } from "framer-motion";
 import * as Icons from "lucide-react";
 import { tools, toolCategories, type ToolDefinition } from "@/components/tools/ToolDefinitions";
 import { cn } from "@/lib/utils";
-import { duration, ease } from "@/styles/motion";
 import { Search, Loader2 } from "lucide-react";
+import { PickerSurface } from "./PickerSurface";
 
 interface ToolPickerProps {
   onSelect: (tool: ToolDefinition) => void;
+  onClose: () => void;
   loading?: boolean;
 }
 
-export function ToolPicker({ onSelect, loading }: ToolPickerProps) {
+export function ToolPicker({ onSelect, onClose, loading }: ToolPickerProps) {
   const [category, setCategory] = useState<string>("all");
   const [query, setQuery] = useState("");
 
@@ -24,18 +24,7 @@ export function ToolPicker({ onSelect, loading }: ToolPickerProps) {
   });
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 8, scale: 0.98 }}
-      transition={{ duration: duration.fast, ease: ease.default }}
-      onPointerDown={(e) => e.stopPropagation()}
-      className="absolute bottom-full left-0 mb-1.5 z-50 w-[320px] max-w-[calc(100vw-2rem)] rounded-xl border border-border/40 bg-popover shadow-premium p-2 backdrop-blur-xl"
-    >
-      <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/50 px-1.5 pb-1.5">
-        Tools
-      </p>
-
+    <PickerSurface label="Tools" onClose={onClose} className="w-[320px] bottom-full left-0 mb-1.5">
       <div className="relative mb-2">
         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50" />
         <input
@@ -87,7 +76,7 @@ export function ToolPicker({ onSelect, loading }: ToolPickerProps) {
           <p className="px-2 py-3 text-center text-[11px] text-muted-foreground/50">No tools match</p>
         )}
       </div>
-    </motion.div>
+    </PickerSurface>
   );
 }
 

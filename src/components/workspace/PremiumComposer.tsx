@@ -10,6 +10,7 @@ import { useWorkspaceStore } from "@/stores/workspace-store";
 import { SmartSuggestions } from "./SmartSuggestions";
 import { ToolPicker } from "./ToolPicker";
 import { TonePicker } from "./TonePicker";
+import { PickerSurface } from "./PickerSurface";
 import type { ToolDefinition } from "@/components/tools/ToolDefinitions";
 import { cn } from "@/lib/utils";
 import { TONES, PLATFORMS } from "@/lib/constants";
@@ -171,7 +172,7 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
   }, [input]);
 
   return (
-    <div className="border-t border-border/20 bg-background/60 backdrop-blur-xl">
+    <div className="border-t border-border/20 bg-background/60 backdrop-blur-xl pb-[env(safe-area-inset-bottom)]">
       <div className="max-w-4xl mx-auto">
         {/* Smart Suggestions */}
         <AnimatePresence>
@@ -288,7 +289,7 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
                   </ToolbarButton>
                   <AnimatePresence>
                     {openPicker === "tone" && (
-                      <TonePicker onSelect={() => setOpenPicker(null)} />
+                      <TonePicker onSelect={() => setOpenPicker(null)} onClose={() => setOpenPicker(null)} />
                     )}
                   </AnimatePresence>
                 </div>
@@ -308,7 +309,7 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
                   </ToolbarButton>
                   <AnimatePresence>
                     {openPicker === "platform" && (
-                      <PickerPanel label="Platform" className="w-[200px] bottom-full left-0 mb-1.5">
+                      <PickerSurface label="Platform" onClose={() => setOpenPicker(null)} className="w-[200px] bottom-full left-0 mb-1.5">
                         <div className="max-h-64 overflow-y-auto scrollbar-thin">
                           {PLATFORMS.map((platform) => {
                             const id = platform.name.toLowerCase();
@@ -329,7 +330,7 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
                             );
                           })}
                         </div>
-                      </PickerPanel>
+                      </PickerSurface>
                     )}
                   </AnimatePresence>
                 </div>
@@ -353,7 +354,7 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
                   </ToolbarButton>
                   <AnimatePresence>
                     {openPicker === "tool" && (
-                      <ToolPicker onSelect={applyTool} loading={toolLoading} />
+                      <ToolPicker onSelect={applyTool} onClose={() => setOpenPicker(null)} loading={toolLoading} />
                     )}
                   </AnimatePresence>
                 </div>
@@ -393,10 +394,10 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
                     <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
                       <button
                         onClick={stopGeneration}
-                        className="h-9 w-9 rounded-xl flex items-center justify-center bg-destructive/10 text-destructive hover:bg-destructive/20 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/40"
+                        className="h-10 w-10 sm:h-9 sm:w-9 rounded-xl flex items-center justify-center bg-destructive/10 text-destructive hover:bg-destructive/20 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/40"
                         aria-label="Stop generating"
                       >
-                        <Square className="w-3.5 h-3.5 fill-current" />
+                        <Square className="w-4 h-4 sm:w-3.5 sm:h-3.5 fill-current" />
                       </button>
                     </motion.div>
                   ) : (
@@ -405,7 +406,7 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
                         onClick={handleSubmit}
                         disabled={!input.trim() || uploading}
                         className={cn(
-                          "h-9 w-9 rounded-xl flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-50",
+                          "h-10 w-10 sm:h-9 sm:w-9 rounded-xl flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-50",
                           input.trim() && !uploading
                             ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-glow hover:from-violet-500 hover:to-indigo-500"
                             : "bg-muted/30 text-muted-foreground/50"
@@ -444,39 +445,12 @@ function ToolbarButton({
       title={label}
       aria-expanded={ariaExpanded}
       className={cn(
-        "flex items-center gap-1.5 px-2 h-8 rounded-lg text-muted-foreground/70 hover:text-foreground hover:bg-muted/30 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:opacity-40",
+        "flex items-center gap-1.5 px-2 h-9 sm:h-8 rounded-lg text-muted-foreground/70 hover:text-foreground hover:bg-muted/30 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:opacity-40",
         active && "text-primary bg-primary/10"
       )}
     >
       {children}
     </button>
-  );
-}
-
-function PickerPanel({
-  children, label, className,
-}: {
-  children: React.ReactNode;
-  label: string;
-  className?: string;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 8, scale: 0.98 }}
-      transition={{ duration: duration.fast, ease: ease.default }}
-      onPointerDown={(e) => e.stopPropagation()}
-      className={cn(
-        "absolute z-50 rounded-xl border border-border/40 bg-popover shadow-premium p-2 backdrop-blur-xl",
-        className
-      )}
-    >
-      <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/50 px-1.5 pb-1.5">
-        {label}
-      </p>
-      {children}
-    </motion.div>
   );
 }
 

@@ -357,7 +357,7 @@ export const PremiumMessageCard = memo(function PremiumMessageCard({
               exit={{ opacity: 0, y: 4 }}
               transition={{ duration: duration.fast }}
               className={cn(
-                "flex items-center gap-0.5 mt-1.5",
+                "flex items-center gap-2 sm:gap-0.5 mt-1.5",
                 isUser ? "justify-end" : "justify-start"
               )}
             >
@@ -421,7 +421,7 @@ function ActionButton({
       whileTap={{ scale: 0.95 }}
       onClick={onClick}
       className={cn(
-        "h-7 w-7 rounded-lg flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
+        "h-10 w-10 sm:h-7 sm:w-7 rounded-lg flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
         active
           ? "text-primary bg-primary/10"
           : "text-muted-foreground/50 hover:text-foreground hover:bg-muted/30"

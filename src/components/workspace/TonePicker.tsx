@@ -1,11 +1,10 @@
 "use client";
 import { useState } from "react";
-import { motion } from "framer-motion";
 import { Star } from "lucide-react";
 import { TONES } from "@/lib/constants";
 import { useChatStore } from "@/stores/chat-store";
 import { cn } from "@/lib/utils";
-import { duration, ease } from "@/styles/motion";
+import { PickerSurface } from "./PickerSurface";
 
 const FAVORITES_KEY = "tc:tone-favorites";
 const RECENT_KEY = "tc:tone-recent";
@@ -13,6 +12,7 @@ const MAX_RECENT = 4;
 
 interface TonePickerProps {
   onSelect?: (id: string) => void;
+  onClose: () => void;
 }
 
 function readList(key: string): string[] {
@@ -32,7 +32,7 @@ function writeList(key: string, list: string[]) {
   }
 }
 
-export function TonePicker({ onSelect }: TonePickerProps) {
+export function TonePicker({ onSelect, onClose }: TonePickerProps) {
   const { selectedTone, setSelectedTone } = useChatStore();
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<string[]>(() => readList(FAVORITES_KEY));
@@ -99,18 +99,7 @@ export function TonePicker({ onSelect }: TonePickerProps) {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 8, scale: 0.98 }}
-      transition={{ duration: duration.fast, ease: ease.default }}
-      onPointerDown={(e) => e.stopPropagation()}
-      className="absolute bottom-full left-0 mb-1.5 z-50 w-[300px] max-w-[calc(100vw-2rem)] rounded-xl border border-border/40 bg-popover shadow-premium p-2 backdrop-blur-xl"
-    >
-      <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/50 px-1.5 pb-1.5">
-        Tone
-      </p>
-
+    <PickerSurface label="Tone" onClose={onClose} className="w-[300px] bottom-full left-0 mb-1.5">
       {/* Preview */}
       <div className="rounded-lg border border-border/30 bg-muted/20 p-2.5 mb-2" aria-live="polite">
         <div className="flex items-center gap-2 mb-1">
@@ -158,6 +147,6 @@ export function TonePicker({ onSelect }: TonePickerProps) {
       <div className="grid grid-cols-2 gap-1 max-h-40 overflow-y-auto scrollbar-thin pr-0.5">
         {TONES.filter((t) => !favorites.includes(t.id)).map(toneRow)}
       </div>
-    </motion.div>
+    </PickerSurface>
   );
 }
