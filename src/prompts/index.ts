@@ -1,10 +1,10 @@
 import type { Intent, IntentConfig } from "@/engine/types";
 import { buildRewritePrompt, type RewriteConfig } from "./rewrite";
-import { buildReplyPrompt, type ReplyConfig } from "./reply";
-import { buildSocialPrompt, type SocialConfig } from "./social";
-import { buildEmailPrompt, buildColdEmailPrompt, buildBusinessProposalPrompt, buildMeetingRequestPrompt, type EmailConfig } from "./email";
+import { buildReplyPrompt } from "./reply";
+import { buildSocialPrompt } from "./social";
+import { buildEmailPrompt, buildColdEmailPrompt, buildBusinessProposalPrompt, buildMeetingRequestPrompt } from "./email";
 import { buildGrammarPrompt, buildSimplifyPrompt, buildExpandPrompt, buildExplainPrompt } from "./grammar";
-import { buildTranslationPrompt, type TranslationConfig } from "./translation";
+import { buildTranslationPrompt } from "./translation";
 import { buildResumeBulletPrompt, buildCoverLetterPrompt, buildInterviewAnswerPrompt } from "./resume";
 import { buildSummarizePrompt, buildEnhancePrompt, buildPromptImproverPrompt, buildCustomPrompt } from "./utility";
 
@@ -52,6 +52,7 @@ export function buildPrompt(intent: Intent, input: string, config: IntentConfig)
     case "enhance":
       return buildEnhancePrompt(input, config.tone);
     case "custom":
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return buildCustomPrompt(input, config as any);
     default:
       return buildEnhancePrompt(input);

@@ -1,8 +1,19 @@
 import { PlanTier, getPlanConfig, type PlanConfig } from "./plans";
 
-export type ProviderName = "groq" | "openrouter" | "google" | "openai";
+export type ProviderName = "groq" | "openrouter" | "google" | "openai" | "anthropic";
+
+export type ModelStatus = "available" | "deprecated" | "unavailable";
 
 export type ModelTier = "free" | "pro";
+
+export interface ModelCapabilities {
+  streaming: boolean;
+  vision: boolean;
+  tools: boolean;
+  json: boolean;
+  reasoning: boolean;
+  longContext: boolean;
+}
 
 export interface ModelEntry {
   readonly id: string;
@@ -12,77 +23,83 @@ export interface ModelEntry {
   readonly tier: ModelTier;
   readonly creditCost: number;
   readonly contextWindow: number;
-  readonly supportsStreaming: boolean;
-  readonly supportsVision: boolean;
-  readonly isFallback: boolean;
+  readonly status: ModelStatus;
+  readonly capabilities: ModelCapabilities;
+  readonly priority: number;
   readonly temperature: number;
+  readonly maxTokens: number;
 }
 
 const MODELS: readonly ModelEntry[] = [
   {
     id: "groq-llama3-70b",
     provider: "groq",
-    displayName: "Llama 3.1 70B",
-    modelId: "llama-3.1-70b-versatile",
+    displayName: "Llama 3.3 70B",
+    modelId: "llama-3.3-70b-versatile",
     tier: "free",
     creditCost: 1,
-    contextWindow: 8192,
-    supportsStreaming: true,
-    supportsVision: false,
-    isFallback: true,
+    contextWindow: 131072,
+    status: "available",
+    capabilities: { streaming: true, vision: false, tools: false, json: true, reasoning: false, longContext: true },
+    priority: 10,
     temperature: 0.7,
+    maxTokens: 32768,
   },
   {
-    id: "groq-mixtral-8x7b",
+    id: "groq-llama3-8b",
     provider: "groq",
-    displayName: "Mixtral 8x7B",
-    modelId: "mixtral-8x7b-32768",
+    displayName: "Llama 3.1 8B Instant",
+    modelId: "llama-3.1-8b-instant",
     tier: "free",
     creditCost: 1,
-    contextWindow: 32768,
-    supportsStreaming: true,
-    supportsVision: false,
-    isFallback: true,
+    contextWindow: 131072,
+    status: "available",
+    capabilities: { streaming: true, vision: false, tools: false, json: true, reasoning: false, longContext: true },
+    priority: 9,
     temperature: 0.7,
+    maxTokens: 16384,
   },
   {
     id: "gemini-flash",
     provider: "google",
-    displayName: "Gemini 1.5 Flash",
-    modelId: "gemini-1.5-flash",
+    displayName: "Gemini 2.5 Flash",
+    modelId: "gemini-2.5-flash",
     tier: "free",
     creditCost: 2,
-    contextWindow: 16384,
-    supportsStreaming: true,
-    supportsVision: true,
-    isFallback: false,
+    contextWindow: 1048576,
+    status: "available",
+    capabilities: { streaming: true, vision: true, tools: true, json: true, reasoning: true, longContext: true },
+    priority: 8,
     temperature: 0.7,
+    maxTokens: 8192,
   },
   {
     id: "gemini-pro",
     provider: "google",
-    displayName: "Gemini 1.5 Pro",
-    modelId: "gemini-1.5-pro",
+    displayName: "Gemini 2.5 Pro",
+    modelId: "gemini-2.5-pro",
     tier: "pro",
     creditCost: 5,
-    contextWindow: 32768,
-    supportsStreaming: true,
-    supportsVision: true,
-    isFallback: false,
+    contextWindow: 2097152,
+    status: "available",
+    capabilities: { streaming: true, vision: true, tools: true, json: true, reasoning: true, longContext: true },
+    priority: 7,
     temperature: 0.7,
+    maxTokens: 8192,
   },
   {
     id: "openrouter-claude",
     provider: "openrouter",
-    displayName: "Claude 3.5 Sonnet",
-    modelId: "anthropic/claude-3.5-sonnet",
+    displayName: "Claude 3.7 Sonnet",
+    modelId: "anthropic/claude-3.7-sonnet",
     tier: "pro",
     creditCost: 10,
-    contextWindow: 32768,
-    supportsStreaming: true,
-    supportsVision: true,
-    isFallback: false,
+    contextWindow: 200000,
+    status: "available",
+    capabilities: { streaming: true, vision: true, tools: true, json: true, reasoning: true, longContext: true },
+    priority: 6,
     temperature: 0.7,
+    maxTokens: 8192,
   },
   {
     id: "openrouter-gpt4",
@@ -91,20 +108,41 @@ const MODELS: readonly ModelEntry[] = [
     modelId: "openai/gpt-4o",
     tier: "pro",
     creditCost: 10,
-    contextWindow: 32768,
-    supportsStreaming: true,
-    supportsVision: true,
-    isFallback: false,
+    contextWindow: 128000,
+    status: "available",
+    capabilities: { streaming: true, vision: true, tools: true, json: true, reasoning: true, longContext: true },
+    priority: 5,
     temperature: 0.7,
+    maxTokens: 16384,
   },
 ];
+
+const unavailableModels = new Set<string>();
+
+export function markModelUnavailable(id: string): void {
+  unavailableModels.add(id);
+}
+
+export function isModelAvailable(id: string): boolean {
+  return !unavailableModels.has(id);
+}
 
 export function getAllModels(): readonly ModelEntry[] {
   return MODELS;
 }
 
+export function getAvailableModels(): readonly ModelEntry[] {
+  return [...MODELS]
+    .filter((m) => m.status === "available" && !unavailableModels.has(m.id))
+    .sort((a, b) => b.priority - a.priority);
+}
+
 export function getModelById(id: string): ModelEntry | undefined {
   return MODELS.find((m) => m.id === id);
+}
+
+export function getModelByProviderModelId(provider: ProviderName, modelId: string): ModelEntry | undefined {
+  return MODELS.find((m) => m.provider === provider && m.modelId === modelId);
 }
 
 export function getModelsByProvider(provider: ProviderName): readonly ModelEntry[] {
@@ -113,11 +151,11 @@ export function getModelsByProvider(provider: ProviderName): readonly ModelEntry
 
 export function getModelsByTier(tier: PlanTier): readonly ModelEntry[] {
   const config: Readonly<PlanConfig> = getPlanConfig(tier);
-  return MODELS.filter((m) => m.tier === "free" || config.modelTier === "pro");
+  return getAvailableModels().filter((m) => m.tier === "free" || config.modelTier === "pro");
 }
 
 export function getFallbackModels(): readonly ModelEntry[] {
-  return MODELS.filter((m) => m.isFallback);
+  return getAvailableModels().filter((m) => m.tier === "free").sort((a, b) => b.priority - a.priority);
 }
 
 export function getCreditCost(modelId: string): number | undefined {
@@ -126,4 +164,8 @@ export function getCreditCost(modelId: string): number | undefined {
 
 export function getSupportedProviders(): readonly ProviderName[] {
   return Array.from(new Set(MODELS.map((m) => m.provider)));
+}
+
+export function getModelsByCapability(capability: keyof ModelCapabilities): readonly ModelEntry[] {
+  return getAvailableModels().filter((m) => m.capabilities[capability]);
 }

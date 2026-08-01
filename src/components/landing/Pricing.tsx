@@ -38,13 +38,13 @@ function TiltedPricingCard({ tier, index, inView, annual }: {
   inView: boolean;
   annual: boolean;
 }) {
-  const tilt = useTiltEffect({ max: 3, scale: 1.003 });
+  const { ref: tiltRef, onMouseMove: handleTiltMove, onMouseLeave: handleTiltLeave } = useTiltEffect({ max: 3, scale: 1.003 });
 
   return (
     <motion.div
-      ref={tilt.ref}
-      onMouseMove={tilt.onMouseMove}
-      onMouseLeave={tilt.onMouseLeave}
+      ref={tiltRef}
+      onMouseMove={handleTiltMove}
+      onMouseLeave={handleTiltLeave}
       initial={{ opacity: 0, y: 40 }}
       animate={inView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.5, delay: index * 0.1 }}

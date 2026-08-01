@@ -60,19 +60,6 @@ function getProHourly() {
   return _proHourly;
 }
 
-let _uploadDaily: Ratelimit | null = null;
-function getUploadDailyUnused() {
-  if (!_uploadDaily) {
-    _uploadDaily = new Ratelimit({
-      redis: getRedis(),
-      limiter: Ratelimit.slidingWindow(5, "24 h"),
-      analytics: true,
-      prefix: "ratelimit:upload",
-    });
-  }
-  return _uploadDaily;
-}
-
 export async function checkMessageLimit(userId: string, plan: string) {
   if (plan === "pro" || plan === "enterprise") {
     const { success, remaining } = await getProHourly().limit(userId);

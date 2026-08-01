@@ -1,16 +1,36 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
 function createPrismaClient() {
-  const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) {
-    throw new Error("DATABASE_URL environment variable is not set");
-  }
-  const adapter = new PrismaPg({ connectionString });
+  // Driver adapters do their own pooling, so talk to the DIRECT Neon endpoint
+  // (not the -pooler / PgBouncer endpoint). The pooler closes idle sockets and
+  // drops connections when the free-tier compute suspends; pg.Pool then hands
+  // Prisma a stale socket and it reports P1017 "Server has closed the
+  // connection" on the first query after idle.
+  const connectionString =
+    process.env.DIRECT_URL ??
+    process.env.DATABASE_URL ??
+    (() => {
+      throw new Error("DIRECT_URL or DATABASE_URL environment variable is not set");
+    })();
+
+  const pool = new Pool({
+    connectionString,
+    max: 5,                       // well under Neon's direct-connection limit
+    connectionTimeoutMillis: 10_000, // fail fast instead of hanging forever
+    idleTimeoutMillis: 10_000,    // discard idle clients before the server closes them
+    maxUses: 1000,                // recycle connections to avoid stale sockets
+    // Neon requires SCRAM-SHA-256-PLUS; pg only reads this option at runtime,
+    // never the `channel_binding` URL param, and its types don't expose it yet.
+    ...({ enableChannelBinding: true } as Record<string, boolean>),
+  });
+
+  const adapter = new PrismaPg(pool);
   return new PrismaClient({ adapter });
 }
 

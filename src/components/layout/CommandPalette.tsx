@@ -3,7 +3,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search, MessageSquare, Settings, Wand2, Star, Pin, ArrowRight,
-  Command, FileText, Sparkles, Zap, Hash, Plus,
+  FileText, Sparkles, Zap, Hash, Plus,
   RefreshCw, Briefcase, MessageCircle, Smile, Heart, Gem, Laugh,
   CheckSquare, Globe, Mail, Camera, Terminal, Headphones,
 } from "lucide-react";
@@ -12,10 +12,9 @@ import { cn } from "@/lib/utils";
 import { useCommandPalette } from "@/hooks/use-command-palette";
 import { useRouter } from "next/navigation";
 import { useChatStore } from "@/stores/chat-store";
-import { useWorkspaceStore, type WorkspaceMode } from "@/stores/workspace-store";
-import { getAllCapabilities, type Capability } from "@/stores/capability-registry";
+import { useWorkspaceStore } from "@/stores/workspace-store";
+import { getAllCapabilities } from "@/stores/capability-registry";
 import { fadeIn, fadeInScale, comboboxTransition } from "@/styles/motion";
-import { useTheme } from "next-themes";
 import { useChat } from "@/hooks/use-chat";
 
 type ResultCategory = "chat" | "capability" | "page" | "action" | "mode";
@@ -39,7 +38,6 @@ export function CommandPalette() {
   const router = useRouter();
   const { chats } = useChatStore();
   const { setMode } = useWorkspaceStore();
-  const { theme, setTheme } = useTheme();
   const { createChat } = useChat();
 
   const allResults: Result[] = [
@@ -80,17 +78,26 @@ export function CommandPalette() {
       )
     : allResults;
 
-  useEffect(() => {
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
     if (isOpen) {
       setQuery("");
       setSelectedIndex(0);
+    }
+  }
+
+  const [prevQuery, setPrevQuery] = useState(query);
+  if (query !== prevQuery) {
+    setPrevQuery(query);
+    setSelectedIndex(0);
+  }
+
+  useEffect(() => {
+    if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [isOpen]);
-
-  useEffect(() => {
-    setSelectedIndex(0);
-  }, [query]);
 
   const selectItem = useCallback((item: Result) => {
     if (item.action) { item.action(); return; }
@@ -166,7 +173,7 @@ export function CommandPalette() {
                         <div className="flex-1 h-px bg-border/20" />
                       </div>
                       <div className="space-y-0.5">
-                        {group.items.map((item, i) => {
+                        {group.items.map((item) => {
                           const globalIndex = results.indexOf(item);
                           const isSelected = globalIndex === selectedIndex;
                           return (

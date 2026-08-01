@@ -3,8 +3,6 @@ import { chatRepository } from "@/repositories/ChatRepository";
 import { aiEngine } from "@/engine/AIEngine";
 import { prisma } from "@/lib/prisma";
 import { planService } from "@/services/PlanService";
-import type { Message } from "@/types";
-import type { Platform, ResponseLength } from "@/engine/types";
 
 export class MessageService {
   async getMessages(chatId: string, limit = 50, offset = 0) {
@@ -13,6 +11,7 @@ export class MessageService {
 
   async sendMessage(chatId: string, userId: string, data: {
     content: string; tone?: string; model?: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     context?: Record<string, any>;
   }) {
     const [plan, chat] = await Promise.all([
@@ -28,6 +27,7 @@ export class MessageService {
       language: data.context?.language || chat.language || undefined,
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await chatRepository.update(chatId, userId, { updatedAt: new Date() } as any);
 
     const history = (chat.messages || []).map(m => ({
@@ -43,7 +43,9 @@ export class MessageService {
     const stream = aiEngine.stream({
       intent: "rewrite",
       prompt: data.content,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tone: (data.tone || chat.tone) as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       platform: data.context?.platform as any,
       language: data.context?.language,
       length: data.context?.length,
@@ -73,6 +75,7 @@ export class MessageService {
 
     const result = await aiEngine.generate({
       intent: "rewrite",
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tone: (original.tone || "professional") as any,
       history,
       prompt: original.content,
@@ -81,6 +84,7 @@ export class MessageService {
     });
 
     const regenerated = await messageRepository.regenerate(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { ...original, content: result.content, model: result.model, tokens: result.tokens, latency: result.latency } as any,
       result.content,
       result.model,
@@ -100,6 +104,7 @@ export class MessageService {
     const result = await aiEngine.generate({
       intent: "enhance",
       prompt: `Continue the following:\n\n${original.content}`,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tone: (original.tone || "professional") as any,
       userId,
       plan: plan.tier,

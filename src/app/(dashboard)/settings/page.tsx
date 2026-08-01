@@ -18,12 +18,13 @@ export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
 
   const fullName = user?.fullName || user?.firstName || "";
-  const [displayName, setDisplayName] = useState("");
+  const [displayName, setDisplayName] = useState(fullName);
+  const [prevFullName, setPrevFullName] = useState(fullName);
+  if (fullName !== prevFullName) {
+    setPrevFullName(fullName);
+    setDisplayName(fullName);
+  }
   const [profileSaving, setProfileSaving] = useState(false);
-
-  useEffect(() => {
-    if (fullName) setDisplayName(fullName);
-  }, [fullName]);
 
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [personaLoading, setPersonaLoading] = useState(true);

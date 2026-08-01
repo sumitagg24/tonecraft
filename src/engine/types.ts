@@ -76,6 +76,25 @@ export interface Workflow {
 }
 
 import type { PlanTier } from "@/config/plans";
+import type { ProviderName } from "@/config/models";
+
+export type CapabilityTier = "writing" | "long-context" | "coding" | "creative" | "vision";
+
+export interface CapabilityContext {
+  hasFiles?: boolean;
+  tokenCount?: number;
+  creativity?: number;
+  isCoding?: boolean;
+}
+
+export interface RouteOptions {
+  system: string;
+  messages: { role: "user" | "assistant" | "system"; content: string }[];
+  modelId?: string;
+  plan?: PlanTier;
+  intent?: Intent;
+  capabilityContext?: CapabilityContext;
+}
 
 export interface ConversationMessage {
   id: string;
@@ -107,7 +126,7 @@ export interface EngineOptions {
 export interface ProviderConfig {
   id: string;
   name: string;
-  provider: "groq" | "openrouter" | "google" | "openai";
+  provider: ProviderName;
   model: string;
   temperature: number;
   isFree: boolean;

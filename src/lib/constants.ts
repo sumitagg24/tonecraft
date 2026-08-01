@@ -40,20 +40,6 @@ export const PRO_TIER_LIMITS = {
   contextWindow: 16384,
 } as const;
 
-export const AI_MODELS = {
-  free: [
-    { id: "groq-llama3-70b", name: "Llama 3.1 70B", provider: "groq" },
-    { id: "groq-mixtral-8x7b", name: "Mixtral 8x7B", provider: "groq" },
-    { id: "gemini-flash", name: "Gemini 1.5 Flash", provider: "google" },
-  ],
-  pro: [
-    { id: "groq-llama3-70b", name: "Llama 3.1 70B", provider: "groq" },
-    { id: "openrouter-claude", name: "Claude 3.5 Sonnet", provider: "openrouter" },
-    { id: "openrouter-gpt4", name: "GPT-4o", provider: "openrouter" },
-    { id: "gemini-pro", name: "Gemini 1.5 Pro", provider: "google" },
-  ],
-} as const;
-
 export const PRICING_TIERS = [
   {
     name: "Free",

@@ -20,6 +20,7 @@ export class UserRepository {
   }
 
   async updatePreferences(id: string, prefs: Partial<UserPreferences>) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data: any = {};
     if (prefs.preferredLanguage !== undefined) data.preferredLanguage = prefs.preferredLanguage;
     if (prefs.preferredTone !== undefined) data.defaultTone = prefs.preferredTone;

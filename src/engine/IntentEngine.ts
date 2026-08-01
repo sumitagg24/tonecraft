@@ -89,6 +89,7 @@ export class IntentEngine {
       language: overrides?.language,
       audience: overrides?.audience,
       formality: overrides?.formality,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       style: overrides?.style || mapping.defaultStyle as any,
     };
   }

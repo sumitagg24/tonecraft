@@ -1,5 +1,4 @@
-import type { Tone, Formality, Platform } from "@/engine/types";
-import { contextBlock } from "./utils";
+import type { Tone, Formality } from "@/engine/types";
 
 export interface EmailConfig {
   tone?: Tone;
@@ -44,6 +43,7 @@ ${config.context ? `\nContext: ${config.context}` : ""}`;
 }
 
 export function buildBusinessProposalPrompt(input: string, config: EmailConfig): string {
+  void config;
   return `You are a business strategy consultant. Write a professional proposal:
 "${input}"
 
@@ -59,6 +59,7 @@ Use persuasive, professional language. Be specific and actionable.`;
 }
 
 export function buildMeetingRequestPrompt(input: string, config: EmailConfig): string {
+  void config;
   return `You are an executive assistant. Write a meeting request:
 "${input}"
 

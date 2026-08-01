@@ -53,7 +53,7 @@ export function AIPlayground() {
   const [hasGenerated, setHasGenerated] = useState(false);
   const generatingRef = useRef(false);
 
-  const currentPreset = PRESETS.find((p) => p.label === selectedPreset)!;
+  const currentPreset = PRESETS.find((p) => p.label === selectedPreset) ?? PRESETS[0];
 
   const handleGenerate = useCallback(() => {
     if (generatingRef.current) return;

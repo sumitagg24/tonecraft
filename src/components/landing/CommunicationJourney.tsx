@@ -56,7 +56,7 @@ export function CommunicationJourney() {
   const [activePlatform, setActivePlatform] = useState("email");
   const [hoveredPlatform, setHoveredPlatform] = useState<string | null>(null);
 
-  const current = PLATFORMS.find((p) => p.id === activePlatform)!;
+  const current = PLATFORMS.find((p) => p.id === activePlatform) ?? PLATFORMS[0];
   const Icon = current.icon;
 
   return (

@@ -49,7 +49,7 @@ export async function POST(
     return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
 
-  const { content, tone, model, platform, language, recipient, length, creativity, emojis, audience, formality } = parsed.data;
+  const { content, tone, platform, language, length, creativity, audience, formality } = parsed.data;
 
   const chat = await chatRepository.findByIdAndUser(chatId, userId);
   if (!chat) {
@@ -57,6 +57,7 @@ export async function POST(
   }
 
   await messageRepository.create({ chatId, role: "user", content, tone, platform, language });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await chatRepository.update(chatId, userId, { updatedAt: new Date() } as any);
 
   const history = (chat.messages || []).map(m => ({
@@ -78,11 +79,15 @@ export async function POST(
         const gen = aiEngine.stream({
           intent: "rewrite",
           prompt: content,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           tone: tone as any,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           platform: platform as any,
           language,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           length: length as any,
           creativity,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           formality: formality as any,
           audience,
           history,

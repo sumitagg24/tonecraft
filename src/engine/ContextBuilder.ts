@@ -1,4 +1,4 @@
-import type { ConversationMessage, IntentConfig, Tone, Platform, WritingStyle } from "./types";
+import type { ConversationMessage, IntentConfig, Tone } from "./types";
 
 export interface ContextSource {
   history?: ConversationMessage[];

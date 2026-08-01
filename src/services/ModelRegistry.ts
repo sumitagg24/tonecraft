@@ -5,7 +5,13 @@ import {
   getCreditCost as getCreditCostFromConfig,
   getModelsByTier,
   getModelsByProvider as getModelsByProviderFromConfig,
+  getAvailableModels as getAvailableModelsFromConfig,
+  getFallbackModels as getFallbackModelsFromConfig,
+  getModelsByCapability as getModelsByCapabilityFromConfig,
+  markModelUnavailable,
+  isModelAvailable,
   type ModelEntry,
+  type ModelCapabilities,
   type ProviderName,
 } from "@/config/models";
 
@@ -30,8 +36,40 @@ export class ModelRegistry {
     return getAllModels();
   }
 
+  getAvailableModels(): readonly ModelEntry[] {
+    return getAvailableModelsFromConfig();
+  }
+
   getModelsByProvider(provider: ProviderName): readonly ModelEntry[] {
     return getModelsByProviderFromConfig(provider);
+  }
+
+  getModelsByCapability(capability: keyof ModelCapabilities): readonly ModelEntry[] {
+    return getModelsByCapabilityFromConfig(capability);
+  }
+
+  getFallbackModels(): readonly ModelEntry[] {
+    return getFallbackModelsFromConfig();
+  }
+
+  markDecommissioned(modelId: string): void {
+    markModelUnavailable(modelId);
+  }
+
+  isAvailable(modelId: string): boolean {
+    return isModelAvailable(modelId);
+  }
+
+  resolveFallbackChain(plan: Readonly<PlanConfig>, excludeModelId?: string): readonly ModelEntry[] {
+    let models = getModelsByTier(plan.tier)
+      .filter((m) => m.id !== excludeModelId)
+      .sort((a, b) => b.priority - a.priority);
+
+    if (models.length === 0) {
+      models = getFallbackModelsFromConfig().filter((m) => m.id !== excludeModelId);
+    }
+
+    return models;
   }
 }
 

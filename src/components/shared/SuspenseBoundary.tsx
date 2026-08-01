@@ -1,10 +1,8 @@
 import { Suspense, type ReactNode } from "react";
-import { cn } from "@/lib/utils";
 
 interface SuspenseBoundaryProps {
   children: ReactNode;
   fallback?: ReactNode;
-  name?: string;
 }
 
 const DefaultFallback = () => (
@@ -41,6 +39,6 @@ export function SuspenseSection({ children, fallback }: SuspenseBoundaryProps) {
   return <Suspense fallback={fallback ?? <SectionFallback />}>{children}</Suspense>;
 }
 
-export function SuspenseDefault({ children, fallback, name }: SuspenseBoundaryProps) {
+export function SuspenseDefault({ children, fallback }: SuspenseBoundaryProps) {
   return <Suspense fallback={fallback ?? <DefaultFallback />}>{children}</Suspense>;
 }

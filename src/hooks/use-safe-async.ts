@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, startTransition } from "react";
 
 interface SafeAsyncState<T> {
   data: T | null;
@@ -16,40 +16,59 @@ export function useSafeAsync<T>(
     isLoading: true,
   });
   const mountedRef = useRef(true);
+  const abortRef = useRef<AbortController | null>(null);
   const retryCount = useRef(0);
+  const asyncFnRef = useRef(asyncFn);
 
-  const execute = useCallback(async () => {
+  useEffect(() => {
+    asyncFnRef.current = asyncFn;
+  }, [asyncFn]);
+
+  const execute = useCallback(() => {
+    abortRef.current?.abort();
     const controller = new AbortController();
+    abortRef.current = controller;
     mountedRef.current = true;
     retryCount.current += 1;
-    setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
-    try {
-      const result = await asyncFn(controller.signal);
-      if (mountedRef.current) {
-        setState({ data: result, error: null, isLoading: false });
+    const run = async () => {
+      startTransition(() => {
+        setState((prev) => ({ ...prev, isLoading: true, error: null }));
+      });
+      try {
+        const result = await asyncFnRef.current(controller.signal);
+        if (mountedRef.current) {
+          startTransition(() => {
+            setState({ data: result, error: null, isLoading: false });
+          });
+        }
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        if (mountedRef.current) {
+          startTransition(() => {
+            setState({
+              data: null,
+              error: err instanceof Error ? err : new Error(String(err)),
+              isLoading: false,
+            });
+          });
+        }
       }
-    } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") return;
-      if (mountedRef.current) {
-        setState({
-          data: null,
-          error: err instanceof Error ? err : new Error(String(err)),
-          isLoading: false,
-        });
-      }
-    }
+    };
 
-    return () => controller.abort();
-  }, deps);
+    run();
 
+    return () => { controller.abort(); };
+  }, []);
+
+  const depsKey = JSON.stringify(deps);
   useEffect(() => {
     const cleanup = execute();
     return () => {
       mountedRef.current = false;
-      cleanup.then((abort) => abort?.());
+      cleanup?.();
     };
-  }, [execute]);
+  }, [execute, depsKey]);
 
   return { ...state, refetch: execute };
 }

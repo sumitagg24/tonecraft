@@ -160,18 +160,18 @@ export function Hero() {
   const y1 = useTransform(scrollY, [0, 600], [0, -50]);
   const y2 = useTransform(scrollY, [0, 600], [0, -80]);
   const opacity = useTransform(scrollY, [0, 400], [1, 0]);
-  const spotlight = useSpotlightEffect();
+  const { ref: spotlightRef, onMouseMove: handleSpotlightMove } = useSpotlightEffect();
 
   return (
     <section
       ref={sectionRef}
-      onMouseMove={spotlight.onMouseMove}
+      onMouseMove={handleSpotlightMove}
       className="relative spotlight min-h-screen flex items-center justify-center overflow-hidden pt-20 pb-32"
     >
       <Particles />
 
       <div className="absolute inset-0 aurora-bg opacity-40" />
-      <motion.div ref={spotlight.ref} style={{ y: y1, opacity }} className="absolute inset-0 pointer-events-none" aria-hidden="true">
+      <motion.div ref={spotlightRef} style={{ y: y1, opacity }} className="absolute inset-0 pointer-events-none" aria-hidden="true">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl animate-breathe" />
         <div className="absolute bottom-1/3 right-1/4 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-breathe" style={{ animationDelay: "2s" }} />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-500/5 rounded-full blur-3xl" />

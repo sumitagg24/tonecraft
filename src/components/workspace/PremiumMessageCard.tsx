@@ -151,6 +151,7 @@ export const PremiumMessageCard = memo(function PremiumMessageCard({
                       <pre className="bg-muted/80 rounded-xl p-4 overflow-x-auto my-3 group/pre relative border border-border/20">
                         <button
                           onClick={() => {
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             const codeEl = (children as any)?.props?.children;
                             const code = typeof codeEl === "string" ? codeEl : "";
                             handleCopyCode(code);

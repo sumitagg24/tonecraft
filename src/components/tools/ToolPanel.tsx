@@ -5,7 +5,6 @@ import { X, Sparkles, Loader2, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import type { ToolDefinition } from "./ToolDefinitions";
 import ReactMarkdown from "react-markdown";
@@ -21,6 +20,7 @@ interface ToolPanelProps {
 export function ToolPanel({ tool, onClose }: ToolPanelProps) {
   const [input, setInput] = useState("");
   const [result, setResult] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [metadata, setMetadata] = useState<Record<string, any> | null>(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -46,6 +46,7 @@ export function ToolPanel({ tool, onClose }: ToolPanelProps) {
       const data = await res.json();
       setResult(data.content);
       setMetadata(data.metadata || null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       toast.error(e.message);
     } finally {

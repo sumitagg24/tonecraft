@@ -44,7 +44,8 @@ export class WorkflowEngine {
       finalResult = result;
     }
 
-    return finalResult!;
+    if (!finalResult) throw new Error("Workflow produced no result");
+    return finalResult;
   }
 
   private async *executeMultiStepStream(

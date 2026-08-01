@@ -59,7 +59,7 @@ const ROLES = [
 export function RoleSelector() {
   const [activeRole, setActiveRole] = useState(ROLES[0].id);
 
-  const currentRole = ROLES.find((r) => r.id === activeRole)!;
+  const currentRole = ROLES.find((r) => r.id === activeRole) ?? ROLES[0];
 
   return (
     <section className="relative py-32 overflow-hidden">

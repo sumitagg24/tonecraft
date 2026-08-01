@@ -1,7 +1,7 @@
 "use client";
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
-import { ArrowRight, Play, Sparkles, TrendingUp } from "lucide-react";
+import { Play, Sparkles, TrendingUp } from "lucide-react";
 
 const workflowSteps = [
   {

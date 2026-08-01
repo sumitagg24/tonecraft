@@ -16,7 +16,7 @@ import {
 import { cn } from "@/lib/utils";
 
 export function ChatList() {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery] = useState("");
   const pathname = usePathname();
   const { chats } = useChatStore();
   const { createChat, deleteChat } = useChat();

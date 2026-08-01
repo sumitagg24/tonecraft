@@ -1,21 +1,21 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+const CONVERSATION_DATA = [
+  { role: "user", content: "Hey, can we reschedule our 3pm sync to tomorrow?" },
+  { role: "ai", content: "Hi! That works for me tomorrow at 3pm. I'll update the calendar invite." },
+  { role: "user", content: "Also, can you update the project status for the client?" },
+  { role: "ai", content: "Sure! Here's the update I sent to the client along with a polished summary for their review." },
+];
 
 export function WorkspaceShowcase() {
   const [activeTab, setActiveTab] = useState("conversations");
   const [streamedMessages, setStreamedMessages] = useState<string[]>([]);
   const [showPlaceholder, setShowPlaceholder] = useState(true);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  const conversationData = [
-    { role: "user", content: "Hey, can we reschedule our 3pm sync to tomorrow?" },
-    { role: "ai", content: "Hi! That works for me tomorrow at 3pm. I'll update the calendar invite." },
-    { role: "user", content: "Also, can you update the project status for the client?" },
-    { role: "ai", content: "Sure! Here's the update I sent to the client along with a polished summary for their review." },
-  ];
 
   const streamMessages = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
@@ -24,9 +24,10 @@ export function WorkspaceShowcase() {
 
     let msgIndex = 0;
     intervalRef.current = setInterval(() => {
-      if (msgIndex < conversationData.length) {
-        setStreamedMessages((prev) => [...prev, conversationData[msgIndex].content]);
+      if (msgIndex < CONVERSATION_DATA.length) {
+        const msg = CONVERSATION_DATA[msgIndex].content;
         msgIndex++;
+        setStreamedMessages((prev) => [...prev, msg]);
       } else {
         if (intervalRef.current) clearInterval(intervalRef.current);
       }
@@ -157,7 +158,7 @@ export function WorkspaceShowcase() {
                     ) : (
                       <>
                         {streamedMessages.map((msg, i) => {
-                          const role = conversationData[i]?.role || "user";
+                          const role = CONVERSATION_DATA[i]?.role || "user";
                           return (
                             <motion.div
                               key={i}
@@ -178,7 +179,7 @@ export function WorkspaceShowcase() {
                             </motion.div>
                           );
                         })}
-                        {streamedMessages.length < conversationData.length && (
+                        {streamedMessages.length < CONVERSATION_DATA.length && (
                           <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}

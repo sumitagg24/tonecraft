@@ -6,7 +6,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "@/components/ui/sonner";
 import { ReducedMotionProvider } from "@/hooks/use-reduced-motion";
 import { GlobalEffects } from "@/components/shared/Effects";
-import { PremiumCursor } from "@/components/ui/effects/PremiumCursor";
+import "@/lib/startup-validation";
 import "./globals.css";
 
 const inter = Inter({
@@ -20,6 +20,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
   title: "ToneCraft — AI Communication Platform",
   description:
     "Write Once. Speak Perfectly. Everywhere. ToneCraft rewrites your messages for every platform and tone.",
@@ -95,7 +96,6 @@ export default function RootLayout({
               <QueryProvider>
                 {children}
                 <GlobalEffects />
-                <PremiumCursor />
                 <Toaster position="bottom-right" />
               </QueryProvider>
             </ReducedMotionProvider>

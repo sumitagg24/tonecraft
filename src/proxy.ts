@@ -1,23 +1,30 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { clerkMiddleware } from "@clerk/nextjs/server";
+import type { NextRequest } from "next/server";
 
-const isPublicRoute = createRouteMatcher([
+const PUBLIC_PATHS: ReadonlyArray<string> = [
   "/",
-  "/login(.*)",
-  "/register(.*)",
+  "/login",
+  "/register",
   "/onboarding",
   "/pricing",
   "/features",
-  "/about(.*)",
+  "/about",
   "/privacy",
   "/terms",
-  "/blog(.*)",
-  "/api/stripe/webhook",
-  "/api/webhook(.*)",
-  "/api/auth(.*)",
-]);
+  "/blog",
+    "/api/webhook",
+  "/api/auth",
+  "/api/health",
+];
 
-export default clerkMiddleware(async (auth, req) => {
-  if (!isPublicRoute(req)) {
+function isPublicPath(pathname: string): boolean {
+  return PUBLIC_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(p + "/"),
+  );
+}
+
+export default clerkMiddleware(async (auth, req: NextRequest) => {
+  if (!isPublicPath(req.nextUrl.pathname)) {
     await auth.protect();
   }
 });

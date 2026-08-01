@@ -11,6 +11,7 @@ export function useTools() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const executeTool = useCallback(async (toolId: string, input: string, context?: Record<string, any>): Promise<ToolResult | null> => {
     setLoading(true);
     setError(null);
@@ -25,6 +26,7 @@ export function useTools() {
         throw new Error(err.error?.message || "Tool execution failed");
       }
       return res.json();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       setError(e.message);
       return null;

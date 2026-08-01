@@ -3,12 +3,21 @@
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
+// The runtime Prisma Client gets its connection from the pg adapter in
+// src/lib/prisma.ts. The url below is only consumed by the Prisma CLI
+// (migrate, db pull, db push), which requires the DIRECT Neon endpoint:
+// the pooled (-pooler) endpoint is PgBouncer transaction mode and does not
+// support schema operations. DIRECT_URL is the same host minus "-pooler".
+const directUrl =
+  process.env["DIRECT_URL"] ??
+  (process.env["DATABASE_URL"] ?? "").replace("-pooler", "");
+
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    url: directUrl,
   },
 });

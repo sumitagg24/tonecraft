@@ -45,17 +45,6 @@ OPENAI_API_KEY="your-openai-api-key"  # For Pro tier
 ANTHROPIC_API_KEY="your-anthropic-api-key"  # For Pro tier
 
 # ==========================================
-# STRIPE PAYMENTS
-# ==========================================
-STRIPE_SECRET_KEY="your-stripe-secret-key"
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="your-stripe-publishable-key"
-STRIPE_WEBHOOK_SECRET="your-stripe-webhook-secret"
-STRIPE_PRICE_ID_PRO="price_..."  # Replace with actual price ID
-STRIPE_PRICE_ID_ENTERPRISE="price_..."  # Replace with actual price ID
-NEXT_PUBLIC_STRIPE_PRICE_ID_PRO="price_..."  # Replace with actual price ID
-NEXT_PUBLIC_STRIPE_PRICE_ID_ENTERPRISE="price_..."  # Replace with actual price ID
-
-# ==========================================
 # UPSTASH REDIS (Rate Limiting)
 # ==========================================
 UPSTASH_REDIS_REST_URL="https://<your-upstash-instance>.upstash.io"

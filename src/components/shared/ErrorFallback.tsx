@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { AlertTriangle, Home, RefreshCw, RotateCcw } from "lucide-react";
 import Link from "next/link";
@@ -28,9 +29,10 @@ export function ErrorFallback({
   onRetry,
   className,
 }: ErrorFallbackProps) {
-  const id =
-    errorId ??
-    `ERR-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+  const [fallbackId] = useState(
+    () => `ERR-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`
+  );
+  const id = errorId ?? fallbackId;
 
   return (
     <motion.div

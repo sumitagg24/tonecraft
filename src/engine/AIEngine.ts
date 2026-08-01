@@ -1,7 +1,7 @@
-import type { EngineOptions, EngineResult, ConversationMessage } from "./types";
+import type { EngineOptions, EngineResult, CapabilityContext } from "./types";
 import { ProviderRouter, providerRouter } from "./ProviderRouter";
 import { ResponseFormatter, responseFormatter } from "./ResponseFormatter";
-import { ContextBuilder, contextBuilder } from "./ContextBuilder";
+import { ContextBuilder, contextBuilder, type BuiltContext } from "./ContextBuilder";
 import { IntentEngine, intentEngine } from "./IntentEngine";
 import { WorkflowEngine } from "./WorkflowEngine";
 import { buildPrompt } from "@/prompts";
@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { usageGuard } from "@/services/UsageGuard";
 import { modelRegistry } from "@/services/ModelRegistry";
 import { type PlanTier, getPlanConfig } from "@/config/plans";
+import { CODE_PATTERN } from "@/lib/capabilities";
 
 export class AIEngine {
   private providerRouter: ProviderRouter;
@@ -75,6 +76,8 @@ export class AIEngine {
       messages: built.messages,
       modelId: options.modelId,
       plan: options.plan,
+      intent: intentConfig.intent,
+      capabilityContext: this.buildCapabilityContext(options, built),
     });
 
     // Deduct credits after success
@@ -163,6 +166,8 @@ export class AIEngine {
         messages: built.messages,
         modelId: options.modelId,
         plan: options.plan,
+        intent: intentConfig.intent,
+        capabilityContext: this.buildCapabilityContext(options, built),
       });
 
       for await (const chunk of stream) {
@@ -205,6 +210,22 @@ export class AIEngine {
     } catch (error) {
       yield { type: "error", message: (error as Error).message };
     }
+  }
+
+  private buildCapabilityContext(options: EngineOptions, built: BuiltContext): CapabilityContext {
+    const prompt = options.prompt ?? "";
+    const contentLength =
+      built.systemMessage.length +
+      built.messages.reduce((sum, m) => sum + m.content.length, 0) +
+      prompt.length;
+    const tokenCount = Math.ceil(contentLength / 4);
+
+    return {
+      hasFiles: options.context?.hasFiles === true || false,
+      tokenCount,
+      creativity: options.creativity,
+      isCoding: CODE_PATTERN.test(prompt),
+    };
   }
 
   async generateText(options: { prompt: string; modelId?: string; userId?: string }): Promise<string> {

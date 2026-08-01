@@ -1,5 +1,3 @@
-import { contextBlock } from "./utils";
-
 export function buildResumeBulletPrompt(input: string): string {
   return `You are a professional resume writer and career coach. Convert the following experience into powerful resume bullet points.
 

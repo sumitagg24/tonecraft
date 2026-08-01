@@ -1,7 +1,6 @@
 "use client";
 import { motion } from "framer-motion";
-import { Check, X, MessageSquare, Bot, Palette, Globe, Zap, Shield, Layers, Sparkles } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Check, X, Bot, Palette, Globe, Zap, Shield, Layers, Sparkles } from "lucide-react";
 
 const COMPARISONS = [
   {

@@ -121,3 +121,4 @@ plans/
 
 # JetBrains
 .idea/
+.aider*

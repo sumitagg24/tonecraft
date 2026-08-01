@@ -29,6 +29,7 @@ export function usePreferences() {
       .finally(() => setLoading(false));
   }, []);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updatePreference = useCallback(async (key: keyof UserPreferences, value: any) => {
     setPreferences((prev) => ({ ...prev, [key]: value }));
     try {

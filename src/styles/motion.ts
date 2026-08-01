@@ -328,6 +328,7 @@ export const MotionStagger = {
 };
 
 // ─── AI-Specific Motion ────────────────────────────────────────────────
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const ai: Record<string, { initial?: any; animate: any; transition: Transition }> = {
   thinking: {
     animate: { scale: [1, 1.02, 1], opacity: [0.6, 1, 0.6] },

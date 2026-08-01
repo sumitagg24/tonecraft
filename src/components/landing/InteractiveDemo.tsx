@@ -2,7 +2,7 @@
 import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Sparkles, MessageSquare, RefreshCw } from "lucide-react";
+import { Sparkles, RefreshCw } from "lucide-react";
 
 const DEMO_INPUT = "Hey bro I can't come today";
 

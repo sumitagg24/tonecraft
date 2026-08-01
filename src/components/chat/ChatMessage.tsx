@@ -17,7 +17,7 @@ import { TONES } from "@/lib/constants";
 import { useChat } from "@/hooks/use-chat";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
-import { messageVariants, avatar, loading, spring, ease, duration } from "@/styles/motion";
+import { messageVariants, avatar, loading, ease, duration } from "@/styles/motion";
 
 interface ChatMessageProps {
   message: Message;
@@ -37,14 +37,14 @@ export function ChatMessage({ message, isStreaming, onRegenerate, onContinue }: 
   const [showMeta, setShowMeta] = useState(false);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(message.content);
+    try { await navigator.clipboard.writeText(message.content); } catch { /* ignore */ }
     setCopied(true);
     toast.success("Copied to clipboard");
     setTimeout(() => setCopied(false), 2000);
   };
 
   const handleCopyCode = async (code: string) => {
-    await navigator.clipboard.writeText(code);
+    try { await navigator.clipboard.writeText(code); } catch { /* ignore */ }
     toast.success("Code copied");
   };
 
@@ -172,7 +172,7 @@ export function ChatMessage({ message, isStreaming, onRegenerate, onContinue }: 
                   pre: ({ children }) => (
                     <pre className="bg-muted rounded-lg p-3 overflow-x-auto my-2 group relative">
                       <button
-                        onClick={() => handleCopyCode((children as any)?.props?.children || "")}
+                        onClick={() => handleCopyCode((children as { props?: { children?: string } })?.props?.children || "")}
                         className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1 rounded bg-background/80 hover:bg-background transition-all"
                       >
                         <Copy className="w-3 h-3" />

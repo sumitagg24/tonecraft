@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Loader2, ExternalLink, AlertCircle } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import { PRICING_TIERS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { useUser } from "@clerk/nextjs";
@@ -33,10 +33,16 @@ function BillingContent() {
   const [usageLoading, setUsageLoading] = useState(true);
 
   useEffect(() => {
-    if (searchParams.get("success") === "true") {
+    const success =
+      searchParams.get("success") === "true" ||
+      searchParams.get("checkout") === "completed";
+    const canceled =
+      searchParams.get("canceled") === "true" ||
+      searchParams.get("checkout") === "canceled";
+    if (success) {
       toast.success("Subscription activated! Welcome to Pro.");
     }
-    if (searchParams.get("canceled") === "true") {
+    if (canceled) {
       toast.error("Checkout was canceled.");
     }
   }, [searchParams]);
@@ -58,21 +64,21 @@ function BillingContent() {
       });
   }, [isSignedIn]);
 
-  const handleSubscribe = async (priceId: string) => {
+  const handleSubscribe = async (planName: string) => {
     if (!isSignedIn) return;
-    setLoading(priceId);
+    setLoading(planName);
     try {
-      const res = await fetch("/api/stripe/checkout", {
+      const res = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ priceId }),
+        body: JSON.stringify({ plan: planName }),
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Checkout failed");
+        const err = await res.json();
+        throw new Error(err.error ?? "Checkout failed");
       }
       const { url } = await res.json();
-      if (url) window.location.href = url;
+      window.location.assign(url);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Checkout failed");
     } finally {
@@ -80,13 +86,24 @@ function BillingContent() {
     }
   };
 
-  const currentPlan = usageData?.plan ?? "free";
-
-  const getPriceId = (tierName: string) => {
-    if (tierName === "Pro") return process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_PRO;
-    if (tierName === "Enterprise") return process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_ENTERPRISE;
-    return null;
+  const handlePortal = async () => {
+    setLoading("portal");
+    try {
+      const res = await fetch("/api/billing/portal", { method: "POST" });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error ?? "Portal failed");
+      }
+      const { url } = await res.json();
+      window.location.assign(url);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Portal failed");
+    } finally {
+      setLoading(null);
+    }
   };
+
+  const currentPlan = usageData?.plan ?? "free";
 
   const isPro = currentPlan === "pro" || currentPlan === "enterprise";
 
@@ -102,7 +119,6 @@ function BillingContent() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {PRICING_TIERS.map((tier) => {
-            const priceId = getPriceId(tier.name);
             const isCurrentPlan =
               (tier.name === "Free" && currentPlan === "free") ||
               (tier.name === "Pro" && currentPlan === "pro") ||
@@ -157,15 +173,15 @@ function BillingContent() {
                     <Button
                       className="w-full"
                       variant={tier.popular ? "default" : "outline"}
-                      disabled={!priceId || loading !== null}
-                      onClick={() => priceId && handleSubscribe(priceId)}
-                    >
-                      {loading === tier.name ? (
-                        <><Loader2 className="w-4 h-4 animate-spin mr-2" />Redirecting...</>
-                      ) : (
-                        tier.cta
-                      )}
-                    </Button>
+                       disabled={loading !== null}
+                       onClick={() => handleSubscribe(tier.name)}
+                     >
+                       {loading === tier.name ? (
+                         <><Loader2 className="w-4 h-4 animate-spin mr-2" />Redirecting...</>
+                       ) : (
+                         tier.cta
+                       )}
+                     </Button>
                   )}
                 </CardContent>
               </Card>
@@ -228,34 +244,21 @@ function BillingContent() {
               <CardDescription>View or change your subscription settings</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button variant="outline" className="w-full gap-2" asChild>
-                <a href="https://billing.stripe.com" target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="w-4 h-4" />
-                  Manage Subscription
-                </a>
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full gap-2 text-destructive hover:text-destructive"
-                onClick={async () => {
-                  if (!window.confirm("Are you sure you want to cancel your subscription? You will lose Pro access at the end of your billing period.")) return;
-                  try {
-                    const res = await fetch("/api/stripe/cancel", { method: "POST" });
-                    if (!res.ok) throw new Error("Failed to cancel");
-                    toast.success("Subscription canceled");
-                    window.location.reload();
-                  } catch {
-                    toast.error("Failed to cancel subscription");
-                  }
-                }}
-              >
-                <AlertCircle className="w-4 h-4" />
-                Cancel Subscription
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+               <Button
+                 className="w-full"
+                 onClick={handlePortal}
+                 disabled={loading !== null}
+                >
+                  {loading === "portal" ? (
+                    <><Loader2 className="w-4 h-4 animate-spin mr-2" />Opening portal...</>
+                  ) : (
+                    "Manage Billing"
+                  )}
+                </Button>
+             </CardContent>
+           </Card>
+         )}
+       </div>
     </div>
   );
 }

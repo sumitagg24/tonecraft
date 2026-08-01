@@ -34,6 +34,7 @@ Make it: specific, contextual, formatted, with constraints and desired output fo
 }
 
 export function buildCustomPrompt(input: string, config: Record<string, unknown>): string {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const ctx = contextBlock(config as any);
   return `You are a versatile writing assistant. Follow the instructions below carefully.${ctx}\n\n${input}`;
 }

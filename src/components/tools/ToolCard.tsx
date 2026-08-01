@@ -10,6 +10,7 @@ interface ToolCardProps {
 }
 
 export function ToolCard({ tool, onClick, index }: ToolCardProps) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const Icon = (Icons as any)[tool.icon] || Icons.Wand;
 
   return (

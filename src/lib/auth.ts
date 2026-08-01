@@ -6,10 +6,16 @@ export async function auth() {
   const { userId } = await clerkAuth();
   if (!userId) return null;
 
-  let user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-    select: { id: true },
-  });
+  let user;
+  try {
+    user = await prisma.user.findUnique({
+      where: { clerkId: userId },
+      select: { id: true },
+    });
+  } catch (e) {
+    console.error(e);
+    throw e;
+  }
 
   // Lazy sync: webhook might not have fired yet
   if (!user) {
@@ -18,8 +24,8 @@ export async function auth() {
         data: { clerkId: userId, email: `temp-${userId}@clerk.local` },
         select: { id: true },
       });
-    } catch {
-      // Race with webhook — fetch existing
+    } catch (e) {
+      console.warn("auth: user create failed (race)", e instanceof Error ? e.message : e);
       user = await prisma.user.findUnique({
         where: { clerkId: userId },
         select: { id: true },
@@ -44,7 +50,8 @@ export async function getAuthUser(): Promise<User | null> {
       user = await prisma.user.create({
         data: { clerkId: userId, email: `temp-${userId}@clerk.local` },
       });
-    } catch {
+    } catch (e) {
+      console.warn("auth: getAuthUser create failed (race)", e instanceof Error ? e.message : e);
       user = await prisma.user.findUnique({
         where: { clerkId: userId },
       });

@@ -19,12 +19,16 @@ export class ToolService {
   }): Promise<EngineResult> {
     const plan = options.userId ? await planService.getPlan(options.userId) : undefined;
     const config = intentEngine.resolve(options.toolId, {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tone: options.tone as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       platform: options.platform as any,
       language: options.language,
       audience: options.audience,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       length: options.length as any,
       creativity: options.creativity,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       formality: options.formality as any,
     });
 

@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUser } from "@clerk/nextjs";
 import { useTheme } from "next-themes";
 import {
-  Search, Command, Bell, Sun, Moon, Sparkles,
+  Search, Command, Bell, Sun, Moon,
   Settings, LogOut, CreditCard, ChevronDown,
 } from "lucide-react";
 import {

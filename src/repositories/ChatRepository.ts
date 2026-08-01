@@ -16,10 +16,6 @@ const chatSelect = {
   updatedAt: true,
 } as const;
 
-function asChat<T>(val: T): T {
-  return val;
-}
-
 export class ChatRepository {
   async findByUserId(userId: string, includeArchived = false) {
     const where: Record<string, unknown> = { userId };

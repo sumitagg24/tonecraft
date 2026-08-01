@@ -67,13 +67,13 @@ function TiltedCard({ index, inView, onToggle, children }: {
   onToggle: () => void;
   children: React.ReactNode;
 }) {
-  const tilt = useTiltEffect({ max: 4, scale: 1.005 });
+  const { ref: tiltRef, onMouseMove: handleTiltMove, onMouseLeave: handleTiltLeave } = useTiltEffect({ max: 4, scale: 1.005 });
 
   return (
     <motion.div
-      ref={tilt.ref}
-      onMouseMove={tilt.onMouseMove}
-      onMouseLeave={tilt.onMouseLeave}
+      ref={tiltRef}
+      onMouseMove={handleTiltMove}
+      onMouseLeave={handleTiltLeave}
       initial={{ opacity: 0, y: 20 }}
       animate={inView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.5, delay: index * 0.06 }}

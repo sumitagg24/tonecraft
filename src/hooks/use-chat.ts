@@ -67,6 +67,7 @@ export function useChat() {
         }
 
         const refreshRes = await fetch(`/api/chats/${chatId}`);
+        if (!refreshRes.ok) throw new Error("Failed to refresh chat");
         const chat = await refreshRes.json();
         setMessages(chat.messages);
         clearStreamingContent();

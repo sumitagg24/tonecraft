@@ -1,5 +1,4 @@
 import type { Platform, Tone, ResponseLength } from "@/engine/types";
-import { contextBlock } from "./utils";
 
 export interface SocialConfig {
   platform: Platform;
@@ -65,6 +64,7 @@ ${config.audience ? `- Target audience: ${config.audience}` : ""}`;
 }
 
 function facebookPost(input: string, config: SocialConfig): string {
+  void config;
   return `You are a Facebook content creator. Write a Facebook post for:
 "${input}"
 
@@ -77,6 +77,7 @@ Requirements:
 }
 
 function threadsPost(input: string, config: SocialConfig): string {
+  void config;
   return `You are a Threads content creator. Write a Threads post for:
 "${input}"
 
@@ -88,6 +89,7 @@ Requirements:
 }
 
 function youtubeDescription(input: string, config: SocialConfig): string {
+  void config;
   return `You are a YouTube SEO specialist. Write a YouTube video description for:
 "${input}"
 

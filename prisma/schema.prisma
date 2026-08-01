@@ -7,49 +7,47 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  clerkId       String    @unique
-  name          String?
-  email         String    @unique
-  image         String?
-  preferredLanguage String @default("english")
-  defaultTone   String    @default("professional")
-  preferredPlatform String? @default("email")
-  preferredStyle   String? @default("standard")
-  preferredModel   String? @default("auto")
-  creativityLevel  Int?    @default(70)
-  responseLength   String? @default("medium")
-  autoSave         Boolean @default(true)
-  streamingEnabled Boolean @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  chats        Chat[]
-  personas     Persona[]
-  subscription Subscription?
-  usage        Usage?
-  usageRecords UsageRecord[]
+  id                String        @id @default(cuid())
+  clerkId           String        @unique
+  name              String?
+  email             String        @unique
+  image             String?
+  preferredLanguage String        @default("english")
+  defaultTone       String        @default("professional")
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  autoSave          Boolean       @default(true)
+  creativityLevel   Int?          @default(70)
+  preferredModel    String?       @default("auto")
+  preferredPlatform String?       @default("email")
+  preferredStyle    String?       @default("standard")
+  responseLength    String?       @default("medium")
+  streamingEnabled  Boolean       @default(true)
+  chats             Chat[]
+  personas          Persona[]
+  subscription      Subscription?
+  usage             Usage?
+  usageRecords      UsageRecord[]
 
   @@index([clerkId])
   @@index([email])
 }
 
 model Chat {
-  id        String   @id @default(cuid())
-  userId    String
-  title     String   @default("New Chat")
-  tone      String   @default("professional")
-  model     String   @default("auto")
-  platform  String?
-  language  String?
-  isPinned  Boolean  @default(false)
-  isFavorite Boolean @default(false)
-  isArchived Boolean @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages Message[]
+  id         String    @id @default(cuid())
+  userId     String
+  title      String    @default("New Chat")
+  tone       String    @default("professional")
+  model      String    @default("auto")
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  isArchived Boolean   @default(false)
+  isFavorite Boolean   @default(false)
+  isPinned   Boolean   @default(false)
+  language   String?
+  platform   String?
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages   Message[]
 
   @@index([userId, updatedAt])
   @@index([userId, isPinned])
@@ -58,26 +56,25 @@ model Chat {
 }
 
 model Message {
-  id        String   @id @default(cuid())
-  chatId    String
-  role      String
-  content   String   @db.Text
-  tone      String?
-  tokens    Int?
-  latency   Int?
-  model     String?
-  platform  String?
-  language  String?
-  isEdited  Boolean  @default(false)
-  editedAt  DateTime?
-  feedback  String?
-  parentId  String?
-  createdAt DateTime @default(now())
-
-  chat     Chat      @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  parent   Message?  @relation("MessageChain", fields: [parentId], references: [id])
-  children Message[] @relation("MessageChain")
+  id          String       @id @default(cuid())
+  chatId      String
+  role        String
+  content     String
+  tone        String?
+  tokens      Int?
+  latency     Int?
+  model       String?
+  platform    String?
+  language    String?
+  createdAt   DateTime     @default(now())
+  editedAt    DateTime?
+  feedback    String?
+  isEdited    Boolean      @default(false)
+  parentId    String?
   attachments Attachment[]
+  chat        Chat         @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  parent      Message?     @relation("MessageChain", fields: [parentId], references: [id])
+  children    Message[]    @relation("MessageChain")
 
   @@index([chatId, createdAt])
   @@index([chatId, feedback])
@@ -91,8 +88,7 @@ model Attachment {
   fileSize   Int
   storageKey String
   createdAt  DateTime @default(now())
-
-  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  message    Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
   @@index([messageId])
 }
@@ -102,36 +98,34 @@ model Persona {
   userId       String
   name         String
   description  String?
-  systemPrompt String   @db.Text
+  systemPrompt String
   icon         String?
   color        String   @default("#6366F1")
   isDefault    Boolean  @default(false)
   createdAt    DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
 
 model Usage {
-  id            String   @id @default(cuid())
-  userId        String   @unique
-  messagesSent  Int      @default(0)
-  tokensUsed    Int      @default(0)
-  filesUploaded Int      @default(0)
-  storageUsed   Int      @default(0)
-  dailyMessages  Int     @default(0)
-  monthlyMessages Int    @default(0)
-  dailyTokens    Int     @default(0)
-  monthlyTokens  Int     @default(0)
-  lastDailyReset   DateTime @default(now())
-  lastMonthlyReset DateTime @default(now())
-  resetDate    DateTime @default(now())
-  creditsUsed  Int      @default(0)
-  periodStart  DateTime @default(now())
-  periodEnd    DateTime?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  messagesSent     Int       @default(0)
+  tokensUsed       Int       @default(0)
+  filesUploaded    Int       @default(0)
+  storageUsed      Int       @default(0)
+  resetDate        DateTime  @default(now())
+  creditsUsed      Int       @default(0)
+  periodStart      DateTime  @default(now())
+  periodEnd        DateTime?
+  dailyMessages    Int       @default(0)
+  dailyTokens      Int       @default(0)
+  lastDailyReset   DateTime  @default(now())
+  lastMonthlyReset DateTime  @default(now())
+  monthlyMessages  Int       @default(0)
+  monthlyTokens    Int       @default(0)
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model UsageRecord {
@@ -144,26 +138,25 @@ model UsageRecord {
   success   Boolean  @default(true)
   error     String?
   createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
   @@index([userId, provider])
 }
 
 model Subscription {
-  id                   String    @id @default(cuid())
-  userId               String    @unique
-  stripeCustomerId     String    @unique
-  stripeSubscriptionId String?   @unique
-  stripePriceId        String?
-  status               String
-  plan                 String    @default("free")
-  currentPeriodStart   DateTime?
-  currentPeriodEnd     DateTime?
-  cancelAtPeriodEnd    Boolean   @default(false)
-  createdAt            DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                     String    @id @default(cuid())
+  userId                 String    @unique
+  status                 String
+  plan                   String    @default("free")
+  currentPeriodStart     DateTime?
+  currentPeriodEnd       DateTime?
+  cancelAtPeriodEnd      Boolean   @default(false)
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  paymentProvider        String    @default("paddle")
+  providerCustomerId     String?
+  providerSubscriptionId String?   @unique
+  providerPriceId        String?
+  user                   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

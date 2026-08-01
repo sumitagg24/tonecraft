@@ -21,6 +21,12 @@ export function useRetry<T>(fn: () => Promise<T>, config?: RetryConfig) {
   const { maxRetries, baseDelay, maxDelay } = { ...defaultConfig, ...config };
   const [isRetrying, setIsRetrying] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
 
   const execute = useCallback(async (): Promise<T | null> => {
     abortRef.current?.abort();
@@ -30,7 +36,7 @@ export function useRetry<T>(fn: () => Promise<T>, config?: RetryConfig) {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       if (controller.signal.aborted) return null;
       try {
-        setIsRetrying(true);
+        if (mountedRef.current) setIsRetrying(true);
         return await fn();
       } catch (err) {
         if (controller.signal.aborted) return null;

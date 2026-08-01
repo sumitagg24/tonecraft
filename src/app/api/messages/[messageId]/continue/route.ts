@@ -15,6 +15,7 @@ export async function POST(
   try {
     const message = await messageService.continueMessage(messageId, session.user.id);
     return NextResponse.json(message);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Failed to continue" }, { status: 400 });
   }

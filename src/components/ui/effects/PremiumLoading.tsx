@@ -2,8 +2,7 @@
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
-import { ai, loading, spring, duration, ease } from "@/styles/motion";
-import { Sparkles, Bot } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
 export function AIOrb({ size = "md", className }: { size?: "sm" | "md" | "lg"; className?: string }) {
   const reduced = useReducedMotion();
