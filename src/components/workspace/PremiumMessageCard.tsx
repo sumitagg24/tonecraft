@@ -1,35 +1,65 @@
 "use client";
 import { useState, useCallback, memo } from "react";
+import { useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Message } from "@/types";
 import { cn } from "@/lib/utils";
 import { TONES } from "@/lib/constants";
 import { PremiumBadge } from "@/components/ui/recipes/PremiumBadge";
-import { User, Bot, Copy, MoreHorizontal, Check, RefreshCw, Play, ThumbsUp, ThumbsDown, Bookmark, FileText, Pencil } from "lucide-react";
+import { useChatStore } from "@/stores/chat-store";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import {
+  User, Bot, Copy, Check, RefreshCw, Play, ThumbsUp, ThumbsDown,
+  Bookmark, FileText, Pencil, Paperclip,
+} from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import "highlight.js/styles/github-dark.css";
 import { toast } from "sonner";
 import { messageVariants, spring, ease, duration } from "@/styles/motion";
-import { GenerationComplete } from "./AIThinking";
 
 interface PremiumMessageCardProps {
   message: Message;
   isStreaming?: boolean;
+  isLastMessage?: boolean;
   onRegenerate?: (messageId: string) => void;
   onContinue?: (messageId: string) => void;
 }
 
 export const PremiumMessageCard = memo(function PremiumMessageCard({
-  message, isStreaming, onRegenerate, onContinue,
+  message, isStreaming, isLastMessage, onRegenerate, onContinue,
 }: PremiumMessageCardProps) {
   const isUser = message.role === "user";
   const tone = message.tone ? TONES.find((t) => t.id === message.tone) : null;
+  const isTouch = useMediaQuery("(hover: none)");
   const [showActions, setShowActions] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [bookmarked, setBookmarked] = useState(false);
   const [showMeta, setShowMeta] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(message.content);
+
+  const bookmarkKey = `tc:bookmark:${message.id}`;
+  const bookmarked = useSyncExternalStore(
+    (onChange) => {
+      window.addEventListener("storage", onChange);
+      window.addEventListener("tc-bookmark", onChange);
+      return () => {
+        window.removeEventListener("storage", onChange);
+        window.removeEventListener("tc-bookmark", onChange);
+      };
+    },
+    () => {
+      try {
+        return localStorage.getItem(bookmarkKey) === "1";
+      } catch {
+        return false;
+      }
+    },
+    () => false
+  );
+
+  const actionsVisible = !isStreaming && (isTouch || showActions || isLastMessage);
 
   const handleCopy = useCallback(async () => {
     await navigator.clipboard.writeText(message.content);
@@ -43,9 +73,52 @@ export const PremiumMessageCard = memo(function PremiumMessageCard({
     toast.success("Code copied");
   }, []);
 
-  const formatTime = (date: Date) => {
-    return new Date(date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  };
+  const handleEdit = useCallback(async () => {
+    const content = draft.trim();
+    if (!content) return;
+    try {
+      const res = await fetch(`/api/messages/${message.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content }),
+      });
+      if (!res.ok) throw new Error("Failed to update");
+      useChatStore.getState().updateMessage(message.id, content);
+      toast.success("Message updated");
+      setEditing(false);
+    } catch {
+      toast.error("Failed to update message");
+    }
+  }, [draft, message.id]);
+
+  const handleFeedback = useCallback(async (value: "liked" | "disliked") => {
+    const next = message.feedback === value ? null : value;
+    try {
+      const res = await fetch(`/api/messages/${message.id}/feedback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ feedback: next }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      useChatStore.getState().updateMessageInList(message.id, { feedback: next });
+    } catch {
+      toast.error("Failed to save feedback");
+    }
+  }, [message.id, message.feedback]);
+
+  const toggleBookmark = useCallback(() => {
+    const next = !bookmarked;
+    try {
+      localStorage.setItem(bookmarkKey, next ? "1" : "0");
+    } catch {
+      /* storage unavailable */
+    }
+    window.dispatchEvent(new Event("tc-bookmark"));
+    toast.success(next ? "Bookmarked" : "Removed bookmark");
+  }, [bookmarked, bookmarkKey]);
+
+  const formatTime = (date: Date) =>
+    new Date(date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
   return (
     <motion.div
@@ -54,56 +127,39 @@ export const PremiumMessageCard = memo(function PremiumMessageCard({
       animate="animate"
       transition={{ duration: duration.normal, ease: ease.emphasized }}
       className={cn(
-        "flex gap-3 px-6 py-4 max-w-4xl mx-auto w-full group",
+        "flex gap-3 px-3 sm:px-6 py-3 max-w-4xl mx-auto w-full group",
         isUser ? "justify-end" : "justify-start"
       )}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
+      onFocusCapture={() => setShowActions(true)}
+      onBlurCapture={() => setShowActions(false)}
     >
       {!isUser && (
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={spring.elastic}
-          className="relative shrink-0 mt-1"
-        >
+        <div className="relative shrink-0 mt-1">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-glow">
             <Bot className="w-5 h-5 text-white" />
           </div>
-          <motion.div
-            animate={{ scale: [1, 1.1, 1], opacity: [0.5, 0.8, 0.5] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute -inset-0.5 rounded-2xl bg-gradient-to-br from-violet-500/20 to-indigo-600/20 blur-sm -z-10"
-          />
-        </motion.div>
+        </div>
       )}
 
-      <div className={cn(
-        "relative max-w-[80%] min-w-0",
-        isUser ? "order-1" : "order-1"
-      )}>
-        {/* Message Card */}
+      <div className="relative max-w-[80%] min-w-0">
+        {/* Message bubble */}
         <div
           className={cn(
-            "rounded-2xl px-5 py-4 transition-all duration-200 relative",
+            "rounded-2xl px-4 py-3.5 transition-all duration-200 relative",
             isUser
-              ? "bg-gradient-to-br from-primary to-primary/90 text-primary-foreground rounded-br-sm shadow-glow"
-              : "bg-card/60 backdrop-blur-sm border border-border/30 rounded-bl-sm shadow-card hover:border-border/50"
+              ? "bg-gradient-to-br from-primary to-primary/90 text-primary-foreground rounded-br-md"
+              : "bg-card/60 backdrop-blur-sm border border-border/30 rounded-bl-md shadow-card hover:border-border/50"
           )}
         >
           {/* Tone badge for AI messages */}
           {!isUser && !isStreaming && tone && (
-            <div className="flex items-center gap-2 mb-2.5">
+            <div className="mb-2">
               <PremiumBadge variant="tone" className="border-border/40 text-[10px] py-0.5 h-5">
                 <span className="text-xs">{tone.emoji}</span>
                 {tone.label}
               </PremiumBadge>
-              <button
-                onClick={() => setShowMeta(!showMeta)}
-                className="text-muted-foreground/40 hover:text-foreground/60 transition-colors"
-              >
-                <MoreHorizontal className="w-3 h-3" />
-              </button>
             </div>
           )}
 
@@ -128,20 +184,46 @@ export const PremiumMessageCard = memo(function PremiumMessageCard({
 
           {/* User message content */}
           {isUser ? (
-            <div>
-              <p className="text-sm leading-relaxed whitespace-pre-wrap text-primary-foreground/90">
-                {message.content}
-              </p>
-              {message.isEdited && (
-                <span className="text-[10px] text-primary-foreground/50 mt-1.5 block">(edited)</span>
-              )}
-              <div className="flex items-center gap-1 mt-2 text-primary-foreground/50">
-                <span className="text-[10px]">{formatTime(message.createdAt)}</span>
+            editing ? (
+              <div>
+                <textarea
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  rows={Math.max(2, draft.split("\n").length)}
+                  className="w-full bg-primary-foreground/10 border border-primary-foreground/20 rounded-lg px-3 py-2 text-sm text-primary-foreground placeholder:text-primary-foreground/40 outline-none focus:ring-2 focus:ring-primary-foreground/30 resize-none"
+                  aria-label="Edit message"
+                />
+                <div className="flex items-center justify-end gap-1.5 mt-2">
+                  <button
+                    onClick={() => { setEditing(false); setDraft(message.content); }}
+                    className="h-7 px-2.5 rounded-lg text-xs text-primary-foreground/70 hover:bg-primary-foreground/10 transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleEdit}
+                    disabled={!draft.trim()}
+                    className="h-7 px-3 rounded-lg bg-primary-foreground/15 hover:bg-primary-foreground/25 text-xs font-medium transition-all disabled:opacity-40"
+                  >
+                    Save
+                  </button>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div>
+                <p className="text-sm leading-relaxed whitespace-pre-wrap text-primary-foreground/90">
+                  {message.content}
+                </p>
+                {message.isEdited && (
+                  <span className="text-[10px] text-primary-foreground/50 mt-1.5 block">(edited)</span>
+                )}
+                <span className="text-[10px] text-primary-foreground/50 block mt-1.5">
+                  {formatTime(message.createdAt)}
+                </span>
+              </div>
+            )
           ) : (
             <>
-              {/* Assistant message content */}
               <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
@@ -156,7 +238,7 @@ export const PremiumMessageCard = memo(function PremiumMessageCard({
                             const code = typeof codeEl === "string" ? codeEl : "";
                             handleCopyCode(code);
                           }}
-                          className="absolute top-2.5 right-2.5 opacity-0 group-hover/pre:opacity-100 p-1.5 rounded-lg bg-background/60 hover:bg-background/80 border border-border/20 transition-all"
+                          className="absolute top-2.5 right-2.5 opacity-0 group-hover/pre:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 p-1.5 rounded-lg bg-background/60 hover:bg-background/80 border border-border/20 transition-all"
                           aria-label="Copy code"
                         >
                           <Copy className="w-3 h-3" />
@@ -225,31 +307,50 @@ export const PremiumMessageCard = memo(function PremiumMessageCard({
                 />
               )}
 
-              {/* Timestamp */}
+              {/* Timestamp + tokens */}
               {!isStreaming && (
-                <div className="flex items-center justify-between mt-3">
+                <div className="flex items-center justify-between mt-2.5">
                   <span className="text-[10px] text-muted-foreground/40">
                     {formatTime(message.createdAt)}
                   </span>
-                  {message.tokens && (
+                  {message.tokens ? (
                     <span className="text-[9px] text-muted-foreground/30">
-                      {message.tokens} tokens
+                      {message.tokens.toLocaleString()} tokens
                     </span>
-                  )}
+                  ) : null}
                 </div>
               )}
             </>
           )}
+
+          {/* Attachments */}
+          {message.attachments.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2.5">
+              {message.attachments.map((a) => (
+                <span
+                  key={a.id}
+                  className={cn(
+                    "flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[10px]",
+                    isUser
+                      ? "bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground/80"
+                      : "bg-muted/20 border-border/20 text-muted-foreground/70"
+                  )}
+                  title={a.fileName}
+                >
+                  <Paperclip className="w-3 h-3 shrink-0" />
+                  <span className="max-w-[160px] truncate">{a.fileName}</span>
+                  <span className={cn("shrink-0", isUser ? "text-primary-foreground/50" : "text-muted-foreground/50")}>
+                    {formatBytes(a.fileSize)}
+                  </span>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Gradient border glow for AI messages */}
-        {!isUser && !isStreaming && (
-          <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-br from-violet-500/10 via-transparent to-indigo-500/10 -z-10 blur-[2px]" />
-        )}
-
-        {/* Action Bar (appears on hover) */}
+        {/* Action bar */}
         <AnimatePresence>
-          {showActions && !isStreaming && (
+          {actionsVisible && (
             <motion.div
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
@@ -271,36 +372,26 @@ export const PremiumMessageCard = memo(function PremiumMessageCard({
                 <>
                   <ActionButton
                     icon={ThumbsUp}
-                    label="Like"
-                    onClick={() => toast.success("Liked")}
+                    label={message.feedback === "liked" ? "Undo like" : "Like"}
+                    onClick={() => handleFeedback("liked")}
                     active={message.feedback === "liked"}
                   />
                   <ActionButton
                     icon={ThumbsDown}
-                    label="Dislike"
-                    onClick={() => toast.success("Feedback sent")}
+                    label={message.feedback === "disliked" ? "Undo dislike" : "Dislike"}
+                    onClick={() => handleFeedback("disliked")}
                     active={message.feedback === "disliked"}
                   />
-                  <ActionButton
-                    icon={Bookmark}
-                    label="Bookmark"
-                    onClick={() => { setBookmarked(!bookmarked); toast.success(bookmarked ? "Removed bookmark" : "Bookmarked"); }}
-                    active={bookmarked}
-                  />
+                  <ActionButton icon={Bookmark} label={bookmarked ? "Remove bookmark" : "Bookmark"} onClick={toggleBookmark} active={bookmarked} />
                   <ActionButton icon={FileText} label="Metadata" onClick={() => setShowMeta(!showMeta)} />
                 </>
               )}
               {isUser && (
-                <ActionButton icon={Pencil} label="Edit" onClick={() => toast.success("Edit mode")} />
+                <ActionButton icon={Pencil} label="Edit" onClick={() => setEditing(true)} />
               )}
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Generation complete indicator */}
-        {!isUser && !isStreaming && message.tokens && (
-          <GenerationComplete />
-        )}
       </div>
 
       {isUser && (
@@ -330,7 +421,7 @@ function ActionButton({
       whileTap={{ scale: 0.95 }}
       onClick={onClick}
       className={cn(
-        "h-7 w-7 rounded-lg flex items-center justify-center transition-all",
+        "h-7 w-7 rounded-lg flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
         active
           ? "text-primary bg-primary/10"
           : "text-muted-foreground/50 hover:text-foreground hover:bg-muted/30"
@@ -350,4 +441,10 @@ function MetaRow({ label, value }: { label: string; value: string }) {
       <span className="font-medium text-foreground/80">{value}</span>
     </div>
   );
+}
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes}B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)}MB`;
 }

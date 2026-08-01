@@ -98,10 +98,11 @@ export default function ChatPage() {
               <NoConversationEmptyState />
             )}
 
-            {messages.map((message) => (
+            {messages.map((message, index) => (
               <PremiumMessageCard
                 key={message.id}
                 message={message}
+                isLastMessage={index === messages.length - 1}
                 onRegenerate={message.role === "assistant" ? handleRegenerate : undefined}
                 onContinue={message.role === "assistant" ? handleContinue : undefined}
               />
