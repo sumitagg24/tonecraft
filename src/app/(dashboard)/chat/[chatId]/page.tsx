@@ -18,7 +18,7 @@ export default function ChatPage() {
   const router = useRouter();
   const chatId = params.chatId as string;
   const { currentChat, messages, isLoading, streamingContent } = useChatStore();
-  const { sendMessage, fetchChats, regenerateMessage, continueMessage } = useChat();
+  const { sendMessage, stopStreaming, fetchChats, regenerateMessage, continueMessage } = useChat();
   const scrollRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -151,7 +151,7 @@ export default function ChatPage() {
       </div>
 
       {/* Composer */}
-      <PremiumComposer chatId={chatId} onSend={sendMessage} />
+      <PremiumComposer chatId={chatId} onSend={sendMessage} onStop={stopStreaming} />
     </div>
   );
 }

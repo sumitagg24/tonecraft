@@ -27,6 +27,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024;
 interface PremiumComposerProps {
   chatId: string;
   onSend: (content: string, chatId: string) => Promise<void>;
+  onStop?: () => void;
 }
 
 interface PendingAttachment {
@@ -34,7 +35,7 @@ interface PendingAttachment {
   file: File;
 }
 
-export function PremiumComposer({ chatId, onSend }: PremiumComposerProps) {
+export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps) {
   const [input, setInput] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [attachments, setAttachments] = useState<PendingAttachment[]>([]);
@@ -65,9 +66,10 @@ export function PremiumComposer({ chatId, onSend }: PremiumComposerProps) {
   const currentPlatform = PLATFORMS.find((p) => p.name.toLowerCase() === context.platform);
 
   const stopGeneration = useCallback(() => {
+    onStop?.();
     useChatStore.getState().setIsLoading(false);
     useChatStore.getState().clearStreamingContent();
-  }, []);
+  }, [onStop]);
 
   const handleSubmit = useCallback(async () => {
     if (!input.trim() || isLoading || uploading) return;

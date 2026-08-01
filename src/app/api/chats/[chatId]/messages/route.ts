@@ -116,13 +116,27 @@ export async function POST(
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "done", messageId: assistantMessage.id })}\n`));
         controller.close();
       } catch (error) {
+        const partial = fullContent.trim();
         console.error("Streaming error:", error);
         await prisma.message.update({
           where: { id: assistantMessage.id },
-          data: { content: "I apologize, but I'm having trouble responding right now. Please try again in a moment." },
+          data: {
+            content: partial || "I apologize, but I'm having trouble responding right now. Please try again in a moment.",
+            model: usedModel || usedProvider,
+            tokens: totalTokens,
+            latency: Date.now() - startTime,
+          },
         }).catch(() => {});
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "error", message: "Failed to generate response" })}\n`));
-        controller.close();
+        try {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "error", message: "Failed to generate response" })}\n`));
+        } catch {
+          /* stream already cancelled by client */
+        }
+        try {
+          controller.close();
+        } catch {
+          /* stream already cancelled by client */
+        }
       }
     },
   });
