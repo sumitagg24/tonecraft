@@ -8,7 +8,7 @@ const faqs = [
   {
     question: "What AI models does ToneCraft use?",
     answer:
-      "ToneCraft uses Groq (Llama 3.1 70B, Mixtral 8x7B) and Google Gemini 1.5 Flash on the free tier — all fast and free. Pro users get access to GPT-4o and Claude 3.5 Sonnet via OpenRouter.",
+      "ToneCraft uses Groq (Llama 3.3 70B, Llama 3.1 8B) and Google Gemini 2.5 Flash on the free tier. Pro users get access to GPT-4o and Claude 3.7 Sonnet via OpenRouter.",
   },
   {
     question: "Is the free tier really free?",
@@ -46,7 +46,6 @@ export function FAQ() {
   const ref = useRef<HTMLElement>(null);
   const inView = useInView(ref, { once: true, margin: "-100px" });
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchActive, setSearchActive] = useState(false);
 
   const filteredFAQs = useMemo(
     () =>
@@ -97,10 +96,7 @@ export function FAQ() {
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
-              setSearchActive(true);
             }}
-            onFocus={() => setSearchActive(true)}
-            onBlur={() => setTimeout(() => setSearchActive(false), 200)}
             className="search-input"
             aria-label="Search FAQs"
           />

@@ -1,10 +1,10 @@
 "use client";
 import { motion } from "framer-motion";
 import { useChatStore } from "@/stores/chat-store";
-import { MotionStagger, spring, duration, ease } from "@/styles/motion";
+import { MotionStagger } from "@/styles/motion";
 import {
-  Sparkles, Briefcase, CheckSquare, Globe, Smile, Heart,
-  MessageCircle, Zap, Coffee, Gem, Laugh, Minimize2, Maximize2,
+  Briefcase, CheckSquare, Globe, Smile,
+  MessageCircle, Zap, Gem, Laugh, Minimize2, Maximize2,
   AlignLeft, Reply,
 } from "lucide-react";
 
@@ -43,7 +43,7 @@ interface SmartSuggestionsProps {
 }
 
 export function SmartSuggestions({ chatId, onSend }: SmartSuggestionsProps) {
-  const { selectedTone, setSelectedTone } = useChatStore();
+  const { setSelectedTone } = useChatStore();
 
   const handleSuggestion = async (suggestion: Suggestion) => {
     if (suggestion.tone) {

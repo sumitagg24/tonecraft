@@ -1,12 +1,11 @@
 "use client";
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useWorkspaceStore, type WorkspaceMode } from "@/stores/workspace-store";
-import { useChatStore } from "@/stores/chat-store";
 import { useCommandPalette } from "@/hooks/use-command-palette";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { cn } from "@/lib/utils";
-import { duration, ease, sidebarTransition, fadeInScale } from "@/styles/motion";
+import { duration, ease } from "@/styles/motion";
 import { ConversationSidebar } from "./ConversationSidebar";
 import { AIContextPanel } from "./AIContextPanel";
 import { UniversalSearch } from "./UniversalSearch";
@@ -23,7 +22,6 @@ export function WorkspaceLayout({ children }: WorkspaceLayoutProps) {
   } = useWorkspaceStore();
   const { toggle } = useCommandPalette();
   const [showSearch, setShowSearch] = useState(false);
-  const [isDragging, setIsDragging] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useKeyboardShortcuts([
@@ -50,7 +48,6 @@ export function WorkspaceLayout({ children }: WorkspaceLayoutProps) {
   const sidebarWidth = sidebarOpen ? 280 : 0;
   const contextWidth = contextPanelOpen ? 320 : 48;
 
-  const isMinimal = mode === "minimal";
   const isFocus = mode === "focus" || mode === "writer";
 
   return (

@@ -10,20 +10,18 @@ import { AIThinking, GradientPulse } from "@/components/workspace/AIThinking";
 import { InlineActionRing } from "@/components/workspace/InlineActionRing";
 import { NoConversationEmptyState } from "@/components/workspace/WorkspaceEmptyStates";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useWorkspaceStore } from "@/stores/workspace-store";
 import { toast } from "sonner";
-import { ease, duration, MotionStagger } from "@/styles/motion";
-import { MessageSquare } from "lucide-react";
+import { duration } from "@/styles/motion";
 
 export default function ChatPage() {
   const params = useParams();
   const router = useRouter();
   const chatId = params.chatId as string;
   const { currentChat, messages, isLoading, streamingContent } = useChatStore();
-  const { sendMessage, fetchChats, renameChat, togglePin, toggleFavorite, archiveChat, deleteChat, regenerateMessage, continueMessage } = useChat();
+  const { sendMessage, fetchChats, regenerateMessage, continueMessage } = useChat();
   const scrollRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { mode } = useWorkspaceStore();
+
 
   useEffect(() => {
     fetchChats();
@@ -100,7 +98,7 @@ export default function ChatPage() {
               <NoConversationEmptyState />
             )}
 
-            {messages.map((message, i) => (
+            {messages.map((message) => (
               <PremiumMessageCard
                 key={message.id}
                 message={message}

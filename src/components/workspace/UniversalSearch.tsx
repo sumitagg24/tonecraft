@@ -3,13 +3,12 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useChatStore } from "@/stores/chat-store";
-import { searchCapabilities, getAllCapabilities } from "@/stores/capability-registry";
+import { searchCapabilities } from "@/stores/capability-registry";
 import { cn } from "@/lib/utils";
-import { MotionStagger, spring, duration, ease, fadeInScale, comboboxTransition } from "@/styles/motion";
+import { MotionStagger, fadeInScale, comboboxTransition } from "@/styles/motion";
 import {
   Search, X, MessageSquare, Star, Pin, Sparkles, Wand2,
-  Settings, ArrowRight, Command, Hash, Clock, Bookmark,
-  History, Trash2, FileText, Globe, CheckSquare, Zap,
+  ArrowRight, FileText, Globe, CheckSquare, Zap,
   Smile, Heart, Briefcase, Gem, Laugh, Terminal,
   RefreshCw, MessageCircle, Mail, Camera, Headphones,
 } from "lucide-react";
@@ -35,15 +34,19 @@ export function UniversalSearch({ onClose }: { onClose?: () => void }) {
   const [activeCategory, setActiveCategory] = useState<SearchCategory | "all">("all");
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
-  const { chats, searchQuery, setSearchQuery, searchResults, setSearchResults } = useChatStore();
+  const { chats } = useChatStore();
 
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
-  useEffect(() => {
+  const [prevQuery, setPrevQuery] = useState(query);
+  const [prevCategory, setPrevCategory] = useState(activeCategory);
+  if (query !== prevQuery || activeCategory !== prevCategory) {
+    setPrevQuery(query);
+    setPrevCategory(activeCategory);
     setSelectedIndex(0);
-  }, [query, activeCategory]);
+  }
 
   const results = useMemo(() => {
     const items: SearchResult[] = [];

@@ -1,7 +1,6 @@
 "use client";
-import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
-import { ai, loading, spring, duration, ease, fadeInUp } from "@/styles/motion";
+import { motion } from "framer-motion";
+import { ai, spring, duration } from "@/styles/motion";
 import { Sparkles, Bot } from "lucide-react";
 
 const thinkingPhases = [
@@ -11,7 +10,7 @@ const thinkingPhases = [
   { label: "Polishing", icon: "gem" },
 ];
 
-export function AIThinking({ phase = 0, isStreaming = false }: { phase?: number; isStreaming?: boolean }) {
+export function AIThinking({ phase = 0 }: { phase?: number }) {
   const current = thinkingPhases[phase % thinkingPhases.length];
 
   return (
@@ -69,10 +68,15 @@ function AnimatedDots() {
   );
 }
 
+const WAVE_BARS = Array.from({ length: 40 }, (_, i) => ({
+  duration: 2 + ((i * 37 + 17) % 100) / 100,
+  height: 4 + (((i * 23 + 7) % 100) / 100) * 12,
+}));
+
 function StreamingWave() {
   return (
     <div className="flex items-end gap-0.5 h-full">
-      {Array.from({ length: 40 }).map((_, i) => (
+      {WAVE_BARS.map((bar, i) => (
         <motion.div
           key={i}
           animate={{
@@ -80,13 +84,13 @@ function StreamingWave() {
             opacity: [0.2, 0.5, 0.2, 0.7, 0.2, 0.4, 0.2],
           }}
           transition={{
-            duration: 2 + Math.random(),
+            duration: bar.duration,
             repeat: Infinity,
             delay: i * 0.05,
             ease: "easeInOut",
           }}
           className="w-1 rounded-full bg-gradient-to-t from-violet-500/60 to-indigo-500/30"
-          style={{ height: 4 + Math.random() * 12 }}
+          style={{ height: bar.height }}
         />
       ))}
     </div>

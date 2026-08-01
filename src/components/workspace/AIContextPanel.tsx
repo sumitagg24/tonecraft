@@ -4,24 +4,20 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useChatStore } from "@/stores/chat-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { cn } from "@/lib/utils";
-import { TONES, PLATFORMS } from "@/lib/constants";
-import { spring, hoverScale, duration, ease, fadeIn, slideDown, fadeInScale } from "@/styles/motion";
-import { PremiumPanel } from "@/components/ui/recipes/PremiumPanel";
-import { PremiumBadge } from "@/components/ui/recipes/PremiumBadge";
+import { TONES } from "@/lib/constants";
+import { ease } from "@/styles/motion";
 import {
-  ChevronDown, ChevronRight, Sparkles, MessageSquare, Clock, Hash,
-  Bookmark, Star, Wand2, Zap, Globe, Mic, Palette, Sliders,
-  FileText, Users, Brain, BarChart3, BookOpen, Settings,
-  PanelRightClose, PanelRightOpen, X, Check, Copy,
-  RefreshCw, Music, Pen, Type, Layers, Eye, EyeOff,
-  Maximize2, Minimize2, Heart, Smile, MessageCircle,
-  User, Target, Activity,
+  ChevronDown, Sparkles, MessageSquare, Clock, Hash,
+  Bookmark, Star, Zap, Globe, Palette,
+  FileText, Brain, BarChart3,
+  PanelRightClose, PanelRightOpen, Copy,
+  RefreshCw, Heart, User, Target, Activity,
 } from "lucide-react";
 
 type Section = "summary" | "memory" | "stats" | "presets" | "actions";
 
 export function AIContextPanel() {
-  const { currentChat, messages, selectedTone, selectedModel, isLoading, context } = useChatStore();
+  const { currentChat, messages, selectedTone, selectedModel } = useChatStore();
   const { contextPanelOpen, toggleContextPanel, setContextPanelOpen } = useWorkspaceStore();
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [activeSection, setActiveSection] = useState<string>("summary");
@@ -182,6 +178,7 @@ function Section({
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function SummarySection({ currentChat, selectedTone, selectedModel }: any) {
   const tone = TONES.find((t) => t.id === selectedTone);
   return (
@@ -213,8 +210,11 @@ function MemorySection() {
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function StatsSection({ messages, wordCount, charCount, estTokens }: any) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const userMsgs = messages.filter((m: any) => m.role === "user").length;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const aiMsgs = messages.filter((m: any) => m.role === "assistant").length;
   const readingTime = Math.max(1, Math.round(wordCount / 200));
   return (

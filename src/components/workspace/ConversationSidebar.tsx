@@ -6,10 +6,10 @@ import { useChatStore } from "@/stores/chat-store";
 import { useChat } from "@/hooks/use-chat";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { cn } from "@/lib/utils";
-import { duration, ease, spring } from "@/styles/motion";
+import { ease, spring } from "@/styles/motion";
 import {
   Plus, Search, MessageSquare, Star, Pin, Archive, Trash2,
-  MoreHorizontal, Pencil, Sparkles, Clock, ChevronDown, ChevronRight, X,
+  MoreHorizontal, Pencil, Sparkles, Clock, X,
   PanelRightClose, Copy, Share2, Wand2, Settings,
   History as HistoryIcon,
 } from "lucide-react";
@@ -33,9 +33,9 @@ const groupLabels: Record<GroupLabel, string> = {
 export function ConversationSidebar() {
   const router = useRouter();
   const pathname = usePathname();
-  const { chats, currentChat, searchQuery, setSearchQuery } = useChatStore();
+  const { chats, searchQuery, setSearchQuery } = useChatStore();
   const { createChat, deleteChat, renameChat, togglePin, toggleFavorite, archiveChat } = useChat();
-  const { sidebarOpen, toggleSidebar, setSidebarOpen } = useWorkspaceStore();
+  const { toggleSidebar } = useWorkspaceStore();
   const [showSearch, setShowSearch] = useState(false);
   const [contextMenu, setContextMenu] = useState<string | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
@@ -314,13 +314,15 @@ export function ConversationSidebar() {
 }
 
 function ChatItem({
-  chat, isActive, index, onSelect, onRename, onDelete, onPin, onFavorite,
+  chat, isActive, onSelect, onRename, onDelete, onPin, onFavorite,
   onArchive, onDuplicate, onShare, isRenaming, renameValue, setRenameValue,
   onRenameSubmit, renameRef, contextMenu, setContextMenu,
 }: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   chat: any; isActive: boolean; index: number; onSelect: () => void;
   onRename: (id: string) => void; onDelete: (id: string) => void;
   onPin: (id: string, val: boolean) => void; onFavorite: (id: string, val: boolean) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onArchive: (id: string, val: boolean) => void; onDuplicate: (chat: any) => void;
   onShare: (id: string) => void; isRenaming: boolean; renameValue: string;
   setRenameValue: (val: string) => void; onRenameSubmit: (id: string) => void;

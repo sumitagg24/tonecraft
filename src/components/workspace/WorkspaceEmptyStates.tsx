@@ -1,12 +1,10 @@
 "use client";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { fadeInUp, duration, ease, spring } from "@/styles/motion";
-import { AnimatedGradient } from "@/components/ui/effects/AnimatedGradient";
+import { fadeInUp, duration, ease } from "@/styles/motion";
 import {
   MessageSquare, Search, Star, Bookmark, Sparkles, Plus,
-  FolderOpen, Pin, Archive, FileText, Wand2, Smile, Heart,
-  Globe, Zap, Coffee, Gem, Laugh,
+  Pin, Archive,
 } from "lucide-react";
 
 interface EmptyStateProps {

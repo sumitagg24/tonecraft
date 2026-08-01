@@ -5,17 +5,14 @@ import { useRouter } from "next/navigation";
 import { useChatStore } from "@/stores/chat-store";
 import { useChat } from "@/hooks/use-chat";
 import { cn } from "@/lib/utils";
-import { TONES } from "@/lib/constants";
-import { MotionStagger, spring, duration, ease, hoverScale, fadeInUp } from "@/styles/motion";
-import { PremiumCard } from "@/components/ui/recipes/PremiumCard";
-import { PremiumBadge } from "@/components/ui/recipes/PremiumBadge";
+import { MotionStagger } from "@/styles/motion";
 import {
   Search, X, Sparkles, Star, Plus, MessageSquare, Clock,
-  FolderOpen, Bookmark, Hash, Grid3X3, List as ListIcon,
-  Briefcase, MessageCircle, Heart, Smile, Zap, Coffee, Gem,
-  Mail, Camera, Globe, Languages, Terminal,
-  Headphones, FileText, CheckSquare, RefreshCw, Eye, EyeOff,
-  ChevronDown, ChevronRight, Palette, Wand2, LayoutGrid,
+  Bookmark, Hash, List as ListIcon,
+  Briefcase, MessageCircle, Heart, Smile, Zap, Gem,
+  Mail, Camera, Globe, Terminal,
+  Headphones, FileText, CheckSquare,
+  Wand2, LayoutGrid,
 } from "lucide-react";
 import { TwitterIcon, LinkedinIcon } from "@/components/icons/social-icons";
 

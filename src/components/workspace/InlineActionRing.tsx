@@ -1,12 +1,11 @@
 "use client";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
-import { spring, duration, ease, fadeInScale, MotionPresets } from "@/styles/motion";
+import { spring, MotionPresets } from "@/styles/motion";
 import {
-  Sparkles, Briefcase, Smile, Zap, Building2, Heart,
+  Sparkles, Briefcase, Smile, Zap, Building2,
   Globe, CheckSquare, FileText, Copy, Mail,
-  Camera, MessageCircle, Reply, Laugh, AlignLeft,
+  Camera, Reply, Laugh,
 } from "lucide-react";
 import { TwitterIcon, LinkedinIcon } from "@/components/icons/social-icons";
 
@@ -76,7 +75,7 @@ export function InlineActionRing({ containerRef }: { containerRef: React.RefObje
     { id: "translate", label: "Translate", icon: Globe, color: "#14b8a6", action: (text) => handleAction("Translate this:", text) },
     { id: "grammar", label: "Grammar", icon: CheckSquare, color: "#f97316", action: (text) => handleAction("Fix grammar:", text) },
     { id: "summarize", label: "Summarize", icon: FileText, color: "#a855f7", action: (text) => handleAction("Summarize this:", text) },
-    { id: "copy", label: "Copy", icon: Copy, color: "#e4e4e7", action: (text) => navigator.clipboard.writeText(text) },
+    { id: "copy", label: "Copy", icon: Copy, color: "#e4e4e7", action: (text) => { try { navigator.clipboard.writeText(text); } catch { /* ignore */ } } },
     { id: "email", label: "Email", icon: Mail, color: "#EA4335", action: (text) => handleAction("Turn this into an email:", text) },
     { id: "linkedin", label: "LinkedIn", icon: LinkedinIcon, color: "#0A66C2", action: (text) => handleAction("Turn this into a LinkedIn post:", text) },
     { id: "tweet", label: "Twitter", icon: TwitterIcon, color: "#1DA1F2", action: (text) => handleAction("Turn this into a tweet:", text) },
