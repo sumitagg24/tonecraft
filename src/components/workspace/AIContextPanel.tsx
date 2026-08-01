@@ -1,23 +1,20 @@
 "use client";
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useChatStore } from "@/stores/chat-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { TONES } from "@/lib/constants";
 import { ease } from "@/styles/motion";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import type { Persona } from "@/types";
 import {
   ChevronDown, Sparkles, MessageSquare, Clock, Hash,
-  Bookmark, Star, Zap, Globe, Palette,
-  FileText, Brain, BarChart3,
-  PanelRightClose, Copy,
-  RefreshCw, Heart, User, Target, Activity,
+  Zap, Globe, Palette, FileText, Brain, BarChart3,
+  PanelRightClose, User, Target, Sliders, Paperclip, Languages, Smile,
 } from "lucide-react";
 
-type Section = "summary" | "memory" | "stats" | "presets" | "actions";
-
 export function AIContextPanel() {
-  const { currentChat, messages, selectedTone, selectedModel } = useChatStore();
+  const { currentChat, messages, selectedTone, selectedModel, context } = useChatStore();
   const { setContextPanelOpen, setMobileContextOpen } = useWorkspaceStore();
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const isMobile = useMediaQuery("(max-width: 767px)");
@@ -34,6 +31,16 @@ export function AIContextPanel() {
   const wordCount = messages.reduce((acc, m) => acc + m.content.split(/\s+/).filter(Boolean).length, 0);
   const charCount = messages.reduce((acc, m) => acc + m.content.length, 0);
   const estTokens = Math.round(charCount / 4);
+
+  const attachments = useMemo(() => {
+    const seen = new Map<string, (typeof messages)[number]["attachments"][number]>();
+    for (const m of messages) {
+      for (const a of m.attachments) {
+        if (!seen.has(a.id)) seen.set(a.id, a);
+      }
+    }
+    return Array.from(seen.values());
+  }, [messages]);
 
   return (
     <aside className="h-full bg-sidebar/30 backdrop-blur-2xl border-l border-border/20 flex flex-col overflow-hidden">
@@ -52,54 +59,24 @@ export function AIContextPanel() {
       </div>
 
       <div className="flex-1 overflow-y-auto scrollbar-thin px-3 py-3 space-y-2.5">
-        <Section
-          id="summary"
-          label="Summary"
-          icon={MessageSquare}
-          collapsed={collapsed}
-          onToggle={toggleSection}
-        >
+        <Section id="summary" label="Conversation" icon={MessageSquare} collapsed={collapsed} onToggle={toggleSection}>
           <SummarySection currentChat={currentChat} selectedTone={selectedTone} selectedModel={selectedModel} />
         </Section>
 
-        <Section
-          id="memory"
-          label="Conversation Memory"
-          icon={Brain}
-          collapsed={collapsed}
-          onToggle={toggleSection}
-        >
-          <MemorySection />
+        <Section id="settings" label="Active Settings" icon={Sliders} collapsed={collapsed} onToggle={toggleSection}>
+          <ActiveSettings context={context} />
         </Section>
 
-        <Section
-          id="stats"
-          label="Statistics"
-          icon={BarChart3}
-          collapsed={collapsed}
-          onToggle={toggleSection}
-        >
+        <Section id="stats" label="Statistics" icon={BarChart3} collapsed={collapsed} onToggle={toggleSection}>
           <StatsSection messages={messages} wordCount={wordCount} charCount={charCount} estTokens={estTokens} />
         </Section>
 
-        <Section
-          id="presets"
-          label="Favorite Presets"
-          icon={Bookmark}
-          collapsed={collapsed}
-          onToggle={toggleSection}
-        >
-          <PresetsSection />
+        <Section id="personas" label="Personas" icon={User} collapsed={collapsed} onToggle={toggleSection}>
+          <PersonasSection />
         </Section>
 
-        <Section
-          id="actions"
-          label="Recent Actions"
-          icon={Activity}
-          collapsed={collapsed}
-          onToggle={toggleSection}
-        >
-          <ActionsSection />
+        <Section id="files" label="Attachments" icon={Paperclip} collapsed={collapsed} onToggle={toggleSection}>
+          <AttachmentsSection attachments={attachments} />
         </Section>
       </div>
 
@@ -168,20 +145,24 @@ function SummarySection({ currentChat, selectedTone, selectedModel }: any) {
   );
 }
 
-function MemorySection() {
-  const items = [
-    { icon: User, label: "User Context", value: "Professional communication" },
-    { icon: Target, label: "Goal", value: "Clear effective messaging" },
-    { icon: Heart, label: "Style", value: "Balanced & polished" },
+function ActiveSettings({ context }: { context: { platform: string; language: string; length: string; formality: string; emojis: boolean; creativity: number; audience: string } }) {
+  const rows = [
+    { icon: Globe, label: "Platform", value: context.platform || "—" },
+    { icon: Languages, label: "Language", value: context.language || "—" },
+    { icon: Hash, label: "Length", value: context.length || "—" },
+    { icon: Smile, label: "Formality", value: context.formality || "—" },
+    { icon: Smile, label: "Emojis", value: context.emojis ? "On" : "Off" },
+    { icon: Zap, label: "Creativity", value: `${context.creativity}%` },
+    { icon: Target, label: "Audience", value: context.audience || "—" },
   ];
   return (
     <div className="space-y-2">
-      {items.map((item) => (
-        <InfoRow key={item.label} icon={item.icon} label={item.label} value={item.value} />
+      {rows.map((row) => (
+        <InfoRow key={row.label} icon={row.icon} label={row.label} value={row.value} />
       ))}
-      <button className="w-full mt-2 text-[10px] text-primary/70 hover:text-primary py-1.5 rounded-lg border border-dashed border-border/30 hover:border-primary/30 transition-all">
-        + Add context
-      </button>
+      <p className="text-[10px] text-muted-foreground/40 pt-1">
+        These are applied to every message you send in this conversation.
+      </p>
     </div>
   );
 }
@@ -196,7 +177,7 @@ function StatsSection({ messages, wordCount, charCount, estTokens }: any) {
   return (
     <div className="space-y-2">
       <InfoRow icon={MessageSquare} label="User messages" value={userMsgs} />
-      <InfoRow icon={BotIcon} label="AI responses" value={aiMsgs} />
+      <InfoRow icon={Brain} label="AI responses" value={aiMsgs} />
       <InfoRow icon={FileText} label="Word count" value={wordCount.toLocaleString()} />
       <InfoRow icon={Hash} label="Characters" value={charCount.toLocaleString()} />
       <InfoRow icon={Zap} label="Est. tokens" value={estTokens.toLocaleString()} />
@@ -205,56 +186,86 @@ function StatsSection({ messages, wordCount, charCount, estTokens }: any) {
   );
 }
 
-function BotIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="11" width="18" height="10" rx="2" />
-      <circle cx="12" cy="5" r="2" />
-      <path d="M12 7v4" />
-      <line x1="8" y1="16" x2="8" y2="16" />
-      <line x1="16" y1="16" x2="16" y2="16" />
-    </svg>
-  );
-}
+function PersonasSection() {
+  const { selectedPersona, setSelectedPersona } = useChatStore();
+  const [personas, setPersonas] = useState<Persona[]>([]);
 
-function PresetsSection() {
-  const presets = [
-    { label: "Professional Email", tone: "professional", platform: "email" },
-    { label: "Casual WhatsApp", tone: "friendly", platform: "whatsapp" },
-    { label: "LinkedIn Post", tone: "professional", platform: "linkedin" },
-    { label: "Funny Reply", tone: "funny", platform: "discord" },
-  ];
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/personas")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: Persona[]) => {
+        if (!cancelled) setPersonas(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (personas.length === 0) {
+    return (
+      <p className="text-[11px] text-muted-foreground/50">
+        No personas yet. Create one to apply a consistent voice.
+      </p>
+    );
+  }
+
   return (
     <div className="space-y-1.5">
-      {presets.map((p) => (
-        <button
-          key={p.label}
-          className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs hover:bg-muted/30 transition-all text-left"
-        >
-          <Star className="w-3 h-3 text-amber-500/60 shrink-0" />
-          <div className="min-w-0 flex-1">
-            <p className="font-medium truncate">{p.label}</p>
-            <p className="text-[10px] text-muted-foreground/60">{p.tone} · {p.platform}</p>
-          </div>
-        </button>
-      ))}
+      {personas.map((persona) => {
+        const active = selectedPersona === persona.id;
+        return (
+          <button
+            key={persona.id}
+            onClick={() => setSelectedPersona(active ? null : persona.id)}
+            className={cnPersonaRow(active)}
+            aria-pressed={active}
+          >
+            <span
+              className="w-6 h-6 rounded-lg shrink-0 flex items-center justify-center text-[11px]"
+              style={{ backgroundColor: `${persona.color}22`, color: persona.color }}
+            >
+              {persona.icon || persona.name.charAt(0).toUpperCase()}
+            </span>
+            <span className="min-w-0 flex-1 text-left">
+              <span className="block text-xs font-medium truncate">{persona.name}</span>
+              {persona.description && (
+                <span className="block text-[10px] text-muted-foreground/60 truncate">{persona.description}</span>
+              )}
+            </span>
+            {active && <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
+          </button>
+        );
+      })}
     </div>
   );
 }
 
-function ActionsSection() {
-  const actions = [
-    { icon: RefreshCw, label: "Regenerated response", time: "2m ago" },
-    { icon: Copy, label: "Copied to clipboard", time: "5m ago" },
-    { icon: Star, label: "Saved as favorite", time: "10m ago" },
-  ];
+function cnPersonaRow(active: boolean) {
+  return [
+    "flex items-center gap-2 w-full px-2 py-1.5 rounded-lg border transition-all",
+    active
+      ? "bg-primary/10 border-primary/30"
+      : "border-transparent hover:bg-muted/30",
+  ].join(" ");
+}
+
+function AttachmentsSection({ attachments }: { attachments: { id: string; fileName: string; fileSize: number; fileType: string }[] }) {
+  if (attachments.length === 0) {
+    return (
+      <p className="text-[11px] text-muted-foreground/50">
+        No attachments in this conversation.
+      </p>
+    );
+  }
   return (
     <div className="space-y-1.5">
-      {actions.map((a) => (
-        <div key={a.label} className="flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs">
-          <a.icon className="w-3 h-3 text-muted-foreground/50 shrink-0" />
-          <span className="flex-1 truncate text-muted-foreground/80">{a.label}</span>
-          <span className="text-[10px] text-muted-foreground/40 shrink-0">{a.time}</span>
+      {attachments.map((a) => (
+        <div key={a.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-muted/20 text-xs">
+          <Paperclip className="w-3 h-3 text-muted-foreground/50 shrink-0" />
+          <span className="flex-1 truncate">{a.fileName}</span>
+          <span className="text-[10px] text-muted-foreground/50 shrink-0">{formatBytes(a.fileSize)}</span>
         </div>
       ))}
     </div>
@@ -292,3 +303,8 @@ function UsageBadge({ wordCount, estTokens }: { wordCount: number; estTokens: nu
   );
 }
 
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes}B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)}MB`;
+}

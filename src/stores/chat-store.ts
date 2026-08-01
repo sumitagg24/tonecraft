@@ -9,6 +9,7 @@ interface ChatState {
   streamingContent: string;
   selectedTone: string;
   selectedModel: string;
+  selectedPersona: string | null;
   searchQuery: string;
   searchResults: { chats: Chat[]; messages: Pick<Message, "id" | "content" | "chatId" | "role" | "createdAt">[] };
   context: {
@@ -34,6 +35,7 @@ interface ChatState {
   clearStreamingContent: () => void;
   setSelectedTone: (tone: string) => void;
   setSelectedModel: (model: string) => void;
+  setSelectedPersona: (persona: string | null) => void;
   setContext: (context: Partial<ChatState["context"]>) => void;
   setSearchQuery: (query: string) => void;
   setSearchResults: (results: ChatState["searchResults"]) => void;
@@ -48,6 +50,7 @@ export const useChatStore = create<ChatState>((set) => ({
   streamingContent: "",
   selectedTone: "professional",
   selectedModel: "auto",
+  selectedPersona: null,
   searchQuery: "",
   searchResults: { chats: [], messages: [] },
   context: {
@@ -81,6 +84,7 @@ export const useChatStore = create<ChatState>((set) => ({
   clearStreamingContent: () => set({ streamingContent: "" }),
   setSelectedTone: (tone) => set({ selectedTone: tone }),
   setSelectedModel: (model) => set({ selectedModel: model }),
+  setSelectedPersona: (persona) => set({ selectedPersona: persona }),
   setContext: (ctx) => set((state) => ({ context: { ...state.context, ...ctx } })),
   setSearchQuery: (query) => set({ searchQuery: query }),
   setSearchResults: (results) => set({ searchResults: results }),
