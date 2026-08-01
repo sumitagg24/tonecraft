@@ -3,14 +3,14 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useChatStore } from "@/stores/chat-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
-import { cn } from "@/lib/utils";
 import { TONES } from "@/lib/constants";
 import { ease } from "@/styles/motion";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import {
   ChevronDown, Sparkles, MessageSquare, Clock, Hash,
   Bookmark, Star, Zap, Globe, Palette,
   FileText, Brain, BarChart3,
-  PanelRightClose, PanelRightOpen, Copy,
+  PanelRightClose, Copy,
   RefreshCw, Heart, User, Target, Activity,
 } from "lucide-react";
 
@@ -18,38 +18,14 @@ type Section = "summary" | "memory" | "stats" | "presets" | "actions";
 
 export function AIContextPanel() {
   const { currentChat, messages, selectedTone, selectedModel } = useChatStore();
-  const { contextPanelOpen, toggleContextPanel, setContextPanelOpen } = useWorkspaceStore();
+  const { setContextPanelOpen, setMobileContextOpen } = useWorkspaceStore();
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
-  const [activeSection, setActiveSection] = useState<string>("summary");
+  const isMobile = useMediaQuery("(max-width: 767px)");
 
-  if (!contextPanelOpen) {
-    return (
-      <div className="h-full border-l border-border/20 bg-sidebar/20 backdrop-blur-sm flex flex-col items-center py-4 px-2">
-        <button
-          onClick={toggleContextPanel}
-          className="h-8 w-8 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all"
-          aria-label="Open context panel"
-        >
-          <PanelRightOpen className="w-4 h-4" />
-        </button>
-        <div className="flex flex-col gap-2 mt-4">
-          {sections.slice(0, 5).map((s) => (
-            <button
-              key={s.id}
-              onClick={() => { setActiveSection(s.id); setContextPanelOpen(true); }}
-              className={cn(
-                "h-8 w-8 rounded-xl flex items-center justify-center transition-all",
-                activeSection === s.id ? "text-primary bg-primary/10" : "text-muted-foreground/50 hover:text-foreground hover:bg-muted/20"
-              )}
-              title={s.label}
-            >
-              <s.icon className="w-4 h-4" />
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const closePanel = () => {
+    if (isMobile) setMobileContextOpen(false);
+    else setContextPanelOpen(false);
+  };
 
   const toggleSection = (id: string) => {
     setCollapsed((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -67,7 +43,7 @@ export function AIContextPanel() {
           <span className="text-sm font-semibold">AI Context</span>
         </div>
         <button
-          onClick={toggleContextPanel}
+          onClick={closePanel}
           className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all"
           aria-label="Close context panel"
         >
@@ -316,10 +292,3 @@ function UsageBadge({ wordCount, estTokens }: { wordCount: number; estTokens: nu
   );
 }
 
-const sections = [
-  { id: "summary", label: "Summary", icon: MessageSquare },
-  { id: "memory", label: "Memory", icon: Brain },
-  { id: "stats", label: "Stats", icon: BarChart3 },
-  { id: "presets", label: "Presets", icon: Bookmark },
-  { id: "actions", label: "Actions", icon: Activity },
-];

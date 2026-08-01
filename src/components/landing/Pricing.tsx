@@ -8,6 +8,7 @@ import { Check } from "lucide-react";
 import { PRICING_TIERS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { useTiltEffect } from "@/hooks/use-tilt-effect";
+import Link from "next/link";
 
 function AnimatedPrice({ price, annual }: { price: number; annual: boolean }) {
   const displayPrice = annual ? Math.round(price * 10) : price;
@@ -39,6 +40,11 @@ function TiltedPricingCard({ tier, index, inView, annual }: {
   annual: boolean;
 }) {
   const { ref: tiltRef, onMouseMove: handleTiltMove, onMouseLeave: handleTiltLeave } = useTiltEffect({ max: 3, scale: 1.003 });
+
+  const href =
+    tier.name === "Free" ? "/chat"
+    : tier.name === "Enterprise" ? "mailto:sales@tonecraft.ai"
+    : "/sign-up";
 
   return (
     <motion.div
@@ -102,8 +108,9 @@ function TiltedPricingCard({ tier, index, inView, annual }: {
             )}
             variant={tier.popular ? "default" : "outline"}
             size="lg"
+            asChild
           >
-            {tier.cta}
+            <Link href={href}>{tier.cta}</Link>
           </Button>
         </CardContent>
       </Card>

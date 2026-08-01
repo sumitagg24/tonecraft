@@ -10,8 +10,7 @@ import { ease, spring } from "@/styles/motion";
 import {
   Plus, Search, MessageSquare, Star, Pin, Archive, Trash2,
   MoreHorizontal, Pencil, Sparkles, Clock, X,
-  PanelRightClose, Copy, Share2, Wand2, Settings,
-  History as HistoryIcon,
+  PanelRightClose, Copy, Share2,
 } from "lucide-react";
 
 type GroupLabel = "today" | "yesterday" | "this-week" | "older";
@@ -305,10 +304,6 @@ export function ConversationSidebar() {
 
         <div className="h-4" />
       </div>
-
-      <div className="shrink-0 px-3 py-3 border-t border-border/20">
-        <QuickActionButtons />
-      </div>
     </aside>
   );
 }
@@ -460,29 +455,5 @@ function ContextMenuItem({ icon: Icon, label, onClick, destructive }: { icon: Re
       <Icon className="w-3.5 h-3.5 shrink-0" />
       {label}
     </button>
-  );
-}
-
-function QuickActionButtons() {
-  const router = useRouter();
-  const items = [
-    { icon: HistoryIcon, label: "History", href: "/chat" },
-    { icon: Wand2, label: "Tools", href: "/tools" },
-    { icon: Search, label: "Search", href: "/search" },
-    { icon: Settings, label: "Settings", href: "/settings" },
-  ];
-  return (
-    <div className="flex gap-1">
-      {items.map((item) => (
-        <button
-          key={item.href}
-          onClick={() => router.push(item.href)}
-          className="flex-1 flex flex-col items-center gap-1 py-2 rounded-lg text-[10px] text-muted-foreground/60 hover:text-foreground hover:bg-muted/20 transition-all"
-        >
-          <item.icon className="w-3.5 h-3.5" />
-          {item.label}
-        </button>
-      ))}
-    </div>
   );
 }

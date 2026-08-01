@@ -1,122 +1,121 @@
 "use client";
-import { useState, useRef, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Sparkles, RefreshCw } from "lucide-react";
+import { Sparkles, RefreshCw, ArrowRight, ArrowDown } from "lucide-react";
+import Link from "next/link";
+import { sectionReveal, sectionItem, sectionChip } from "@/styles/motion";
+import { cn } from "@/lib/utils";
 
-const DEMO_INPUT = "Hey bro I can't come today";
+const DEMO_TONES = [
+  { id: "professional", label: "Professional" },
+  { id: "friendly", label: "Friendly" },
+  { id: "funny", label: "Funny" },
+  { id: "creative", label: "Creative" },
+  { id: "minimal", label: "Minimal" },
+] as const;
 
-const PLATFORM_OUTPUTS: Record<string, Record<string, string>> = {
-  gen_z: {
-    label: "Gen Z",
-    color: "#6366f1",
-    output: "hey i can't make it today fr 😭 got other stuff goin on. we can hang l8r tho 🙏",
-  },
-  professional: {
-    label: "Professional / Email",
-    color: "#3b82f6",
-    output: "Dear [Recipient],\n\nI regret to inform you that I am unable to attend today's scheduled event due to a prior commitment. I appreciate your understanding and look forward to rescheduling at a mutually convenient time.\n\nBest regards",
-  },
-  linkedin: {
-    label: "LinkedIn",
-    color: "#0A66C2",
-    output: "I appreciate the invite, but unfortunately I won't be able to attend today's session due to a scheduling conflict. I'd love to reconnect soon — let's find a time that works for both of us. Looking forward to staying in touch!",
-  },
-  instagram: {
-    label: "Instagram",
-    color: "#E4405F",
-    output: "Heyyy! So sorry I can't make it today 😔 something came up and I'm totally bummed. Let's def reschedule tho — let me know when you're free! 🤗✨",
-  },
-  translation: {
-    label: "Translation (FR)",
-    color: "#14b8a6",
-    output: "Malheureusement, je ne pourrai pas venir aujourd'hui en raison d'un engagement antérieur. J'apprécie votre compréhension et j'espère pouvoir nous revoir à un moment qui vous convient.\n\nCordialement",
-  },
-  summarization: {
-    label: "Summarization",
-    color: "#f97316",
-    output: "Unable to attend today's event — prior commitment. Willing to reschedule when convenient.",
-  },
-};
+type DemoTone = (typeof DEMO_TONES)[number]["id"];
 
-const OUTPUT_ORDER = ["gen_z", "professional", "linkedin", "instagram", "translation", "summarization"];
+const DEFAULT_INPUT = "hey i can't make it today, rain check?";
+
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+function rewrite(input: string, tone: DemoTone): string {
+  const t = input.trim();
+  if (!t) return "";
+  switch (tone) {
+    case "professional":
+      return `${capitalize(
+        t
+          .replace(/\bcan't\b/gi, "cannot")
+          .replace(/\bgonna\b/gi, "going to")
+          .replace(/\bwanna\b/gi, "want to")
+          .replace(/\b(u)\b/gi, "you")
+      )}\n\nI trust this clarifies the situation — happy to discuss further at your convenience.`;
+    case "friendly":
+      return `Hey! ${capitalize(t)}\n\nLet me know if that works for you — happy to help!`;
+    case "funny":
+      return `${capitalize(t)} — and yes, I'm only 90% joking.`;
+    case "creative":
+      return `${capitalize(t)}\n\nPicture this unfolding exactly the way I mean it.`;
+    case "minimal":
+      return `${capitalize(t).replace(/[?!.]+$/g, "").replace(/[,\s]+/g, " ").trim()}.`;
+  }
+}
 
 export function InteractiveDemo() {
-  const [input, setInput] = useState(DEMO_INPUT);
+  const prefersReduced = useReducedMotion();
+  const [input, setInput] = useState(DEFAULT_INPUT);
+  const [tone, setTone] = useState<DemoTone>("professional");
+  const [output, setOutput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [activePlatforms, setActivePlatforms] = useState<string[]>([]);
-  const [streamedOutputs, setStreamedOutputs] = useState<Record<string, string>>({});
-  const generatingRef = useRef(false);
-  const intervalsRef = useRef<NodeJS.Timeout[]>([]);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const streamText = useCallback((key: string, text: string) => {
-    let i = 0;
-    const interval = setInterval(() => {
-      i += 2;
-      if (i >= text.length) {
-        setStreamedOutputs((prev) => ({ ...prev, [key]: text }));
-        clearInterval(interval);
-      } else {
-        setStreamedOutputs((prev) => ({ ...prev, [key]: text.slice(0, i) }));
-      }
-    }, 12);
-    intervalsRef.current.push(interval);
+  useEffect(() => () => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
   }, []);
 
   const handleGenerate = useCallback(() => {
-    if (generatingRef.current) return;
-    generatingRef.current = true;
+    if (isGenerating) return;
+    const result = rewrite(input, tone);
+    setOutput("");
     setIsGenerating(true);
-    setActivePlatforms([]);
-    setStreamedOutputs({});
-    intervalsRef.current.forEach(clearInterval);
-    intervalsRef.current = [];
+    if (intervalRef.current) clearInterval(intervalRef.current);
 
-    OUTPUT_ORDER.forEach((key, i) => {
-      setTimeout(() => {
-        setActivePlatforms((prev) => [...prev, key]);
-        const output = PLATFORM_OUTPUTS[key].output;
-        streamText(key, output);
-      }, i * 300);
-    });
-
-    setTimeout(() => {
+    const finish = () => {
+      setOutput(result);
       setIsGenerating(false);
-      generatingRef.current = false;
-    }, OUTPUT_ORDER.length * 300 + 200);
-  }, [streamText]);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
 
-  const handleClear = useCallback(() => {
-    setActivePlatforms([]);
-    setStreamedOutputs({});
+    if (prefersReduced) {
+      setTimeout(finish, 400);
+      return;
+    }
+
+    let i = 0;
+    intervalRef.current = setInterval(() => {
+      i += 3;
+      if (i >= result.length) {
+        finish();
+      } else {
+        setOutput(result.slice(0, i));
+      }
+    }, 16);
+  }, [input, tone, isGenerating, prefersReduced]);
+
+  const handleReset = useCallback(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    setOutput("");
     setIsGenerating(false);
-    generatingRef.current = false;
-    intervalsRef.current.forEach(clearInterval);
-    intervalsRef.current = [];
   }, []);
 
   return (
-    <section id="demo" className="relative py-32 overflow-hidden">
+    <section id="demo" className="relative py-24 md:py-32 overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-border to-transparent" />
 
-      <div className="max-w-6xl mx-auto px-4">
+      <div className="max-w-5xl mx-auto px-4">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          variants={sectionReveal}
+          initial="hidden"
+          whileInView="visible"
           viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
+          className="text-center mb-12 md:mb-16"
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium mb-4">
+          <motion.div
+            variants={sectionChip}
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium mb-4"
+          >
             <Sparkles className="w-3.5 h-3.5" />
-            Live Demo
-          </div>
-          <h2 className="text-3xl md:text-5xl font-bold mb-4 tracking-tight">
-            Watch ToneCraft in action
-          </h2>
-          <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-            Type a message. Watch it transform for every platform instantly.
-          </p>
+            Try it now
+          </motion.div>
+          <motion.h2 variants={sectionItem} className="text-3xl md:text-5xl font-bold mb-4 tracking-tight">
+            One message, any tone
+          </motion.h2>
+          <motion.p variants={sectionItem} className="text-muted-foreground text-base md:text-lg max-w-xl mx-auto">
+            Type a message, pick a tone, and watch it transform before your eyes.
+          </motion.p>
         </motion.div>
 
         <motion.div
@@ -124,21 +123,49 @@ export function InteractiveDemo() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="max-w-2xl mx-auto mb-12"
+          className="glass-panel rounded-2xl p-4 md:p-5 shadow-card"
         >
-          <div className="glass-panel rounded-2xl p-2">
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Type your message here..."
-              rows={3}
-              className="w-full bg-transparent border-0 resize-none px-4 py-3 text-base placeholder:text-muted-foreground/50 focus-visible:outline-none focus-visible:ring-0"
-            />
-            <div className="flex items-center justify-between px-3 pt-2 border-t border-border/50">
-              <span className="text-xs text-muted-foreground">Press Enter or click Generate</span>
+          <label htmlFor="demo-input" className="sr-only">
+            Your message
+          </label>
+          <textarea
+            id="demo-input"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleGenerate();
+            }}
+            placeholder="Type a message to transform..."
+            rows={3}
+            className="w-full bg-transparent border-0 resize-none px-2 py-1 text-base placeholder:text-muted-foreground/50 focus-visible:outline-none focus-visible:ring-0"
+          />
+
+          <div className="mt-4 pt-4 border-t border-border/50">
+            <p className="text-xs text-muted-foreground mb-2.5 font-medium">Tone</p>
+            <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Choose a tone">
+              {DEMO_TONES.map((t) => (
+                <button
+                  key={t.id}
+                  role="radio"
+                  aria-checked={tone === t.id}
+                  onClick={() => setTone(t.id)}
+                  className={cn(
+                    "px-3.5 py-1.5 rounded-full text-xs font-medium border transition-all",
+                    tone === t.id
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "border-border/40 text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                  )}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-between mt-4">
+              <span className="text-xs text-muted-foreground/60">Press ⌘/Ctrl + Enter</span>
               <div className="flex gap-2">
-                {activePlatforms.length > 0 && (
-                  <Button variant="ghost" size="sm" onClick={handleClear} className="text-xs">
+                {output && (
+                  <Button variant="ghost" size="sm" onClick={handleReset} className="text-xs">
                     <RefreshCw className="w-3 h-3" />
                     Reset
                   </Button>
@@ -150,93 +177,70 @@ export function InteractiveDemo() {
                   className="gap-2 min-w-[120px]"
                 >
                   {isGenerating ? (
-                    <motion.div
+                    <motion.span
                       animate={{ rotate: 360 }}
                       transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                     >
                       <Sparkles className="w-3.5 h-3.5" />
-                    </motion.div>
+                    </motion.span>
                   ) : (
-                    <>
-                      <Sparkles className="w-3.5 h-3.5" />
-                      Generate
-                    </>
+                    <Sparkles className="w-3.5 h-3.5" />
                   )}
+                  {isGenerating ? "Generating…" : "Generate"}
                 </Button>
               </div>
             </div>
           </div>
         </motion.div>
 
+        <AnimatePresence>
+          {(output || isGenerating) && (
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              transition={{ duration: 0.3 }}
+              className="mt-6 grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-stretch gap-4"
+            >
+              <div className="glass-panel rounded-2xl p-5">
+                <p className="text-xs font-medium text-muted-foreground mb-2.5">Your message</p>
+                <p className="text-sm text-foreground/70 leading-relaxed whitespace-pre-wrap">{input}</p>
+              </div>
+
+              <div className="hidden md:flex items-center justify-center">
+                <ArrowRight className="w-5 h-5 text-primary" />
+              </div>
+              <div className="flex md:hidden items-center justify-center">
+                <ArrowDown className="w-5 h-5 text-primary" />
+              </div>
+
+              <div className="glass-panel rounded-2xl p-5 border-primary/30">
+                <p className="text-xs font-medium text-muted-foreground mb-2.5">
+                  {DEMO_TONES.find((t) => t.id === tone)?.label} version
+                </p>
+                <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+                  {output}
+                  {isGenerating && <span className="inline-block w-0.5 h-4 ml-0.5 bg-primary align-middle" aria-hidden="true" />}
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+          className="text-center mt-10"
         >
-          <AnimatePresence mode="popLayout">
-            {Object.entries(PLATFORM_OUTPUTS).map(([key, platform]) => {
-              const isActive = activePlatforms.includes(key);
-              const displayOutput = streamedOutputs[key] || "";
-              const isStreaming = isActive && displayOutput.length < platform.output.length;
-              const Icon = platform.label.includes("Email") ? "✉️" : platform.label.includes("LinkedIn") ? "💼" : platform.label.includes("Instagram") ? "📸" : platform.label.includes("FR") ? "🌍" : platform.label.includes("Summar") ? "📝" : "💬";
-
-              return (
-                <motion.div
-                  key={key}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={isActive ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.4 }}
-                  className="group"
-                >
-                  <div className="glass-panel rounded-2xl p-5 shadow-card flex flex-col gap-3 hover:border-white/20 transition-all duration-300 min-h-[160px]">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: platform.color }} />
-                        <span className="text-xs font-medium text-muted-foreground">
-                          {platform.label}
-                        </span>
-                      </div>
-                      <span className="text-sm">{Icon}</span>
-                    </div>
-                    <div className="flex-1">
-                      {isActive ? (
-                        <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap font-mono">
-                          {displayOutput}
-                          {isStreaming && (
-                            <motion.span
-                              animate={{ opacity: [0.3, 1, 0.3] }}
-                              transition={{ duration: 0.8, repeat: Infinity }}
-                              className="inline-block w-0.5 h-4 ml-0.5 bg-primary align-middle"
-                            />
-                          )}
-                        </p>
-                      ) : (
-                        <p className="text-sm text-muted-foreground/40 italic font-mono">
-                          {isGenerating ? "..." : "Waiting for input..."}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
+          <Button variant="outline" size="lg" asChild>
+            <Link href="/chat">
+              Try it in the app — it&apos;s free
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Link>
+          </Button>
         </motion.div>
-
-        {activePlatforms.length === 0 && !isGenerating && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center mt-8"
-          >
-            <p className="text-sm text-muted-foreground">
-              Click <span className="text-primary font-medium">Generate</span> to see the magic
-            </p>
-          </motion.div>
-        )}
       </div>
     </section>
   );
