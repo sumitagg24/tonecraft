@@ -3,11 +3,13 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Send, Mic, Loader2, X, ChevronDown, Sliders,
-  Globe, Paperclip, Square, Check,
+  Globe, Paperclip, Square, Check, Wand2,
 } from "lucide-react";
 import { useChatStore } from "@/stores/chat-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { SmartSuggestions } from "./SmartSuggestions";
+import { ToolPicker } from "./ToolPicker";
+import type { ToolDefinition } from "@/components/tools/ToolDefinitions";
 import { cn } from "@/lib/utils";
 import { TONES, PLATFORMS } from "@/lib/constants";
 import { duration, ease } from "@/styles/motion";
@@ -35,8 +37,9 @@ export function PremiumComposer({ chatId, onSend }: PremiumComposerProps) {
   const [input, setInput] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [attachments, setAttachments] = useState<PendingAttachment[]>([]);
-  const [openPicker, setOpenPicker] = useState<"tone" | "platform" | null>(null);
+  const [openPicker, setOpenPicker] = useState<"tone" | "platform" | "tool" | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [toolLoading, setToolLoading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const attachRef = useRef<HTMLInputElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
@@ -117,6 +120,45 @@ export function PremiumComposer({ chatId, onSend }: PremiumComposerProps) {
     if (rejected.length) toast.error(`Skipped: ${rejected.join(", ")} — unsupported type or >5MB`);
     e.target.value = "";
   }, []);
+
+  const applyTool = useCallback(async (tool: ToolDefinition) => {
+    setOpenPicker(null);
+    const current = input.trim();
+    if (!current) {
+      setInput(`${tool.title}: `);
+      toast.info(`Picked ${tool.title} — type what you want it applied to`);
+      return;
+    }
+    setToolLoading(true);
+    try {
+      const res = await fetch("/api/tools", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          toolId: tool.id,
+          input: current,
+          tone: selectedTone,
+          platform: context.platform,
+          language: context.language,
+          length: context.length,
+          creativity: context.creativity,
+          formality: context.formality,
+          audience: context.audience,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error?.message || "Tool execution failed");
+      }
+      const result = await res.json();
+      setInput(result.content || "");
+      toast.success(`Applied ${tool.title}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Tool execution failed");
+    } finally {
+      setToolLoading(false);
+    }
+  }, [input, selectedTone, context]);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -307,6 +349,30 @@ export function PremiumComposer({ chatId, onSend }: PremiumComposerProps) {
                           })}
                         </div>
                       </PickerPanel>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Tool picker */}
+                <div className="relative">
+                  <ToolbarButton
+                    onClick={() => setOpenPicker(openPicker === "tool" ? null : "tool")}
+                    active={openPicker === "tool"}
+                    disabled={isLoading}
+                    label="Pick a tool"
+                    aria-expanded={openPicker === "tool"}
+                  >
+                    {toolLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Wand2 className="w-4 h-4" />
+                    )}
+                    <span className="text-xs font-medium hidden sm:inline">Tools</span>
+                    <ChevronDown className={cn("w-3 h-3 opacity-50 transition-transform", openPicker === "tool" && "rotate-180")} />
+                  </ToolbarButton>
+                  <AnimatePresence>
+                    {openPicker === "tool" && (
+                      <ToolPicker onSelect={applyTool} loading={toolLoading} />
                     )}
                   </AnimatePresence>
                 </div>
