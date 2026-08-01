@@ -12,7 +12,15 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    ".agents/**",
   ]),
+  {
+    rules: {
+      "@typescript-eslint/no-non-null-assertion": "error",
+      "no-empty": ["error", { "allowEmptyCatch": true }],
+      "no-console": ["warn", { "allow": ["warn", "error"] }],
+    },
+  },
 ]);
 
 export default eslintConfig;
