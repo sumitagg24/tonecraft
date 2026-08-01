@@ -13,6 +13,7 @@ interface ChatState {
   searchResults: { chats: Chat[]; messages: Pick<Message, "id" | "content" | "chatId" | "role" | "createdAt">[] };
   context: {
     platform: string;
+    language: string;
     recipient: string;
     length: "short" | "medium" | "long";
     creativity: number;
@@ -50,6 +51,7 @@ export const useChatStore = create<ChatState>((set) => ({
   searchResults: { chats: [], messages: [] },
   context: {
     platform: "email",
+    language: "en",
     recipient: "",
     length: "medium",
     creativity: 70,

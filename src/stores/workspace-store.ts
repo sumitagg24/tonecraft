@@ -4,23 +4,6 @@ import { persist } from "zustand/middleware";
 
 export type WorkspaceMode = "chat" | "focus" | "writer" | "split" | "compact" | "minimal";
 
-interface AdvancedControls {
-  tone: string;
-  language: string;
-  ageGroup: string;
-  platform: string;
-  audience: string;
-  writingStyle: string;
-  creativity: number;
-  responseLength: "short" | "medium" | "long";
-  emojiLevel: "none" | "subtle" | "moderate" | "heavy";
-  outputFormat: "text" | "markdown" | "html";
-  readingLevel: "basic" | "intermediate" | "advanced";
-  provider: string;
-  workflow: string;
-  preset: string;
-}
-
 interface WorkspaceState {
   mode: WorkspaceMode;
   sidebarOpen: boolean;
@@ -29,7 +12,6 @@ interface WorkspaceState {
   contextPanelWidth: number;
   showAdvancedControls: boolean;
   showSuggestions: boolean;
-  advanced: AdvancedControls;
   composerHeight: number;
   mobileSidebarOpen: boolean;
   mobileContextOpen: boolean;
@@ -46,7 +28,6 @@ interface WorkspaceState {
   setShowAdvancedControls: (show: boolean) => void;
   toggleAdvancedControls: () => void;
   setShowSuggestions: (show: boolean) => void;
-  setAdvanced: (controls: Partial<AdvancedControls>) => void;
   setComposerHeight: (height: number) => void;
 }
 
@@ -60,22 +41,6 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       contextPanelWidth: 320,
       showAdvancedControls: false,
       showSuggestions: true,
-      advanced: {
-        tone: "professional",
-        language: "en",
-        ageGroup: "adult",
-        platform: "email",
-        audience: "",
-        writingStyle: "balanced",
-        creativity: 70,
-        responseLength: "medium",
-        emojiLevel: "subtle",
-        outputFormat: "text",
-        readingLevel: "intermediate",
-        provider: "auto",
-        workflow: "direct",
-        preset: "",
-      },
       composerHeight: 48,
       mobileSidebarOpen: false,
       mobileContextOpen: false,
@@ -90,7 +55,6 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       setShowAdvancedControls: (show) => set({ showAdvancedControls: show }),
       toggleAdvancedControls: () => set((s) => ({ showAdvancedControls: !s.showAdvancedControls })),
       setShowSuggestions: (show) => set({ showSuggestions: show }),
-      setAdvanced: (controls) => set((s) => ({ advanced: { ...s.advanced, ...controls } })),
       setComposerHeight: (height) => set({ composerHeight: height }),
       setMobileSidebarOpen: (open) => set({ mobileSidebarOpen: open }),
       setMobileContextOpen: (open) => set({ mobileContextOpen: open }),
