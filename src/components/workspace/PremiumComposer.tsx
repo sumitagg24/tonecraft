@@ -9,6 +9,7 @@ import { useChatStore } from "@/stores/chat-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { SmartSuggestions } from "./SmartSuggestions";
 import { ToolPicker } from "./ToolPicker";
+import { TonePicker } from "./TonePicker";
 import type { ToolDefinition } from "@/components/tools/ToolDefinitions";
 import { cn } from "@/lib/utils";
 import { TONES, PLATFORMS } from "@/lib/constants";
@@ -43,7 +44,7 @@ export function PremiumComposer({ chatId, onSend }: PremiumComposerProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const attachRef = useRef<HTMLInputElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
-  const { isLoading, selectedTone, setSelectedTone, context, setContext } = useChatStore();
+  const { isLoading, selectedTone, context, setContext } = useChatStore();
   const { showAdvancedControls, toggleAdvancedControls, showSuggestions } = useWorkspaceStore();
 
   // Close tone/platform pickers when clicking outside the toolbar
@@ -285,29 +286,7 @@ export function PremiumComposer({ chatId, onSend }: PremiumComposerProps) {
                   </ToolbarButton>
                   <AnimatePresence>
                     {openPicker === "tone" && (
-                      <PickerPanel label="Tone" className="w-[300px] bottom-full left-0 mb-1.5">
-                        <div className="grid grid-cols-2 gap-1 max-h-64 overflow-y-auto scrollbar-thin pr-0.5">
-                          {TONES.map((tone) => {
-                            const active = selectedTone === tone.id;
-                            return (
-                              <button
-                                key={tone.id}
-                                onClick={() => { setSelectedTone(tone.id); setOpenPicker(null); }}
-                                className={cn(
-                                  "flex items-start gap-2 rounded-lg p-2 text-left border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
-                                  active ? "border-primary/40 bg-primary/10" : "border-transparent hover:bg-muted/30"
-                                )}
-                              >
-                                <span className="text-base leading-none">{tone.emoji}</span>
-                                <span className="min-w-0">
-                                  <span className="block text-xs font-medium truncate">{tone.label}</span>
-                                  <span className="block text-[10px] text-muted-foreground/60 leading-tight line-clamp-2">{tone.description}</span>
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </PickerPanel>
+                      <TonePicker onSelect={() => setOpenPicker(null)} />
                     )}
                   </AnimatePresence>
                 </div>

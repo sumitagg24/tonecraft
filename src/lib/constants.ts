@@ -13,16 +13,16 @@ export const NAV_LINKS = [
   { label: "FAQ", href: "#faq" },
 ];
 
-export const TONES: { id: string; label: string; description: string; color: string; emoji: string }[] = [
-  { id: "professional", label: "Professional", description: "Formal consultant tone", color: color.tone.professional, emoji: "💼" },
-  { id: "friendly", label: "Friendly", description: "Warm and approachable", color: color.tone.friendly, emoji: "😊" },
-  { id: "creative", label: "Creative", description: "Imaginative storyteller", color: color.tone.creative, emoji: "🎨" },
-  { id: "romantic", label: "Romantic", description: "Tender and heartfelt", color: color.tone.romantic, emoji: "❤️" },
-  { id: "luxury", label: "Luxury", description: "Premium and refined", color: color.tone.luxury, emoji: "✨" },
-  { id: "funny", label: "Funny", description: "Witty and lighthearted", color: color.tone.funny, emoji: "😂" },
-  { id: "minimal", label: "Minimal", description: "Clean and concise", color: color.tone.minimal, emoji: "⚪" },
-  { id: "corporate", label: "Corporate", description: "Executive business style", color: color.tone.corporate, emoji: "🏢" },
-  { id: "academic", label: "Academic", description: "Research and evidence-based", color: color.tone.academic, emoji: "🎓" },
+export const TONES: { id: string; label: string; description: string; color: string; emoji: string; example: string }[] = [
+  { id: "professional", label: "Professional", description: "Formal consultant tone", color: color.tone.professional, emoji: "💼", example: "I've attached the revised proposal for your review. Please let me know if you have any questions." },
+  { id: "friendly", label: "Friendly", description: "Warm and approachable", color: color.tone.friendly, emoji: "😊", example: "Hey! Just sent over the updated doc — hope you're having a great day!" },
+  { id: "creative", label: "Creative", description: "Imaginative storyteller", color: color.tone.creative, emoji: "🎨", example: "Picture this: a story that blooms in the reader's mind like a garden at dawn." },
+  { id: "romantic", label: "Romantic", description: "Tender and heartfelt", color: color.tone.romantic, emoji: "❤️", example: "Every moment with you feels like a page from my favorite love story." },
+  { id: "luxury", label: "Luxury", description: "Premium and refined", color: color.tone.luxury, emoji: "✨", example: "Indulge in an experience crafted with meticulous attention to every exquisite detail." },
+  { id: "funny", label: "Funny", description: "Witty and lighthearted", color: color.tone.funny, emoji: "😂", example: "I'd tell you a joke about my diet, but you'd probably lose your appetite for it." },
+  { id: "minimal", label: "Minimal", description: "Clean and concise", color: color.tone.minimal, emoji: "⚪", example: "Done is better than perfect. Ship it." },
+  { id: "corporate", label: "Corporate", description: "Executive business style", color: color.tone.corporate, emoji: "🏢", example: "We are pleased to announce the successful completion of the strategic initiative, aligned with our quarterly objectives." },
+  { id: "academic", label: "Academic", description: "Research and evidence-based", color: color.tone.academic, emoji: "🎓", example: "The extant literature suggests that tone modulation significantly influences perceived message credibility." },
 ];
 
 export const FREE_TIER_LIMITS = {
