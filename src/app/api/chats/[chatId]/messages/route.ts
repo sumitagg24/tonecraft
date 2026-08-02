@@ -6,6 +6,7 @@ import { capabilities } from "@/lib/capabilities";
 import { aiEngine } from "@/engine/AIEngine";
 import { messageRepository } from "@/repositories/MessageRepository";
 import { chatRepository } from "@/repositories/ChatRepository";
+import { knowledgeService } from "@/services/KnowledgeService";
 import { z } from "zod";
 
 const messageSchema = z.object({
@@ -21,6 +22,7 @@ const messageSchema = z.object({
   audience: z.string().optional(),
   formality: z.enum(["casual", "neutral", "formal"]).optional(),
   personaId: z.string().nullable().optional(),
+  knowledgeFileIds: z.array(z.string()).max(20).optional(),
 });
 
 export async function POST(
@@ -90,6 +92,21 @@ export async function POST(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await chatRepository.update(chatId, userId, { updatedAt: new Date() } as any);
 
+  let knowledge: { systemBlock: string; sourceFiles: string[] } | undefined;
+  const knowledgeFileIds = parsed.data.knowledgeFileIds;
+  if (knowledgeFileIds?.length) {
+    const chunks = await knowledgeService.retrieve(userId, content, knowledgeFileIds);
+    if (chunks.length > 0) {
+      const passages = chunks
+        .map((c, i) => `[${i + 1}] source=${c.fileName}, chunk=${c.index}\n"${c.content}"`)
+        .join("\n\n");
+      knowledge = {
+        systemBlock: `[Knowledge]\nBased on the user's documents, here are relevant passages:\n\n${passages}\n\nInstructions:\n- Use the passages above to answer. Cite them inline as [1], [2].\n- If the passages do not answer the question, say so — do not invent.`,
+        sourceFiles: [...new Set(chunks.map((c) => c.fileId))],
+      };
+    }
+  }
+
   const history = (chat.messages || []).map(m => ({
     id: m.id, role: m.role as "user" | "assistant" | "system", content: m.content, createdAt: m.createdAt,
   }));
@@ -122,6 +139,7 @@ export async function POST(
           audience,
           history,
           persona,
+          context: knowledge ? { knowledgeBlock: knowledge.systemBlock, sourceFiles: knowledge.sourceFiles } : undefined,
           userId,
           plan: plan.tier,
         });
@@ -137,6 +155,10 @@ export async function POST(
           } else if (chunk.type === "error") {
             throw new Error(chunk.message);
           }
+        }
+
+        if (knowledge) {
+          await knowledgeService.linkToMessage(assistantMessage.id, knowledge.sourceFiles);
         }
 
         await prisma.message.update({

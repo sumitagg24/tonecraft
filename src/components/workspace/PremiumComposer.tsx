@@ -3,7 +3,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Send, Mic, Loader2, X, ChevronDown, Sliders,
-  Globe, Paperclip, Square, Check, Wand2, Sparkles,
+  Globe, Paperclip, Square, Check, Wand2, Sparkles, BookOpenCheck,
 } from "lucide-react";
 import { useChatStore } from "@/stores/chat-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
@@ -11,6 +11,7 @@ import { SmartSuggestions } from "./SmartSuggestions";
 import { ToolPicker } from "./ToolPicker";
 import { TonePicker } from "./TonePicker";
 import { PersonaPicker } from "./PersonaPicker";
+import { KnowledgePicker } from "./KnowledgePicker";
 import { PickerSurface } from "./PickerSurface";
 import type { ToolDefinition } from "@/components/tools/ToolDefinitions";
 import { cn } from "@/lib/utils";
@@ -28,7 +29,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 interface PremiumComposerProps {
   chatId: string;
-  onSend: (content: string, chatId: string) => Promise<void>;
+  onSend: (content: string, chatId: string, opts?: { knowledgeFileIds?: string[] }) => Promise<void>;
   onStop?: () => void;
 }
 
@@ -41,9 +42,10 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
   const [input, setInput] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [attachments, setAttachments] = useState<PendingAttachment[]>([]);
-  const [openPicker, setOpenPicker] = useState<"tone" | "platform" | "tool" | "persona" | null>(null);
+  const [openPicker, setOpenPicker] = useState<"tone" | "platform" | "tool" | "persona" | "knowledge" | null>(null);
   const [uploading, setUploading] = useState(false);
   const [toolLoading, setToolLoading] = useState(false);
+  const [knowledgeFileIds, setKnowledgeFileIds] = useState<string[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const attachRef = useRef<HTMLInputElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
@@ -93,8 +95,8 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
         setUploading(false);
       }
     }
-    await onSend(content, chatId);
-  }, [input, isLoading, uploading, attachments, chatId, onSend]);
+    await onSend(content, chatId, knowledgeFileIds.length ? { knowledgeFileIds } : undefined);
+  }, [input, isLoading, uploading, attachments, chatId, onSend, knowledgeFileIds]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -376,6 +378,32 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
                   <AnimatePresence>
                     {openPicker === "tool" && (
                       <ToolPicker onSelect={applyTool} onClose={() => setOpenPicker(null)} loading={toolLoading} />
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Knowledge picker */}
+                <div className="relative">
+                  <ToolbarButton
+                    onClick={() => setOpenPicker(openPicker === "knowledge" ? null : "knowledge")}
+                    active={openPicker === "knowledge" || knowledgeFileIds.length > 0}
+                    disabled={isLoading}
+                    label="Ground with knowledge"
+                    aria-expanded={openPicker === "knowledge"}
+                  >
+                    <BookOpenCheck className={cn("w-4 h-4", knowledgeFileIds.length > 0 && "text-primary")} />
+                    <span className="text-xs font-medium hidden sm:inline">
+                      {knowledgeFileIds.length > 0 ? `Know ${knowledgeFileIds.length}` : "Knowledge"}
+                    </span>
+                    <ChevronDown className={cn("w-3 h-3 opacity-50 transition-transform", openPicker === "knowledge" && "rotate-180")} />
+                  </ToolbarButton>
+                  <AnimatePresence>
+                    {openPicker === "knowledge" && (
+                      <KnowledgePicker
+                        selected={knowledgeFileIds}
+                        onChange={setKnowledgeFileIds}
+                        onClose={() => setOpenPicker(null)}
+                      />
                     )}
                   </AnimatePresence>
                 </div>

@@ -53,6 +53,9 @@ export class AIEngine {
         history: options.history,
         currentMessage: promptText,
         persona: options.persona,
+        knowledge: options.context?.knowledgeBlock
+          ? { systemBlock: String(options.context.knowledgeBlock) }
+          : undefined,
         preferences: {
           language: options.language,
           creativity: options.creativity,
@@ -137,6 +140,9 @@ export class AIEngine {
         history: options.history,
         currentMessage: promptText,
         persona: options.persona,
+        knowledge: options.context?.knowledgeBlock
+          ? { systemBlock: String(options.context.knowledgeBlock) }
+          : undefined,
         preferences: {
           language: options.language,
           creativity: options.creativity,

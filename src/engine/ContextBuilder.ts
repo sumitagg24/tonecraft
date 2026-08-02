@@ -20,6 +20,9 @@ export interface ContextSource {
     emojiUsage?: string;
     temperature?: number | null;
   };
+  knowledge?: {
+    systemBlock?: string;
+  };
   metadata?: Record<string, unknown>;
 }
 
@@ -56,6 +59,11 @@ export class ContextBuilder {
         heavy: "Use emojis liberally.",
       };
       systemParts.push(`Emoji: ${emojiMap[source.persona.emojiUsage] || ""}`);
+    }
+
+    // Knowledge grounding
+    if (source.knowledge?.systemBlock) {
+      systemParts.push(source.knowledge.systemBlock);
     }
 
     // User preferences

@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { BookOpen, Users, Files } from "lucide-react";
 import { PromptLibraryPage } from "@/components/workspace/PromptLibraryPage";
 import { PersonasLibraryPage } from "@/components/workspace/PersonasLibraryPage";
+import { KnowledgeLibraryPage } from "@/components/workspace/KnowledgeLibraryPage";
 
 type Tab = "prompts" | "personas" | "knowledge";
 
@@ -40,11 +41,7 @@ export default function LibraryPage() {
       <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin">
         {tab === "prompts" && <PromptLibraryPage />}
         {tab === "personas" && <PersonasLibraryPage />}
-        {tab === "knowledge" && (
-          <div className="h-full flex items-center justify-center text-xs text-muted-foreground/50">
-            Knowledge base arrives with the Knowledge feature.
-          </div>
-        )}
+        {tab === "knowledge" && <KnowledgeLibraryPage />}
       </div>
     </div>
   );
