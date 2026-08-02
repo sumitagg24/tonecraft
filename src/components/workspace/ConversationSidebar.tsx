@@ -303,13 +303,18 @@ function ChatItem({
     setMenuOpen(false);
   }, [chat.id]);
 
+  const handleDelete = useCallback(() => {
+    deleteChat(chat.id);
+    if (isActive) router.push("/chat");
+  }, [deleteChat, chat.id, isActive, router]);
+
   const menuItems = archived
     ? [
         { label: "Unarchive", icon: ArchiveRestore, onClick: () => archiveChat(chat.id, false) },
         { label: "Duplicate", icon: Copy, onClick: handleDuplicate },
         { label: "Share", icon: Share2, onClick: handleShare },
         { divider: true },
-        { label: "Delete", icon: Trash2, onClick: () => deleteChat(chat.id), destructive: true },
+        { label: "Delete", icon: Trash2, onClick: handleDelete, destructive: true },
       ]
     : [
         { label: "Rename", icon: Pencil, onClick: () => { setRenameValue(chat.title); setRenaming(true); setMenuOpen(false); } },
@@ -319,7 +324,7 @@ function ChatItem({
         { label: "Archive", icon: Archive, onClick: () => archiveChat(chat.id, true) },
         { label: "Share", icon: Share2, onClick: handleShare },
         { divider: true },
-        { label: "Delete", icon: Trash2, onClick: () => deleteChat(chat.id), destructive: true },
+        { label: "Delete", icon: Trash2, onClick: handleDelete, destructive: true },
       ];
 
   return (

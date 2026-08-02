@@ -1,7 +1,8 @@
 "use client";
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { ArrowDown } from "lucide-react";
 import { useChatStore } from "@/stores/chat-store";
 import { useChat } from "@/hooks/use-chat";
 import { PremiumMessageCard } from "@/components/workspace/PremiumMessageCard";
@@ -11,7 +12,7 @@ import { InlineActionRing } from "@/components/workspace/InlineActionRing";
 import { NoConversationEmptyState } from "@/components/workspace/WorkspaceEmptyStates";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { duration } from "@/styles/motion";
+import { duration, spring } from "@/styles/motion";
 
 export default function ChatPage() {
   const params = useParams();
@@ -21,6 +22,9 @@ export default function ChatPage() {
   const { sendMessage, stopStreaming, fetchChats, regenerateMessage, continueMessage } = useChat();
   const scrollRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [atBottom, setAtBottom] = useState(true);
+  const lastMessageCount = useRef(messages.length);
+  const lastContentLength = useRef(0);
 
 
   useEffect(() => {
@@ -42,11 +46,34 @@ export default function ChatPage() {
       });
   }, [chatId, router]);
 
-  useEffect(() => {
+  const scrollToBottom = useCallback(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
     }
-  }, [messages, streamingContent]);
+  }, []);
+
+  const onScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    setAtBottom(nearBottom);
+  }, []);
+
+  // Smart auto-scroll: always for the first message of a run, then only if the user is near the bottom
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    if (messages.length !== lastMessageCount.current) {
+      // a message arrived (send or final stream) — jump to bottom
+      el.scrollTop = el.scrollHeight;
+      lastMessageCount.current = messages.length;
+      setAtBottom(true);
+    } else if (atBottom && streamingContent.length !== lastContentLength.current) {
+      // streaming tokens — keep the user pinned only if they were already at the bottom
+      el.scrollTop = el.scrollHeight;
+    }
+    lastContentLength.current = streamingContent.length;
+  }, [messages, streamingContent, atBottom]);
 
   const handleRegenerate = useCallback(async (messageId: string) => {
     try {
@@ -91,7 +118,7 @@ export default function ChatPage() {
       <InlineActionRing containerRef={containerRef} />
 
       {/* Messages Area */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-thin">
+      <div ref={scrollRef} onScroll={onScroll} className="flex-1 overflow-y-auto scrollbar-thin relative">
         <div className="max-w-4xl mx-auto">
           <AnimatePresence mode="popLayout">
             {messages.length === 0 && !isLoading && (
@@ -152,6 +179,23 @@ export default function ChatPage() {
 
       {/* Composer */}
       <PremiumComposer chatId={chatId} onSend={sendMessage} onStop={stopStreaming} />
+
+      {/* Scroll-to-bottom floating button */}
+      <AnimatePresence>
+        {!atBottom && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.6 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.6 }}
+            transition={spring.snappy}
+            onClick={scrollToBottom}
+            aria-label="Scroll to latest messages"
+            className="absolute bottom-4 right-4 h-9 w-9 rounded-full bg-background border border-border/40 shadow-premium flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-border/70 transition-colors z-10"
+          >
+            <ArrowDown className="w-4 h-4" />
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -401,21 +401,21 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
                       </button>
                     </motion.div>
                   ) : (
-                    <motion.div whileTap={{ scale: 0.95 }}>
-                      <button
-                        onClick={handleSubmit}
-                        disabled={!input.trim() || uploading}
-                        className={cn(
-                          "h-10 w-10 sm:h-9 sm:w-9 rounded-xl flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-50",
-                          input.trim() && !uploading
-                            ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-glow hover:from-violet-500 hover:to-indigo-500"
-                            : "bg-muted/30 text-muted-foreground/50"
-                        )}
-                        aria-label="Send message"
-                      >
-                        {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                      </button>
-                    </motion.div>
+                    <motion.button
+                      whileTap={{ scale: 0.85 }}
+                      transition={{ type: "spring", stiffness: 500, damping: 20 }}
+                      onClick={handleSubmit}
+                      disabled={!input.trim() || uploading}
+                      className={cn(
+                        "h-10 w-10 sm:h-9 sm:w-9 rounded-xl flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-50",
+                        input.trim() && !uploading
+                          ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-glow hover:from-violet-500 hover:to-indigo-500"
+                          : "bg-muted/30 text-muted-foreground/50"
+                      )}
+                      aria-label="Send message"
+                    >
+                      {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    </motion.button>
                   )}
                 </div>
               </div>

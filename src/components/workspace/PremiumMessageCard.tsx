@@ -150,7 +150,7 @@ export const PremiumMessageCard = memo(function PremiumMessageCard({
             "rounded-2xl px-4 py-3.5 transition-all duration-200 relative",
             isUser
               ? "bg-gradient-to-br from-primary to-primary/90 text-primary-foreground rounded-br-md"
-              : "bg-card/60 backdrop-blur-sm border border-border/30 rounded-bl-md shadow-card hover:border-border/50"
+              : "bg-card/60 backdrop-blur-sm border border-border/30 rounded-bl-md shadow-card hover:border-border/50 hover:-translate-y-px"
           )}
         >
           {/* Tone badge for AI messages */}
@@ -418,10 +418,10 @@ function ActionButton({
   return (
     <motion.button
       whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
+      whileTap={{ scale: 0.9 }}
       onClick={onClick}
       className={cn(
-        "h-10 w-10 sm:h-7 sm:w-7 rounded-lg flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
+        "h-10 w-10 sm:h-7 sm:w-7 rounded-lg flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
         active
           ? "text-primary bg-primary/10"
           : "text-muted-foreground/50 hover:text-foreground hover:bg-muted/30"
@@ -429,7 +429,15 @@ function ActionButton({
       title={label}
       aria-label={label}
     >
-      <Icon className="w-3.5 h-3.5" />
+      <motion.span
+        key={active ? "on" : "off"}
+        initial={{ scale: active ? 0.4 : 1 }}
+        animate={{ scale: 1 }}
+        transition={spring.elastic}
+        className="flex"
+      >
+        <Icon className="w-3.5 h-3.5" />
+      </motion.span>
     </motion.button>
   );
 }
