@@ -7,6 +7,7 @@ import { useChatStore } from "@/stores/chat-store";
 import { useChat } from "@/hooks/use-chat";
 import { PremiumMessageCard } from "@/components/workspace/PremiumMessageCard";
 import { PremiumComposer } from "@/components/workspace/PremiumComposer";
+import { ExportMenu } from "@/components/workspace/ExportMenu";
 import { AIThinking, GradientPulse } from "@/components/workspace/AIThinking";
 import { InlineActionRing } from "@/components/workspace/InlineActionRing";
 import { NoConversationEmptyState } from "@/components/workspace/WorkspaceEmptyStates";
@@ -116,6 +117,14 @@ export default function ChatPage() {
   return (
     <div ref={containerRef} className="flex flex-col h-full relative">
       <InlineActionRing containerRef={containerRef} />
+
+      {/* Chat header */}
+      <div className="shrink-0 h-12 flex items-center justify-between px-4 border-b border-border/20 bg-background/40 backdrop-blur-sm">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-sm font-semibold truncate">{currentChat.title || "Chat"}</span>
+        </div>
+        <ExportMenu chatId={chatId} align="right" />
+      </div>
 
       {/* Messages Area */}
       <div ref={scrollRef} onScroll={onScroll} className="flex-1 overflow-y-auto scrollbar-thin relative">
