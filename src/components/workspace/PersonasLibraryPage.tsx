@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Plus, Trash2, Pencil, Star, Loader2, Users, Check, Download, Upload, Sparkles, X,
 } from "lucide-react";
+import { api } from "@/lib/api-client";
 
 export interface PersonaFormData {
   name: string;
@@ -52,10 +53,9 @@ export function PersonasLibraryPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/personas");
-      const data = await res.json();
-      setPersonas(Array.isArray(data) ? data : data.personas ?? []);
-      setDefaultPersonaId(Array.isArray(data) ? null : data.defaultPersonaId ?? null);
+      const data = await api<{ personas: PersonaLibraryItem[]; defaultPersonaId: string | null }>("/api/personas");
+      setPersonas(data.personas ?? []);
+      setDefaultPersonaId(data.defaultPersonaId ?? null);
     } catch {
       toast.error("Failed to load personas");
     } finally {
@@ -65,27 +65,24 @@ export function PersonasLibraryPage() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/personas")
-      .then((res) => res.json())
+    api<{ personas: PersonaLibraryItem[]; defaultPersonaId: string | null }>("/api/personas")
       .then((data) => {
         if (cancelled) return;
-        setPersonas(Array.isArray(data) ? data : data.personas ?? []);
-        setDefaultPersonaId(Array.isArray(data) ? null : data.defaultPersonaId ?? null);
+        setPersonas(data.personas ?? []);
+        setDefaultPersonaId(data.defaultPersonaId ?? null);
         setLoading(false);
       })
       .catch(() => setLoading(false));
-    fetch("/api/personas/curated").then((r) => r.json()).then(setCurated).catch(() => undefined);
+    api<typeof curated>("/api/personas/curated").then(setCurated).catch(() => undefined);
     return () => { cancelled = true; };
   }, []);
 
   const save = useCallback(async (id: string, data: Record<string, unknown>) => {
-    const res = await fetch(`/api/personas/${id}`, {
+    return api<PersonaLibraryItem>(`/api/personas/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error("Failed to save persona");
-    return res.json();
   }, []);
 
   const setDefault = useCallback(async (id: string) => {
@@ -110,8 +107,7 @@ export function PersonasLibraryPage() {
 
   const remove = useCallback(async (id: string) => {
     try {
-      const res = await fetch(`/api/personas/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to delete");
+      await api(`/api/personas/${id}`, { method: "DELETE" });
       setPersonas((prev) => prev.filter((p) => p.id !== id));
       if (defaultPersonaId === id) setDefaultPersonaId(null);
       toast.success("Persona deleted");
@@ -121,13 +117,11 @@ export function PersonasLibraryPage() {
   }, [defaultPersonaId]);
 
   const createPersona = useCallback(async (data: PersonaFormData) => {
-    const res = await fetch("/api/personas", {
+    return api<PersonaLibraryItem>("/api/personas", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error("Failed to create persona");
-    return res.json();
   }, []);
 
   const handleCreateSubmit = useCallback(async (e: React.FormEvent) => {

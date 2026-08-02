@@ -1,12 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { ok, fail, notFound, forbidden, withApiHandler } from "@/lib/withApiHandler";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
-// Strict allowlist for color values (CSS hex)
 const HEX_COLOR = /^#[0-9a-fA-F]{3,8}$/;
-// Allowlist for icon field — single emoji only
 const ICON_RE = /^[\p{Emoji}\p{Emoji_Presentation}\s]{0,10}$/u;
 
 const updateSchema = z.object({
@@ -31,32 +28,23 @@ const updateSchema = z.object({
   projectId: z.string().nullable().optional(),
 });
 
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+const api = withApiHandler();
 
+export const PATCH = api.PATCH(async (ctx, body) => {
+  const { id } = ctx.params;
   const exists = await prisma.persona.findUnique({ where: { id } });
-  if (!exists) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
+  if (!exists) return notFound();
+  if (exists.userId !== ctx.user.id) return forbidden();
 
-  if (exists.userId !== session.user.id) {
-    return NextResponse.json({ error: "Access denied" }, { status: 403 });
-  }
-
-  const body = await req.json();
   const parsed = updateSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error }, { status: 400 });
+    return fail(
+      "VALIDATION_ERROR",
+      parsed.error.issues.map((i) => i.message).join("; "),
+      400
+    );
   }
 
-  // Guard: strip isDefault for user personas (never allow elevating to global default)
   const data = { ...parsed.data } as Record<string, unknown>;
   if (data.isDefault === true) {
     delete data.isDefault;
@@ -72,31 +60,17 @@ export async function PATCH(
     where: { id },
     data: data as Prisma.PersonaUpdateInput,
   });
-  return NextResponse.json(updated);
-}
+  return ok(updated);
+});
 
-export async function DELETE(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const DELETE = api.DELETE(async (ctx) => {
+  const { id } = ctx.params;
   const exists = await prisma.persona.findUnique({ where: { id } });
-  if (!exists) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
-
+  if (!exists) return notFound();
   const persona = await prisma.persona.findFirst({
-    where: { id, userId: session.user.id },
+    where: { id, userId: ctx.user.id },
   });
-  if (!persona) {
-    return NextResponse.json({ error: "Access denied" }, { status: 403 });
-  }
-
+  if (!persona) return forbidden();
   await prisma.persona.delete({ where: { id } });
-  return NextResponse.json({ success: true });
-}
+  return ok({ ok: true });
+});

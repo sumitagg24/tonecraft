@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { useChatStore } from "@/stores/chat-store";
-import type { Message } from "@/types";
+import type { Chat, Message } from "@/types";
+import { api } from "@/lib/api-client";
 import { toast } from "sonner";
 
 let activeController: AbortController | null = null;
@@ -42,8 +43,8 @@ export function useChat() {
         });
 
         if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || "Failed to send message");
+          const err = await response.json();
+          throw new Error(err?.error?.message || "Failed to send message");
         }
 
         const reader = response.body?.getReader();
@@ -72,10 +73,8 @@ export function useChat() {
           }
         }
 
-        const refreshRes = await fetch(`/api/chats/${chatId}`);
-        if (!refreshRes.ok) throw new Error("Failed to refresh chat");
-        const chat = await refreshRes.json();
-        setMessages(chat.messages);
+        const chat = await api<Chat>(`/api/chats/${chatId}`);
+        setMessages(chat.messages ?? []);
         clearStreamingContent();
       } catch (error) {
         if (controller.signal.aborted) {
@@ -84,12 +83,10 @@ export function useChat() {
           for (let attempt = 0; attempt < 3; attempt++) {
             await new Promise((r) => setTimeout(r, 250));
             try {
-              const refreshRes = await fetch(`/api/chats/${chatId}`);
-              if (!refreshRes.ok) continue;
-              const chat = await refreshRes.json();
-              const lastAssistant = [...chat.messages].reverse().find((m) => m.role === "assistant");
+              const chat = await api<Chat>(`/api/chats/${chatId}`);
+              const lastAssistant = [...(chat.messages ?? [])].reverse().find((m) => m.role === "assistant");
               if (lastAssistant && lastAssistant.content) {
-                setMessages(chat.messages);
+                setMessages(chat.messages ?? []);
                 break;
               }
             } catch {
@@ -114,26 +111,29 @@ export function useChat() {
   }, []);
 
   const createChat = useCallback(async (data?: { title?: string; tone?: string }) => {
-    const res = await fetch("/api/chats", {
+    return api<Chat>("/api/chats", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data || {}),
     });
-    if (!res.ok) throw new Error("Failed to create chat");
-    return res.json();
   }, []);
 
   const fetchChats = useCallback(async () => {
-    const res = await fetch("/api/chats");
-    if (res.ok) {
-      const chats = await res.json();
+    try {
+      const chats = await api<Chat[]>("/api/chats");
       useChatStore.getState().setChats(chats);
+    } catch {
+      // keep current behavior: sidebar stays empty on failure
     }
   }, []);
 
   const deleteChat = useCallback(async (chatId: string) => {
-    const res = await fetch(`/api/chats/${chatId}`, { method: "DELETE" });
-    if (!res.ok) { toast.error("Failed to delete chat"); return; }
+    try {
+      await api(`/api/chats/${chatId}`, { method: "DELETE" });
+    } catch {
+      toast.error("Failed to delete chat");
+      return;
+    }
     const { chats, currentChat, setChats, setCurrentChat, setMessages } = useChatStore.getState();
     setChats(chats.filter((c) => c.id !== chatId));
     if (currentChat?.id === chatId) {
@@ -143,74 +143,92 @@ export function useChat() {
   }, []);
 
   const renameChat = useCallback(async (chatId: string, title: string) => {
-    const res = await fetch(`/api/chats/${chatId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title }),
-    });
-    if (!res.ok) { toast.error("Failed to rename chat"); return; }
+    try {
+      await api(`/api/chats/${chatId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title }),
+      });
+    } catch {
+      toast.error("Failed to rename chat");
+      return;
+    }
     useChatStore.getState().updateChatInList(chatId, { title });
   }, []);
 
   const togglePin = useCallback(async (chatId: string, pinned: boolean) => {
-    const res = await fetch(`/api/chats/${chatId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isPinned: pinned }),
-    });
-    if (!res.ok) { toast.error("Failed to update pin"); return; }
+    try {
+      await api(`/api/chats/${chatId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isPinned: pinned }),
+      });
+    } catch {
+      toast.error("Failed to update pin");
+      return;
+    }
     useChatStore.getState().updateChatInList(chatId, { isPinned: pinned });
   }, []);
 
   const toggleFavorite = useCallback(async (chatId: string, favorite: boolean) => {
-    const res = await fetch(`/api/chats/${chatId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isFavorite: favorite }),
-    });
-    if (!res.ok) { toast.error("Failed to update favorite"); return; }
+    try {
+      await api(`/api/chats/${chatId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isFavorite: favorite }),
+      });
+    } catch {
+      toast.error("Failed to update favorite");
+      return;
+    }
     useChatStore.getState().updateChatInList(chatId, { isFavorite: favorite });
   }, []);
 
   const archiveChat = useCallback(async (chatId: string, archived: boolean) => {
-    const res = await fetch(`/api/chats/${chatId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isArchived: archived }),
-    });
-    if (!res.ok) { toast.error("Failed to archive chat"); return; }
+    try {
+      await api(`/api/chats/${chatId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isArchived: archived }),
+      });
+    } catch {
+      toast.error("Failed to archive chat");
+      return;
+    }
     useChatStore.getState().updateChatInList(chatId, { isArchived: archived });
   }, []);
 
   const regenerateMessage = useCallback(async (messageId: string) => {
-    const res = await fetch(`/api/messages/${messageId}/regenerate`, { method: "POST" });
-    if (!res.ok) throw new Error("Failed to regenerate");
-    return res.json();
+    return api<Message>(`/api/messages/${messageId}/regenerate`, { method: "POST" });
   }, []);
 
   const continueMessage = useCallback(async (messageId: string) => {
-    const res = await fetch(`/api/messages/${messageId}/continue`, { method: "POST" });
-    if (!res.ok) throw new Error("Failed to continue");
-    return res.json();
+    return api<Message>(`/api/messages/${messageId}/continue`, { method: "POST" });
   }, []);
 
   const editMessage = useCallback(async (messageId: string, content: string) => {
-    const res = await fetch(`/api/messages/${messageId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content }),
-    });
-    if (!res.ok) throw new Error("Failed to edit");
+    try {
+      await api(`/api/messages/${messageId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content }),
+      });
+    } catch {
+      throw new Error("Failed to edit");
+    }
     useChatStore.getState().updateMessage(messageId, content);
   }, []);
 
   const setMessageFeedback = useCallback(async (messageId: string, feedback: "liked" | "disliked" | null) => {
-    const res = await fetch(`/api/messages/${messageId}/feedback`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ feedback }),
-    });
-    if (!res.ok) toast.error("Failed to save feedback");
+    try {
+      await api(`/api/messages/${messageId}/feedback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ feedback }),
+      });
+    } catch {
+      toast.error("Failed to save feedback");
+    }
   }, []);
 
   return {

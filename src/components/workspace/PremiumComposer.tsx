@@ -14,6 +14,7 @@ import { PersonaPicker } from "./PersonaPicker";
 import { KnowledgePicker } from "./KnowledgePicker";
 import { PickerSurface } from "./PickerSurface";
 import type { ToolDefinition } from "@/components/tools/ToolDefinitions";
+import { api } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 import { TONES, PLATFORMS } from "@/lib/constants";
 import { duration, ease } from "@/styles/motion";
@@ -138,7 +139,7 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
     }
     setToolLoading(true);
     try {
-      const res = await fetch("/api/tools", {
+      const result = await api<{ content: string }>("/api/tools", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -153,11 +154,6 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
           audience: context.audience,
         }),
       });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error?.message || "Tool execution failed");
-      }
-      const result = await res.json();
       setInput(result.content || "");
       toast.success(`Applied ${tool.title}`);
     } catch (err) {
@@ -506,11 +502,7 @@ function ToolbarButton({
 async function uploadFile(file: File) {
   const fd = new FormData();
   fd.append("file", file);
-  const res = await fetch("/api/upload", { method: "POST", body: fd });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || "Upload failed");
-  }
+  await api("/api/upload", { method: "POST", body: fd });
 }
 
 function AdvancedControlsPanel() {

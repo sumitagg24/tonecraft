@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Files, Upload, Trash2, FileText, Loader2, Search, CheckCircle2, AlertCircle,
 } from "lucide-react";
+import { api } from "@/lib/api-client";
 
 export interface KnowledgeFileItem {
   id: string;
@@ -36,8 +37,7 @@ export function KnowledgeLibraryPage({ projectId }: { projectId?: string }) {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`/api/knowledge${projectId ? `?projectId=${projectId}` : ""}`)
-      .then((r) => r.json())
+    api<{ files: KnowledgeFileItem[] }>(`/api/knowledge${projectId ? `?projectId=${projectId}` : ""}`)
       .then((data) => {
         if (cancelled) return;
         setFiles((data.files ?? []).map((f: KnowledgeFileItem & { _count?: { chunks: number } }) => ({
@@ -56,10 +56,8 @@ export function KnowledgeLibraryPage({ projectId }: { projectId?: string }) {
     form.append("file", file);
     if (projectId) form.append("projectId", projectId);
     try {
-      const res = await fetch("/api/knowledge", { method: "POST", body: form });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Upload failed");
-      setFiles((prev) => [data, ...prev]);
+      const created = await api<KnowledgeFileItem>("/api/knowledge", { method: "POST", body: form });
+      setFiles((prev) => [created, ...prev]);
       toast.success(`Indexed "${file.name}"`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Upload failed");
@@ -74,8 +72,7 @@ export function KnowledgeLibraryPage({ projectId }: { projectId?: string }) {
 
   const removeFile = useCallback(async (id: string) => {
     try {
-      const res = await fetch(`/api/knowledge/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to delete");
+      await api(`/api/knowledge/${id}`, { method: "DELETE" });
       setFiles((prev) => prev.filter((f) => f.id !== id));
       toast.success("File removed");
     } catch {

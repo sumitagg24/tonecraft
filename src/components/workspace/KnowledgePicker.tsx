@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { PickerSurface } from "./PickerSurface";
 import { cn } from "@/lib/utils";
 import { FileText, Loader2 } from "lucide-react";
+import { api } from "@/lib/api-client";
 import type { KnowledgeFileItem } from "./KnowledgeLibraryPage";
 
 export function KnowledgePicker({
@@ -19,11 +20,10 @@ export function KnowledgePicker({
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/knowledge")
-      .then((res) => res.json())
+    api<{ files: KnowledgeFileItem[] }>("/api/knowledge")
       .then((data) => {
         if (cancelled) return;
-        setFiles((data.files ?? []).filter((f: KnowledgeFileItem) => f.status === "ready"));
+        setFiles((data.files ?? []).filter((f) => f.status === "ready"));
       })
       .catch(() => undefined)
       .finally(() => setLoading(false));

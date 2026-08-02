@@ -1,5 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { ok, fail, notFound, withApiHandler } from "@/lib/withApiHandler";
 import { chatService } from "@/services/ChatService";
 import { projectService } from "@/services/ProjectService";
 import { z } from "zod";
@@ -13,62 +12,35 @@ const updateSchema = z.object({
   projectId: z.string().nullable().optional(),
 });
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ chatId: string }> }
-) {
-  const { chatId } = await params;
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const chat = await chatService.getChat(chatId, session.user.id);
-  if (!chat) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
-  return NextResponse.json(chat);
-}
+const api = withApiHandler({ schema: updateSchema });
 
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ chatId: string }> }
-) {
-  const { chatId } = await params;
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const body = await req.json();
-  const parsed = updateSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error }, { status: 400 });
-  }
-  const { projectId, ...rest } = parsed.data;
-  if ("projectId" in parsed.data && parsed.data.projectId !== undefined) {
+export const GET = api.GET(async (ctx) => {
+  const { chatId } = ctx.params;
+  const chat = await chatService.getChat(chatId, ctx.user.id);
+  if (!chat) return notFound();
+  return ok(chat);
+});
+
+export const PATCH = api.PATCH(async (ctx, body) => {
+  const { chatId } = ctx.params;
+  const data = body as typeof updateSchema._output;
+  const { projectId, ...rest } = data;
+  if ("projectId" in data && data.projectId !== undefined) {
     try {
-      await projectService.moveChat(chatId, session.user.id, projectId ?? null);
+      await projectService.moveChat(chatId, ctx.user.id, projectId ?? null);
     } catch (e) {
-      return NextResponse.json({ error: e instanceof Error ? e.message : "Failed" }, { status: 404 });
+      return fail("NOT_FOUND", e instanceof Error ? e.message : "Failed", 404);
     }
   }
   if (Object.keys(rest).length > 0) {
-    const updated = await chatService.updateChat(chatId, session.user.id, rest);
-    if (!updated) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-    }
+    const updated = await chatService.updateChat(chatId, ctx.user.id, rest);
+    if (!updated) return notFound();
   }
-  return NextResponse.json({ success: true });
-}
+  return ok({ ok: true });
+});
 
-export async function DELETE(
-  _req: NextRequest,
-  { params }: { params: Promise<{ chatId: string }> }
-) {
-  const { chatId } = await params;
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  await chatService.deleteChat(chatId, session.user.id);
-  return NextResponse.json({ success: true });
-}
+export const DELETE = api.DELETE(async (ctx) => {
+  const { chatId } = ctx.params;
+  await chatService.deleteChat(chatId, ctx.user.id);
+  return ok({ ok: true });
+});

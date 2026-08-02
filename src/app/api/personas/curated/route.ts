@@ -1,5 +1,4 @@
-import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { ok, withApiHandler } from "@/lib/withApiHandler";
 
 const CURATED_PERSONAS = [
   {
@@ -70,10 +69,8 @@ const CURATED_PERSONAS = [
   },
 ];
 
-export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  return NextResponse.json(CURATED_PERSONAS);
-}
+const api = withApiHandler();
+
+export const GET = api.GET(async () => {
+  return ok(CURATED_PERSONAS);
+});

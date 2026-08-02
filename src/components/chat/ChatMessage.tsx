@@ -14,6 +14,7 @@ import "highlight.js/styles/github-dark.css";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TONES } from "@/lib/constants";
+import { api } from "@/lib/api-client";
 import { useChat } from "@/hooks/use-chat";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
@@ -58,12 +59,11 @@ export function ChatMessage({ message, isStreaming, onRegenerate, onContinue }: 
     if (!editContent.trim()) return;
     setSavingEdit(true);
     try {
-      const res = await fetch(`/api/messages/${message.id}`, {
+      await api(`/api/messages/${message.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content: editContent }),
       });
-      if (!res.ok) throw new Error("Failed to edit");
       setEditing(false);
       toast.success("Message updated");
     } catch {

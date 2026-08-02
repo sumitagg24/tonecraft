@@ -10,6 +10,7 @@ import { useUser } from "@clerk/nextjs";
 import { useTheme } from "next-themes";
 import { User, Palette, Bell, Plus, Trash2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api-client";
 import { toast } from "sonner";
 import { Persona } from "@/types";
 
@@ -32,18 +33,34 @@ export default function SettingsPage() {
   const [newPersona, setNewPersona] = useState({ name: "", description: "", systemPrompt: "" });
   const [addSaving, setAddSaving] = useState(false);
 
-  const [notifications, setNotifications] = useState({
-    email: true,
-    push: false,
-    marketing: false,
-  });
+  const [notifPrefs, setNotifPrefs] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    api<Record<string, boolean>>("/api/notifications/preferences")
+      .then(setNotifPrefs)
+      .catch(() => undefined);
+  }, []);
+
+  const togglePref = useCallback(async (key: string, value: boolean) => {
+    setNotifPrefs((prev) => ({ ...prev, [key]: value }));
+    try {
+      await api("/api/notifications/preferences", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [key]: value }),
+      });
+      toast.success("Preference updated");
+    } catch {
+      setNotifPrefs((prev) => ({ ...prev, [key]: !value }));
+      toast.error("Failed to update preference");
+    }
+  }, []);
 
   // Fetch personas
   useEffect(() => {
-    fetch("/api/personas")
-      .then((res) => res.json())
-      .then((data: Persona[] | { personas: Persona[] }) => {
-        setPersonas(Array.isArray(data) ? data : data.personas);
+    api<{ personas: Persona[] }>("/api/personas")
+      .then((data) => {
+        setPersonas(data.personas);
         setPersonaLoading(false);
       })
       .catch(() => setPersonaLoading(false));
@@ -52,12 +69,11 @@ export default function SettingsPage() {
   const handleSaveProfile = useCallback(async () => {
     setProfileSaving(true);
     try {
-      const res = await fetch("/api/user/profile", {
+      await api("/api/user/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: displayName }),
       });
-      if (!res.ok) throw new Error("Failed to update profile");
       toast.success("Profile updated");
     } catch {
       toast.error("Failed to update profile");
@@ -73,13 +89,11 @@ export default function SettingsPage() {
     }
     setAddSaving(true);
     try {
-      const res = await fetch("/api/personas", {
+      const created = await api<Persona>("/api/personas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newPersona),
       });
-      if (!res.ok) throw new Error("Failed to create persona");
-      const created: Persona = await res.json();
       setPersonas((prev) => [created, ...prev]);
       setNewPersona({ name: "", description: "", systemPrompt: "" });
       setShowAddForm(false);
@@ -93,8 +107,7 @@ export default function SettingsPage() {
 
   const handleDeletePersona = useCallback(async (id: string) => {
     try {
-      const res = await fetch(`/api/personas/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to delete persona");
+      await api(`/api/personas/${id}`, { method: "DELETE" });
       setPersonas((prev) => prev.filter((p) => p.id !== id));
       toast.success("Persona deleted");
     } catch {
@@ -284,9 +297,13 @@ export default function SettingsPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {[
-                  { key: "email" as const, label: "Email notifications", description: "Receive email updates about your account" },
-                  { key: "push" as const, label: "Push notifications", description: "Browser push notifications" },
-                  { key: "marketing" as const, label: "Marketing emails", description: "Product updates and news" },
+                  { key: "inAppEnabled", label: "In-app notifications", description: "Bell icon notifications for events like index ready and exports" },
+                  { key: "generationComplete", label: "Generation finished", description: "When an AI response finishes streaming" },
+                  { key: "knowledgeReady", label: "Knowledge indexed", description: "When an uploaded document finishes indexing" },
+                  { key: "exportReady", label: "Export completed", description: "When a chat export is ready" },
+                  { key: "creditsLow", label: "Credits low", description: "When you're close to your plan limit" },
+                  { key: "invite", label: "Team invites", description: "When you're invited to a project or workspace" },
+                  { key: "comment", label: "Comments & mentions", description: "When someone comments or mentions you" },
                 ].map(({ key, label, description }) => (
                   <div key={key} className="flex items-center justify-between">
                     <div>
@@ -294,10 +311,8 @@ export default function SettingsPage() {
                       <p className="text-xs text-muted-foreground">{description}</p>
                     </div>
                     <Switch
-                      checked={notifications[key]}
-                      onCheckedChange={(checked) =>
-                        setNotifications((prev) => ({ ...prev, [key]: checked }))
-                      }
+                      checked={notifPrefs[key] ?? true}
+                      onCheckedChange={(checked) => togglePref(key, checked)}
                     />
                   </div>
                 ))}
@@ -320,8 +335,7 @@ export default function SettingsPage() {
               onClick={async () => {
                 if (!window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) return;
                 try {
-                  const res = await fetch("/api/user/delete", { method: "DELETE" });
-                  if (!res.ok) throw new Error("Failed to delete account");
+                  await api("/api/user/delete", { method: "DELETE" });
                   window.location.href = "/";
                 } catch {
                   toast.error("Failed to delete account");

@@ -1,20 +1,16 @@
-import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { ok, withApiHandler } from "@/lib/withApiHandler";
 import { prisma } from "@/lib/prisma";
 import { capabilities } from "@/lib/capabilities";
 
-export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+const api = withApiHandler();
 
+export const GET = api.GET(async (ctx) => {
   const usage = await prisma.usage.findUnique({
-    where: { userId: session.user.id },
+    where: { userId: ctx.user.id },
   });
-  const plan = await capabilities.require({ userId: session.user.id });
+  const plan = await capabilities.require({ userId: ctx.user.id });
 
-  return NextResponse.json({
+  return ok({
     usage: usage || {
       messagesSent: 0,
       tokensUsed: 0,
@@ -27,4 +23,4 @@ export async function GET() {
       messagesPerHour: plan.limits.messagesPerHour,
     },
   });
-}
+});

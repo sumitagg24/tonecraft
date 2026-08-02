@@ -1,10 +1,10 @@
 "use client";
 import { useState } from "react";
-import * as Icons from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 import { tools, toolCategories, type ToolDefinition } from "@/components/tools/ToolDefinitions";
 import { cn } from "@/lib/utils";
-import { Search, Loader2 } from "lucide-react";
 import { PickerSurface } from "./PickerSurface";
+import { toolIcons } from "@/components/icons/tool-icons";
 
 interface ToolPickerProps {
   onSelect: (tool: ToolDefinition) => void;
@@ -49,8 +49,7 @@ export function ToolPicker({ onSelect, onClose, loading }: ToolPickerProps) {
 
       <div className="max-h-64 overflow-y-auto scrollbar-thin mt-0.5">
         {filtered.map((tool) => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const Icon = (Icons as any)[tool.icon] || Icons.Wand;
+          const Icon = toolIcons[tool.icon as keyof typeof toolIcons] || toolIcons.Wand;
           return (
             <button
               key={tool.id}

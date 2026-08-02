@@ -1,13 +1,12 @@
-import { NextResponse } from "next/server";
-import { getAuthUser } from "@/lib/auth";
+import { ok, withApiHandler } from "@/lib/withApiHandler";
 import { prisma } from "@/lib/prisma";
 import { clerkClient } from "@clerk/nextjs/server";
 
-export async function DELETE() {
-  const user = await getAuthUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+const api = withApiHandler();
+
+export const DELETE = api.DELETE(async (ctx) => {
+  const user = await prisma.user.findUnique({ where: { id: ctx.user.id } });
+  if (!user) return ok({ ok: true });
 
   // Delete all user data in order (foreign key constraints)
   await prisma.attachment.deleteMany({
@@ -26,5 +25,5 @@ export async function DELETE() {
   const client = await clerkClient();
   await client.users.deleteUser(user.clerkId);
 
-  return NextResponse.json({ success: true });
-}
+  return ok({ ok: true });
+});

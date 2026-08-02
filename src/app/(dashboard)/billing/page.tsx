@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Check, Loader2 } from "lucide-react";
 import { PRICING_TIERS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api-client";
 import { useUser } from "@clerk/nextjs";
 import { toast } from "sonner";
 
@@ -49,12 +50,8 @@ function BillingContent() {
 
   useEffect(() => {
     if (!isSignedIn) return;
-    fetch("/api/usage")
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to load usage");
-        return res.json();
-      })
-      .then((data: UsageData) => {
+    api<UsageData>("/api/usage")
+      .then((data) => {
         setUsageData(data);
         setUsageLoading(false);
       })
@@ -68,16 +65,11 @@ function BillingContent() {
     if (!isSignedIn) return;
     setLoading(planName);
     try {
-      const res = await fetch("/api/billing/checkout", {
+      const { url } = await api<{ url: string }>("/api/billing/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan: planName }),
       });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error ?? "Checkout failed");
-      }
-      const { url } = await res.json();
       window.location.assign(url);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Checkout failed");
@@ -89,12 +81,7 @@ function BillingContent() {
   const handlePortal = async () => {
     setLoading("portal");
     try {
-      const res = await fetch("/api/billing/portal", { method: "POST" });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error ?? "Portal failed");
-      }
-      const { url } = await res.json();
+      const { url } = await api<{ url: string }>("/api/billing/portal", { method: "POST" });
       window.location.assign(url);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Portal failed");

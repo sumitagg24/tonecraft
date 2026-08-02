@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Loader2, Lock, MessageSquare, Share2 } from "lucide-react";
+import { api } from "@/lib/api-client";
 
 interface ShareMessage {
   id: string;
@@ -26,14 +27,9 @@ export default function SharePage() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`/api/share/${token}`)
-      .then(async (res) => {
-        const body = await res.json();
-        if (!res.ok) throw new Error(body.error || "Link unavailable");
-        return body;
-      })
+    api<ShareData>(`/api/share/${token}`)
       .then((d) => { if (!cancelled) setData(d); })
-      .catch((err) => { if (!cancelled) setError(err.message || "Failed to load"); })
+      .catch((err) => { if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load"); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [token]);

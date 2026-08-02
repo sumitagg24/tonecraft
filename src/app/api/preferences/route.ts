@@ -1,22 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { ok, withApiHandler } from "@/lib/withApiHandler";
 import { userRepository } from "@/repositories/UserRepository";
 
-export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const prefs = await userRepository.getPreferences(session.user.id);
-  return NextResponse.json(prefs);
-}
+const api = withApiHandler();
 
-export async function PATCH(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const body = await req.json();
-  await userRepository.updatePreferences(session.user.id, body);
-  return NextResponse.json({ success: true });
-}
+export const GET = api.GET(async (ctx) => {
+  const prefs = await userRepository.getPreferences(ctx.user.id);
+  return ok(prefs);
+});
+
+export const PATCH = api.PATCH(async (ctx, body) => {
+  await userRepository.updatePreferences(ctx.user.id, (body ?? {}) as Record<string, unknown>);
+  return ok({ ok: true });
+});

@@ -8,6 +8,7 @@ import { TONES } from "@/lib/constants";
 import { PremiumBadge } from "@/components/ui/recipes/PremiumBadge";
 import { useChatStore } from "@/stores/chat-store";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { api } from "@/lib/api-client";
 import {
   User, Bot, Copy, Check, RefreshCw, Play, ThumbsUp, ThumbsDown,
   Bookmark, FileText, Pencil, Paperclip,
@@ -77,12 +78,11 @@ export const PremiumMessageCard = memo(function PremiumMessageCard({
     const content = draft.trim();
     if (!content) return;
     try {
-      const res = await fetch(`/api/messages/${message.id}`, {
+      await api(`/api/messages/${message.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content }),
       });
-      if (!res.ok) throw new Error("Failed to update");
       useChatStore.getState().updateMessage(message.id, content);
       toast.success("Message updated");
       setEditing(false);
@@ -94,12 +94,11 @@ export const PremiumMessageCard = memo(function PremiumMessageCard({
   const handleFeedback = useCallback(async (value: "liked" | "disliked") => {
     const next = message.feedback === value ? null : value;
     try {
-      const res = await fetch(`/api/messages/${message.id}/feedback`, {
+      await api(`/api/messages/${message.id}/feedback`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ feedback: next }),
       });
-      if (!res.ok) throw new Error("Failed");
       useChatStore.getState().updateMessageInList(message.id, { feedback: next });
     } catch {
       toast.error("Failed to save feedback");

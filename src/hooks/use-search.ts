@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useChatStore } from "@/stores/chat-store";
 import type { SearchResult } from "@/types";
+import { api } from "@/lib/api-client";
 
 export function useSearch() {
   const [query, setQuery] = useState("");
@@ -21,15 +22,10 @@ export function useSearch() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`, { signal: controller.signal });
-      if (res.ok) {
-        const data = await res.json();
-        if (!controller.signal.aborted) {
-          setResults(data);
-          useChatStore.getState().setSearchResults(data);
-        }
-      } else {
-        setError("Search failed. Please try again.");
+      const data = await api<SearchResult>(`/api/search?q=${encodeURIComponent(q)}`, { signal: controller.signal });
+      if (!controller.signal.aborted) {
+        setResults(data);
+        useChatStore.getState().setSearchResults(data);
       }
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") return;

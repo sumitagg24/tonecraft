@@ -1,5 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getAuthUser } from "@/lib/auth";
+import { ok, fail, notFound, withApiHandler } from "@/lib/withApiHandler";
 import { prisma } from "@/lib/prisma";
 import { clerkClient } from "@clerk/nextjs/server";
 import { z } from "zod";
@@ -10,13 +9,23 @@ const updateSchema = z.object({
   defaultTone: z.string().optional(),
 });
 
-export async function GET() {
-  const user = await getAuthUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+const api = withApiHandler();
 
-  return NextResponse.json({
+export const GET = api.GET(async (ctx) => {
+  const user = await prisma.user.findUnique({
+    where: { id: ctx.user.id },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      image: true,
+      preferredLanguage: true,
+      defaultTone: true,
+    },
+  });
+  if (!user) return notFound();
+
+  return ok({
     id: user.id,
     name: user.name,
     email: user.email,
@@ -24,25 +33,25 @@ export async function GET() {
     preferredLanguage: user.preferredLanguage,
     defaultTone: user.defaultTone,
   });
-}
+});
 
-export async function PATCH(req: NextRequest) {
-  const user = await getAuthUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const body = await req.json();
+export const PATCH = api.PATCH(async (ctx, body) => {
   const parsed = updateSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error }, { status: 400 });
+    return fail("VALIDATION_ERROR", parsed.error.issues.map((i) => i.message).join("; "), 400);
   }
+
+  const user = await prisma.user.findUnique({
+    where: { id: ctx.user.id },
+    select: { clerkId: true },
+  });
+  if (!user) return notFound();
 
   const { name, ...prefs } = parsed.data;
 
   // Update preferences in DB
   const updated = await prisma.user.update({
-    where: { id: user.id },
+    where: { id: ctx.user.id },
     data: {
       ...prefs,
       ...(name ? { name } : {}),
@@ -60,5 +69,5 @@ export async function PATCH(req: NextRequest) {
     });
   }
 
-  return NextResponse.json(updated);
-}
+  return ok(updated);
+});

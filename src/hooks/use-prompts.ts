@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { usePromptsStore, type PromptItem, type PromptVariableDef } from "@/stores/prompts-store";
+import { api } from "@/lib/api-client";
 import { toast } from "sonner";
 
 export function usePrompts() {
@@ -8,9 +9,7 @@ export function usePrompts() {
     store.setLoading(true);
     try {
       const url = projectId ? `/api/prompts?projectId=${encodeURIComponent(projectId)}` : "/api/prompts";
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Failed to load prompts");
-      const data = await res.json();
+      const data = await api<{ prompts: PromptItem[]; categories: string[] }>(url);
       store.setPrompts(data.prompts ?? []);
       store.setCategories(data.categories ?? []);
     } catch (e) {
@@ -24,31 +23,42 @@ export function usePrompts() {
     title: string; description?: string; content: string;
     category?: string; variables?: PromptVariableDef[]; projectId?: string;
   }) => {
-    const res = await fetch("/api/prompts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) { toast.error("Failed to create prompt"); throw new Error("Failed to create prompt"); }
-    const prompt = await res.json();
-    usePromptsStore.getState().addPrompt(prompt);
-    return prompt as PromptItem;
+    try {
+      const prompt = await api<PromptItem>("/api/prompts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      usePromptsStore.getState().addPrompt(prompt);
+      return prompt;
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to create prompt");
+      throw e;
+    }
   }, []);
 
   const updatePrompt = useCallback(async (id: string, patch: Partial<PromptItem>) => {
-    const res = await fetch(`/api/prompts/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(patch),
-    });
-    if (!res.ok) { toast.error("Failed to update prompt"); return false; }
+    try {
+      await api(`/api/prompts/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+    } catch {
+      toast.error("Failed to update prompt");
+      return false;
+    }
     usePromptsStore.getState().updatePromptInList(id, patch);
     return true;
   }, []);
 
   const deletePrompt = useCallback(async (id: string) => {
-    const res = await fetch(`/api/prompts/${id}`, { method: "DELETE" });
-    if (!res.ok) { toast.error("Failed to delete prompt"); return; }
+    try {
+      await api(`/api/prompts/${id}`, { method: "DELETE" });
+    } catch {
+      toast.error("Failed to delete prompt");
+      return;
+    }
     usePromptsStore.getState().removePrompt(id);
   }, []);
 
@@ -57,25 +67,26 @@ export function usePrompts() {
   }, [updatePrompt]);
 
   const renderPrompt = useCallback(async (content: string, variables: Record<string, string>) => {
-    const res = await fetch("/api/prompts/render", {
+    const data = await api<{ rendered: string }>("/api/prompts/render", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ content, variables }),
     });
-    if (!res.ok) throw new Error("Failed to render prompt");
-    const data = await res.json();
-    return data.rendered as string;
+    return data.rendered;
   }, []);
 
   const importPrompts = useCallback(async (prompts: { title: string; description?: string; content: string; category?: string; variables?: PromptVariableDef[] }[]) => {
-    const res = await fetch("/api/prompts/import", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompts }),
-    });
-    if (!res.ok) { toast.error("Failed to import prompts"); return 0; }
-    const data = await res.json();
-    return data.imported as number;
+    try {
+      const data = await api<{ imported: number }>("/api/prompts/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompts }),
+      });
+      return data.imported;
+    } catch {
+      toast.error("Failed to import prompts");
+      return 0;
+    }
   }, []);
 
   return {

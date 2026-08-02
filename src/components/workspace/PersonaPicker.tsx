@@ -4,6 +4,7 @@ import { PickerSurface } from "./PickerSurface";
 import { useChatStore } from "@/stores/chat-store";
 import { cn } from "@/lib/utils";
 import { Star, Pencil, User } from "lucide-react";
+import { api } from "@/lib/api-client";
 import type { PersonaRecord } from "@/services/PersonaService";
 
 const FAVORITES_KEY = "tc:persona-favorites";
@@ -39,12 +40,10 @@ export function PersonaPicker({
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/personas")
-      .then((res) => res.json())
+    api<{ personas: PersonaRecord[]; defaultPersonaId: string | null }>("/api/personas")
       .then((data) => {
         if (cancelled) return;
-        const list = Array.isArray(data) ? data : data.personas ?? [];
-        setPersonas(list);
+        setPersonas(data.personas ?? []);
         setDefaultPersonaId(data.defaultPersonaId ?? null);
       })
       .catch(() => undefined);

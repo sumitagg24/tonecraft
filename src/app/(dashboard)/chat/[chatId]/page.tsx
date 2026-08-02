@@ -14,6 +14,8 @@ import { NoConversationEmptyState } from "@/components/workspace/WorkspaceEmptyS
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { duration, spring } from "@/styles/motion";
+import { api } from "@/lib/api-client";
+import type { Chat } from "@/types";
 
 export default function ChatPage() {
   const params = useParams();
@@ -34,11 +36,7 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (!chatId) return;
-    fetch(`/api/chats/${chatId}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Not found");
-        return res.json();
-      })
+    api<Chat>(`/api/chats/${chatId}`)
       .then((data) => {
         useChatStore.getState().setCurrentChat(data);
       })
@@ -79,11 +77,8 @@ export default function ChatPage() {
   const handleRegenerate = useCallback(async (messageId: string) => {
     try {
       await regenerateMessage(messageId);
-      const res = await fetch(`/api/chats/${chatId}`);
-      if (res.ok) {
-        const chat = await res.json();
-        useChatStore.getState().setMessages(chat.messages);
-      }
+      const chat = await api<Chat>(`/api/chats/${chatId}`);
+      useChatStore.getState().setMessages(chat.messages ?? []);
     } catch {
       toast.error("Failed to regenerate");
     }
@@ -92,11 +87,8 @@ export default function ChatPage() {
   const handleContinue = useCallback(async (messageId: string) => {
     try {
       await continueMessage(messageId);
-      const res = await fetch(`/api/chats/${chatId}`);
-      if (res.ok) {
-        const chat = await res.json();
-        useChatStore.getState().setMessages(chat.messages);
-      }
+      const chat = await api<Chat>(`/api/chats/${chatId}`);
+      useChatStore.getState().setMessages(chat.messages ?? []);
     } catch {
       toast.error("Failed to continue");
     }

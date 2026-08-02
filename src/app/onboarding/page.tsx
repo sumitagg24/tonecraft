@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, ArrowRight, ArrowLeft, Check } from "lucide-react";
+import { api } from "@/lib/api-client";
 import { toast } from "sonner";
 
 const WRITING_TYPES = [
@@ -47,12 +48,11 @@ export default function OnboardingPage() {
   const handleComplete = async () => {
     setSaving(true);
     try {
-      const res = await fetch("/api/user/onboarding", {
+      await api("/api/user/onboarding", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ writingType, language, tone }),
       });
-      if (!res.ok) throw new Error("Failed to save preferences");
       router.push("/chat");
     } catch {
       toast.error("Failed to save preferences. Please try again.");

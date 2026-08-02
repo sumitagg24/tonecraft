@@ -1,5 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { ok, fail, notFound, withApiHandler } from "@/lib/withApiHandler";
 import { promptService } from "@/services/PromptService";
 import { z } from "zod";
 
@@ -19,32 +18,29 @@ const updateSchema = z.object({
   projectId: z.string().nullable().optional(),
 });
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const { id } = await params;
-  const prompt = await promptService.getPrompt(id, session.user.id);
-  if (!prompt) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json(prompt);
-}
+const api = withApiHandler();
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const { id } = await params;
-  const body = await req.json().catch(() => ({}));
+export const GET = api.GET(async (ctx) => {
+  const { id } = ctx.params;
+  const prompt = await promptService.getPrompt(id, ctx.user.id);
+  if (!prompt) return notFound();
+  return ok(prompt);
+});
+
+export const PATCH = api.PATCH(async (ctx, body) => {
+  const { id } = ctx.params;
   const parsed = updateSchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: parsed.error }, { status: 400 });
-  const ok = await promptService.updatePrompt(id, session.user.id, parsed.data);
-  if (!ok) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json({ ok: true });
-}
+  if (!parsed.success) {
+    return fail("VALIDATION_ERROR", parsed.error.issues.map((i) => i.message).join("; "), 400);
+  }
+  const okResult = await promptService.updatePrompt(id, ctx.user.id, parsed.data);
+  if (!okResult) return notFound();
+  return ok({ ok: true });
+});
 
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const { id } = await params;
-  const ok = await promptService.deletePrompt(id, session.user.id);
-  if (!ok) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json({ ok: true });
-}
+export const DELETE = api.DELETE(async (ctx) => {
+  const { id } = ctx.params;
+  const okResult = await promptService.deletePrompt(id, ctx.user.id);
+  if (!okResult) return notFound();
+  return ok({ ok: true });
+});

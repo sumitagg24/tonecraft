@@ -1,5 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { ok, withApiHandler } from "@/lib/withApiHandler";
 import { projectService } from "@/services/ProjectService";
 import { z } from "zod";
 
@@ -14,27 +13,16 @@ const projectSchema = z.object({
   parentId: z.string().optional(),
 });
 
-export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const includeArchived = false;
-  const projects = await projectService.listProjects(session.user.id, includeArchived);
-  const unfiled = await projectService.getUnfiledCount(session.user.id);
-  return NextResponse.json({ projects, unfiled });
-}
+const api = withApiHandler({ schema: projectSchema });
 
-export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const body = await req.json().catch(() => ({}));
-  const parsed = projectSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error }, { status: 400 });
-  }
-  const project = await projectService.createProject(session.user.id, parsed.data);
-  return NextResponse.json(project, { status: 201 });
-}
+export const GET = api.GET(async (ctx) => {
+  const includeArchived = false;
+  const projects = await projectService.listProjects(ctx.user.id, includeArchived);
+  const unfiled = await projectService.getUnfiledCount(ctx.user.id);
+  return ok({ projects, unfiled });
+});
+
+export const POST = api.POST(async (ctx, body) => {
+  const project = await projectService.createProject(ctx.user.id, body as typeof projectSchema._output);
+  return ok(project, 201);
+});

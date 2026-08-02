@@ -15,12 +15,15 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { NotificationCenter } from "./NotificationCenter";
 
 function getTitle(pathname: string): { title: string; crumb?: string } {
   if (pathname === "/chat" || pathname.startsWith("/chat/")) return { title: "Compose" };
   if (pathname === "/tools") return { title: "Tools" };
   if (pathname === "/library") return { title: "Library" };
   if (pathname === "/search") return { title: "Search" };
+  if (pathname === "/notifications" || pathname.startsWith("/notifications")) return { title: "Notifications" };
+  if (pathname === "/analytics" || pathname.startsWith("/analytics")) return { title: "Analytics" };
   if (pathname === "/settings" || pathname.startsWith("/settings")) return { title: "Account" };
   if (pathname === "/billing") return { title: "Account", crumb: "Billing" };
   return { title: "ToneCraft" };
@@ -97,6 +100,8 @@ export function TopBar() {
           <Command className="w-3.5 h-3.5" />
           <kbd className="hidden sm:inline-flex text-[10px] font-mono text-muted-foreground/50">⌘K</kbd>
         </button>
+
+        <NotificationCenter />
 
         <button
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}

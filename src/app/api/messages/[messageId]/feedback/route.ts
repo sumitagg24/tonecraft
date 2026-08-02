@@ -1,30 +1,18 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { ok, notFound, withApiHandler } from "@/lib/withApiHandler";
 import { messageRepository } from "@/repositories/MessageRepository";
 import { z } from "zod";
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ messageId: string }> }
-) {
-  const { messageId } = await params;
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+const schema = z.object({
+  feedback: z.enum(["liked", "disliked"]).nullable(),
+});
 
-  const body = await req.json();
-  const schema = z.object({
-    feedback: z.enum(["liked", "disliked"]).nullable(),
-  });
-  const parsed = schema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error }, { status: 400 });
-  }
+const api = withApiHandler({ schema });
 
-  const updated = await messageRepository.updateFeedback(messageId, parsed.data.feedback);
-  if (!updated) {
-    return NextResponse.json({ error: "Message not found" }, { status: 404 });
-  }
-  return NextResponse.json({ success: true });
-}
+export const POST = api.POST(async (ctx, body) => {
+  const { messageId } = ctx.params;
+  const { feedback } = body as typeof schema._output;
+
+  const updated = await messageRepository.updateFeedback(messageId, feedback);
+  if (!updated) return notFound();
+  return ok({ ok: true });
+});

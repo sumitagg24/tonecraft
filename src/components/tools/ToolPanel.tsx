@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import type { ToolDefinition } from "./ToolDefinitions";
+import { api } from "@/lib/api-client";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
@@ -34,16 +35,11 @@ export function ToolPanel({ tool, onClose }: ToolPanelProps) {
     setResult(null);
     setMetadata(null);
     try {
-      const res = await fetch("/api/tools", {
+      const data = await api<{ content: string; metadata: Record<string, unknown> | null }>("/api/tools", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ toolId: tool.id, input, tone, length, creativity: creativity[0] }),
       });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error?.message || "Tool execution failed");
-      }
-      const data = await res.json();
       setResult(data.content);
       setMetadata(data.metadata || null);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

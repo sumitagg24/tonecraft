@@ -1,11 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { ok, fail, withApiHandler } from "@/lib/withApiHandler";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ token: string }> }
-) {
-  const { token } = await params;
+const api = withApiHandler();
+
+export const GET = api.GET(async (ctx) => {
+  const { token } = ctx.params;
   const share = await prisma.shareLink.findUnique({
     where: { token },
     include: {
@@ -21,28 +20,27 @@ export async function GET(
   });
 
   if (!share || share.revoked) {
-    return NextResponse.json({ error: "Link not found or revoked" }, { status: 404 });
+    return fail("NOT_FOUND", "Link not found or revoked", 404);
   }
   if (share.expiresAt && share.expiresAt < new Date()) {
-    return NextResponse.json({ error: "Link has expired" }, { status: 410 });
+    return fail("GONE", "Link has expired", 410);
   }
 
-  return NextResponse.json({
+  return ok({
     token: share.token,
     createdAt: share.createdAt,
-    chat: share.chat ? {
-      id: share.chat.id,
-      title: share.chat.title,
-      messages: share.chat.messages,
-    } : null,
+    chat: share.chat
+      ? {
+          id: share.chat.id,
+          title: share.chat.title,
+          messages: share.chat.messages,
+        }
+      : null,
   });
-}
+});
 
-export async function DELETE(
-  _req: NextRequest,
-  { params }: { params: Promise<{ token: string }> }
-) {
-  const { token } = await params;
+export const DELETE = api.DELETE(async (ctx) => {
+  const { token } = ctx.params;
   await prisma.shareLink.updateMany({ where: { token }, data: { revoked: true } });
-  return NextResponse.json({ success: true });
-}
+  return ok({ ok: true });
+});

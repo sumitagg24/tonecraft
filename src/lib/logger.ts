@@ -1,5 +1,13 @@
 type LogLevel = "debug" | "info" | "warn" | "error";
 
+type LogEntry = {
+  timestamp: string;
+  level: LogLevel;
+  message: string;
+  meta?: unknown;
+  error?: string;
+};
+
 const LOG_LEVELS: Record<LogLevel, number> = {
   debug: 0,
   info: 1,
@@ -20,17 +28,62 @@ function formatMessage(level: LogLevel, message: string, meta?: unknown): string
   return `[${timestamp}] [${level.toUpperCase()}] ${message}${metaStr}`;
 }
 
+function persistLog(entry: LogEntry): void {
+  try {
+    const logs = JSON.parse(localStorage.getItem("tonecraft-logs") || "[]");
+    logs.push(entry);
+    if (logs.length > 500) logs.splice(0, logs.length - 500);
+    localStorage.setItem("tonecraft-logs", JSON.stringify(logs));
+  } catch {
+    // storage unavailable
+  }
+}
+
 export const logger = {
   debug: (message: string, meta?: unknown) => {
-    if (shouldLog("debug")) console.warn(formatMessage("debug", message, meta));
+    if (shouldLog("debug")) {
+      const entry = { timestamp: new Date().toISOString(), level: "debug" as LogLevel, message, meta };
+      console.warn(formatMessage("debug", message, meta));
+      persistLog(entry);
+    }
   },
   info: (message: string, meta?: unknown) => {
-    if (shouldLog("info")) console.warn(formatMessage("info", message, meta));
+    if (shouldLog("info")) {
+      const entry = { timestamp: new Date().toISOString(), level: "info" as LogLevel, message, meta };
+      console.warn(formatMessage("info", message, meta));
+      persistLog(entry);
+    }
   },
   warn: (message: string, meta?: unknown) => {
-    if (shouldLog("warn")) console.warn(formatMessage("warn", message, meta));
+    if (shouldLog("warn")) {
+      const entry = { timestamp: new Date().toISOString(), level: "warn" as LogLevel, message, meta };
+      console.warn(formatMessage("warn", message, meta));
+      persistLog(entry);
+    }
   },
-  error: (message: string, meta?: unknown) => {
-    if (shouldLog("error")) console.error(formatMessage("error", message, meta));
+  error: (message: string, meta?: unknown, error?: Error) => {
+    const entry = {
+      timestamp: new Date().toISOString(),
+      level: "error" as LogLevel,
+      message,
+      meta,
+      error: error?.stack,
+    };
+    console.error(formatMessage("error", message, meta), error ?? "");
+    persistLog(entry);
+  },
+  getLogs: (): LogEntry[] => {
+    try {
+      return JSON.parse(localStorage.getItem("tonecraft-logs") || "[]");
+    } catch {
+      return [];
+    }
+  },
+  clearLogs: (): void => {
+    try {
+      localStorage.removeItem("tonecraft-logs");
+    } catch {
+      // ignore
+    }
   },
 };

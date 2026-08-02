@@ -3,6 +3,7 @@ import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Download, Share2, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { api } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
 const FORMATS = [
@@ -27,13 +28,11 @@ export function ExportMenu({
   const exportChat = useCallback(async (format: string, mime: string) => {
     setBusy(true);
     try {
-      const res = await fetch("/api/export", {
+      const data = await api<{ content: string; filename: string }>("/api/export", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ chatId, format }),
       });
-      if (!res.ok) throw new Error("Export failed");
-      const data = await res.json();
       const blob = new Blob([data.content], { type: `${mime};charset=utf-8` });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -53,13 +52,11 @@ export function ExportMenu({
   const shareChat = useCallback(async () => {
     setBusy(true);
     try {
-      const res = await fetch("/api/share", {
+      const data = await api<{ url: string }>("/api/share", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ chatId }),
       });
-      if (!res.ok) throw new Error("Share failed");
-      const data = await res.json();
       await navigator.clipboard.writeText(data.url).catch(() => undefined);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);

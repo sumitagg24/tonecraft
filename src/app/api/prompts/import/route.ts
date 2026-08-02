@@ -1,5 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { ok, withApiHandler } from "@/lib/withApiHandler";
 import { promptRepository } from "@/repositories/PromptRepository";
 import { z } from "zod";
 
@@ -18,17 +17,14 @@ const importSchema = z.object({
   })).min(1).max(500),
 });
 
-export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const body = await req.json().catch(() => ({}));
-  const parsed = importSchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: parsed.error }, { status: 400 });
+const api = withApiHandler({ schema: importSchema });
 
+export const POST = api.POST(async (ctx, body) => {
+  const { prompts } = body as typeof importSchema._output;
   const created = [];
-  for (const prompt of parsed.data.prompts) {
+  for (const prompt of prompts) {
     created.push(await promptRepository.create({
-      userId: session.user.id,
+      userId: ctx.user.id,
       title: prompt.title,
       description: prompt.description,
       content: prompt.content,
@@ -36,5 +32,5 @@ export async function POST(req: NextRequest) {
       variables: prompt.variables,
     }));
   }
-  return NextResponse.json({ imported: created.length }, { status: 201 });
-}
+  return ok({ imported: created.length }, 201);
+});

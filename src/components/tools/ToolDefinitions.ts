@@ -27,7 +27,7 @@ export const tools: ToolDefinition[] = [
   // Reply
   { id: "whatsapp-reply", title: "WhatsApp Reply", description: "Natural chat responses", icon: "MessageCircle", category: "reply", color: "#25d366" },
   { id: "instagram-reply", title: "Instagram Reply", description: "DM and comment replies", icon: "Camera", category: "reply", color: "#e4405f" },
-  { id: "linkedin-reply", title: "LinkedIn Reply", description: "Professional networking", icon: "Linkedin", category: "reply", color: "#0a66c2" },
+  { id: "linkedin-reply", title: "LinkedIn Reply", description: "Professional networking", icon: "Network", category: "reply", color: "#0a66c2" },
   { id: "professional-reply", title: "Professional Reply", description: "Polished business replies", icon: "Briefcase", category: "reply", color: "#3b82f6" },
   { id: "customer-support-reply", title: "Support Reply", description: "Helpful customer responses", icon: "Headphones", category: "reply", color: "#10b981" },
   { id: "genz-reply", title: "Gen Z Reply", description: "Authentic Gen Z style", icon: "Zap", category: "reply", color: "#a855f7" },
@@ -37,10 +37,10 @@ export const tools: ToolDefinition[] = [
   { id: "sarcastic-reply", title: "Sarcastic Reply", description: "Witty and clever", icon: "SmilePlus", category: "reply", color: "#f97316" },
 
   // Social
-  { id: "linkedin-post", title: "LinkedIn Post", description: "Engaging professional content", icon: "Linkedin", category: "social", color: "#0a66c2" },
-  { id: "twitter-thread", title: "Twitter/X Thread", description: "Viral thread generator", icon: "Twitter", category: "social", color: "#1da1f2" },
+  { id: "linkedin-post", title: "LinkedIn Post", description: "Engaging professional content", icon: "Network", category: "social", color: "#0a66c2" },
+  { id: "twitter-thread", title: "Twitter/X Thread", description: "Viral thread generator", icon: "Hash", category: "social", color: "#1da1f2" },
   { id: "instagram-caption", title: "Instagram Caption", description: "Scroll-stopping captions", icon: "Camera", category: "social", color: "#e4405f" },
-  { id: "facebook-post", title: "Facebook Post", description: "Engaging community content", icon: "Facebook", category: "social", color: "#1877f2" },
+  { id: "facebook-post", title: "Facebook Post", description: "Engaging community content", icon: "ThumbsUp", category: "social", color: "#1877f2" },
   { id: "youtube-description", title: "YouTube Description", description: "SEO descriptions", icon: "Video", category: "social", color: "#ff0004" },
 
   // Email
@@ -71,5 +71,5 @@ export const toolCategories = [
   { id: "business" as const, label: "Business", icon: "Briefcase" },
   { id: "career" as const, label: "Career", icon: "TrendingUp" },
   { id: "dating" as const, label: "Dating", icon: "Heart" },
-  { id: "utility" as const, label: "Utility", icon: "Tool" },
+  { id: "utility" as const, label: "Utility", icon: "Wrench" },
 ];

@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { api } from "@/lib/api-client";
 
 interface ToolResult {
   content: string;
@@ -16,16 +17,11 @@ export function useTools() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/tools", {
+      return await api<ToolResult>("/api/tools", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ toolId, input, ...context }),
       });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error?.message || "Tool execution failed");
-      }
-      return res.json();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       setError(e.message);

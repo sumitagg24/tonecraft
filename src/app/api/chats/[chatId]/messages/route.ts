@@ -7,6 +7,7 @@ import { aiEngine } from "@/engine/AIEngine";
 import { messageRepository } from "@/repositories/MessageRepository";
 import { chatRepository } from "@/repositories/ChatRepository";
 import { knowledgeService } from "@/services/KnowledgeService";
+import { flattenZodError } from "@/lib/withApiHandler";
 import { z } from "zod";
 
 const messageSchema = z.object({
@@ -32,7 +33,10 @@ export async function POST(
   const { chatId } = await params;
   const session = await auth();
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json(
+      { success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized" } },
+      { status: 401 }
+    );
   }
   const userId = session.user.id;
 
@@ -40,23 +44,36 @@ export async function POST(
 
   const limitCheck = await checkMessageLimit(userId, plan.tier);
   if (!limitCheck.allowed) {
-    return NextResponse.json({
-      error: "Rate limit exceeded",
-      limit: limitCheck.limit, window: limitCheck.window, remaining: limitCheck.remaining,
-    }, { status: 429 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: {
+          code: "RATE_LIMITED",
+          message: "Rate limit exceeded",
+          details: { limit: limitCheck.limit, window: limitCheck.window, remaining: limitCheck.remaining },
+        },
+      },
+      { status: 429 }
+    );
   }
 
   const body = await req.json();
   const parsed = messageSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error }, { status: 400 });
+    return NextResponse.json(
+      { success: false, error: { code: "VALIDATION_ERROR", message: flattenZodError(parsed.error) } },
+      { status: 400 }
+    );
   }
 
   const { content, tone, platform, language, length, creativity, audience, formality, personaId } = parsed.data;
 
   const chat = await chatRepository.findByIdAndUser(chatId, userId);
   if (!chat) {
-    return NextResponse.json({ error: "Chat not found" }, { status: 404 });
+    return NextResponse.json(
+      { success: false, error: { code: "NOT_FOUND", message: "Chat not found" } },
+      { status: 404 }
+    );
   }
 
   let persona: { name?: string; systemPrompt?: string; tone?: string; writingStyle?: string; emojiUsage?: string } | undefined;

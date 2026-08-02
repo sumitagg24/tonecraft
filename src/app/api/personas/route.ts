@@ -1,5 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { ok, withApiHandler } from "@/lib/withApiHandler";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
@@ -23,46 +22,35 @@ const personaSchema = z.object({
   projectId: z.string().nullable().optional(),
 });
 
-export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const projectId = req.nextUrl.searchParams.get("projectId") || undefined;
+const api = withApiHandler({ schema: personaSchema });
+
+export const GET = api.GET(async (ctx) => {
+  const projectId = ctx.request.nextUrl.searchParams.get("projectId") || undefined;
   const personas = await prisma.persona.findMany({
-    where: projectId ? { userId: session.user.id, projectId } : { userId: session.user.id },
+    where: projectId ? { userId: ctx.user.id, projectId } : { userId: ctx.user.id },
     orderBy: [{ isFavorite: "desc" }, { createdAt: "desc" }],
   });
   const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
+    where: { id: ctx.user.id },
     select: { defaultPersonaId: true },
   });
-  return NextResponse.json({ personas, defaultPersonaId: user?.defaultPersonaId ?? null });
-}
+  return ok({ personas, defaultPersonaId: user?.defaultPersonaId ?? null });
+});
 
-export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const body = await req.json();
-  const parsed = personaSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error }, { status: 400 });
-  }
-  const { isDefault, ...data } = parsed.data;
+export const POST = api.POST(async (ctx, body) => {
+  const { isDefault, ...data } = body as typeof personaSchema._output;
   const persona = await prisma.persona.create({
     data: {
-      userId: session.user.id,
+      userId: ctx.user.id,
       ...data,
       platformDefaults: data.platformDefaults as Prisma.InputJsonValue | undefined,
     },
   });
   if (isDefault) {
     await prisma.user.update({
-      where: { id: session.user.id },
+      where: { id: ctx.user.id },
       data: { defaultPersonaId: persona.id },
     });
   }
-  return NextResponse.json(persona, { status: 201 });
-}
+  return ok(persona, 201);
+});

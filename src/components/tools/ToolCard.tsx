@@ -1,7 +1,7 @@
 "use client";
-import * as Icons from "lucide-react";
-import type { ToolDefinition } from "./ToolDefinitions";
+import { type ToolDefinition } from "@/components/tools/ToolDefinitions";
 import { PremiumCard } from "@/components/ui/recipes";
+import { toolIcons } from "@/components/icons/tool-icons";
 
 interface ToolCardProps {
   tool: ToolDefinition;
@@ -10,8 +10,7 @@ interface ToolCardProps {
 }
 
 export function ToolCard({ tool, onClick, index }: ToolCardProps) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const Icon = (Icons as any)[tool.icon] || Icons.Wand;
+  const Icon = toolIcons[tool.icon as keyof typeof toolIcons] || toolIcons.Wand;
 
   return (
     <PremiumCard

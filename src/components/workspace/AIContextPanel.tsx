@@ -6,6 +6,7 @@ import { useWorkspaceStore } from "@/stores/workspace-store";
 import { TONES } from "@/lib/constants";
 import { ease } from "@/styles/motion";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { api } from "@/lib/api-client";
 import type { Persona } from "@/types";
 import {
   ChevronDown, Sparkles, MessageSquare, Clock, Hash,
@@ -193,12 +194,11 @@ function PersonasSection() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/personas")
-      .then((res) => (res.ok ? res.json() : null))
+    api<{ personas: Persona[]; defaultPersonaId: string | null }>("/api/personas")
       .then((data) => {
         if (cancelled) return;
-        setPersonas(Array.isArray(data) ? data : data?.personas ?? []);
-        setDefaultPersonaId(Array.isArray(data) ? null : data?.defaultPersonaId ?? null);
+        setPersonas(data.personas ?? []);
+        setDefaultPersonaId(data.defaultPersonaId ?? null);
       })
       .catch(() => {});
     return () => {

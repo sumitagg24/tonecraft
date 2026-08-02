@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import type { UserPreferences } from "@/types";
+import { api } from "@/lib/api-client";
 import { toast } from "sonner";
 
 const defaultPreferences: UserPreferences = {
@@ -20,11 +21,8 @@ export function usePreferences() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/preferences")
-      .then((res) => res.ok ? res.json() : null)
-      .then((data) => {
-        if (data) setPreferences({ ...defaultPreferences, ...data });
-      })
+    api<UserPreferences>("/api/preferences")
+      .then((data) => setPreferences({ ...defaultPreferences, ...data }))
       .catch(() => null)
       .finally(() => setLoading(false));
   }, []);
@@ -33,12 +31,11 @@ export function usePreferences() {
   const updatePreference = useCallback(async (key: keyof UserPreferences, value: any) => {
     setPreferences((prev) => ({ ...prev, [key]: value }));
     try {
-      const res = await fetch("/api/preferences", {
+      await api("/api/preferences", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ [key]: value }),
       });
-      if (!res.ok) throw new Error("Failed to save preference");
     } catch {
       setPreferences((prev) => ({ ...prev, [key]: defaultPreferences[key] }));
       toast.error("Failed to save preference");
@@ -49,12 +46,11 @@ export function usePreferences() {
     const prev = preferences;
     setPreferences((p) => ({ ...p, ...prefs }));
     try {
-      const res = await fetch("/api/preferences", {
+      await api("/api/preferences", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(prefs),
       });
-      if (!res.ok) throw new Error("Failed to save preferences");
     } catch {
       setPreferences(prev);
       toast.error("Failed to save preferences");

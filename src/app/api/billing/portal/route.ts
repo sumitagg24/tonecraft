@@ -1,22 +1,18 @@
-import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { ok, fail, withApiHandler } from "@/lib/withApiHandler";
 import { billingService } from "@/billing/BillingService";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 
-export async function POST() {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+const api = withApiHandler();
 
+export const POST = api.POST(async (ctx) => {
   const user = await prisma.user.findUnique({
-    where: { clerkId },
+    where: { id: ctx.user.id },
     select: { id: true, subscription: { select: { providerCustomerId: true } } },
   });
 
   if (!user?.subscription?.providerCustomerId) {
-    return NextResponse.json({ error: "No subscription found" }, { status: 404 });
+    return fail("NOT_FOUND", "No subscription found", 404);
   }
 
   const portal = await billingService.createPortalSession(
@@ -24,5 +20,5 @@ export async function POST() {
   );
 
   logger.info("Portal session created", { userId: user.id });
-  return NextResponse.json({ url: portal.url });
-}
+  return ok({ url: portal.url });
+});

@@ -1,22 +1,18 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { ok, fail, withApiHandler } from "@/lib/withApiHandler";
 import { messageService } from "@/services/MessageService";
 
-export async function POST(
-  _req: NextRequest,
-  { params }: { params: Promise<{ messageId: string }> }
-) {
-  const { messageId } = await params;
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+const api = withApiHandler();
 
+export const POST = api.POST(async (ctx) => {
+  const { messageId } = ctx.params;
   try {
-    const message = await messageService.continueMessage(messageId, session.user.id);
-    return NextResponse.json(message);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Failed to continue" }, { status: 400 });
+    const message = await messageService.continueMessage(messageId, ctx.user.id);
+    return ok(message);
+  } catch (error) {
+    return fail(
+      "REQUEST_FAILED",
+      error instanceof Error ? error.message : "Failed to continue",
+      400
+    );
   }
-}
+});

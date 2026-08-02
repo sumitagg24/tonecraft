@@ -1,23 +1,20 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { ok, withApiHandler } from "@/lib/withApiHandler";
 import { chatService } from "@/services/ChatService";
 
-export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const chats = await chatService.listChats(session.user.id);
-  return NextResponse.json(chats);
-}
+const api = withApiHandler();
 
-export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  let data: { title?: string; tone?: string; platform?: string; language?: string } = {};
-  try { data = await req.json(); } catch { /* ignore */ }
-  const chat = await chatService.createChat(session.user.id, data);
-  return NextResponse.json(chat, { status: 201 });
-}
+export const GET = api.GET(async (ctx) => {
+  const chats = await chatService.listChats(ctx.user.id);
+  return ok(chats);
+});
+
+export const POST = api.POST(async (ctx, body) => {
+  const data = (body ?? {}) as {
+    title?: string;
+    tone?: string;
+    platform?: string;
+    language?: string;
+  };
+  const chat = await chatService.createChat(ctx.user.id, data);
+  return ok(chat, 201);
+});

@@ -1,56 +1,28 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { ok, fail, notFound, withApiHandler } from "@/lib/withApiHandler";
 import { prisma } from "@/lib/prisma";
 import { knowledgeService } from "@/services/KnowledgeService";
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const file = await knowledgeService.findByIdAndUser(id, session.user.id);
-  if (!file) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
-  return NextResponse.json(file);
-}
+const api = withApiHandler();
 
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const body = await req.json();
-  const name = body.name as string | undefined;
-  if (!name || !name.trim()) {
-    return NextResponse.json({ error: "Name is required" }, { status: 400 });
-  }
-  await knowledgeService.rename(id, session.user.id, name.trim());
-  return NextResponse.json({ success: true });
-}
+export const GET = api.GET(async (ctx) => {
+  const { id } = ctx.params;
+  const file = await knowledgeService.findByIdAndUser(id, ctx.user.id);
+  if (!file) return notFound();
+  return ok(file);
+});
 
-export async function DELETE(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const result = await prisma.knowledgeChunk.deleteMany({ where: { file: { id, userId: session.user.id } } });
-  const removed = await knowledgeService.remove(id, session.user.id);
-  if (removed.count === 0) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
-  void result;
-  return NextResponse.json({ success: true });
-}
+export const PATCH = api.PATCH(async (ctx, body) => {
+  const { id } = ctx.params;
+  const name = (body as { name?: string }).name;
+  if (!name || !name.trim()) return fail("BAD_REQUEST", "Name is required", 400);
+  await knowledgeService.rename(id, ctx.user.id, name.trim());
+  return ok({ ok: true });
+});
+
+export const DELETE = api.DELETE(async (ctx) => {
+  const { id } = ctx.params;
+  await prisma.knowledgeChunk.deleteMany({ where: { file: { id, userId: ctx.user.id } } });
+  const removed = await knowledgeService.remove(id, ctx.user.id);
+  if (removed.count === 0) return notFound();
+  return ok({ ok: true });
+});

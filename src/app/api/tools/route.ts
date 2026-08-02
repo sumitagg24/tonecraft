@@ -1,5 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { ok, withApiHandler } from "@/lib/withApiHandler";
 import { toolService } from "@/services/ToolService";
 import { z } from "zod";
 
@@ -16,29 +15,20 @@ const toolSchema = z.object({
   model: z.string().optional(),
 });
 
-export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+const api = withApiHandler({ schema: toolSchema });
 
-  const body = await req.json();
-  const parsed = toolSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error }, { status: 400 });
-  }
-
-  const { toolId, input, model, ...context } = parsed.data;
+export const POST = api.POST(async (ctx, body) => {
+  const { toolId, input, model, ...context } = body as typeof toolSchema._output;
 
   const result = await toolService.execute({
     toolId,
     input,
     ...context,
     modelId: model,
-    userId: session.user.id,
+    userId: ctx.user.id,
   });
 
-  return NextResponse.json({
+  return ok({
     content: result.content,
     model: result.model,
     provider: result.provider,
@@ -46,4 +36,4 @@ export async function POST(req: NextRequest) {
     latency: result.latency,
     metadata: result.metadata,
   });
-}
+});

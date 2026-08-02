@@ -1,5 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { ok, withApiHandler } from "@/lib/withApiHandler";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
@@ -9,27 +8,18 @@ const onboardingSchema = z.object({
   tone: z.string().min(1),
 });
 
-export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+const api = withApiHandler({ schema: onboardingSchema });
 
-  const body = await req.json();
-  const parsed = onboardingSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid input" }, { status: 400 });
-  }
-
-  const { language, tone } = parsed.data;
+export const POST = api.POST(async (ctx, body) => {
+  const { language, tone } = body as typeof onboardingSchema._output;
 
   await prisma.user.update({
-    where: { id: session.user.id },
+    where: { id: ctx.user.id },
     data: {
       preferredLanguage: language,
       defaultTone: tone,
     },
   });
 
-  return NextResponse.json({ success: true });
-}
+  return ok({ ok: true });
+});

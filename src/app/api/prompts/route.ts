@@ -1,5 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { ok, withApiHandler } from "@/lib/withApiHandler";
 import { promptService } from "@/services/PromptService";
 import { z } from "zod";
 
@@ -19,27 +18,16 @@ const promptSchema = z.object({
   projectId: z.string().optional(),
 });
 
-export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const projectId = req.nextUrl.searchParams.get("projectId") || undefined;
-  const prompts = await promptService.listPrompts(session.user.id, projectId);
-  const categories = await promptService.listCategories(session.user.id);
-  return NextResponse.json({ prompts, categories });
-}
+const api = withApiHandler({ schema: promptSchema });
 
-export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const body = await req.json().catch(() => ({}));
-  const parsed = promptSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error }, { status: 400 });
-  }
-  const prompt = await promptService.createPrompt(session.user.id, parsed.data);
-  return NextResponse.json(prompt, { status: 201 });
-}
+export const GET = api.GET(async (ctx) => {
+  const projectId = ctx.request.nextUrl.searchParams.get("projectId") || undefined;
+  const prompts = await promptService.listPrompts(ctx.user.id, projectId);
+  const categories = await promptService.listCategories(ctx.user.id);
+  return ok({ prompts, categories });
+});
+
+export const POST = api.POST(async (ctx, body) => {
+  const prompt = await promptService.createPrompt(ctx.user.id, body as typeof promptSchema._output);
+  return ok(prompt, 201);
+});

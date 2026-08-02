@@ -1,39 +1,34 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { ok, fail, withApiHandler } from "@/lib/withApiHandler";
 import { knowledgeService } from "@/services/KnowledgeService";
+import { notificationService } from "@/services/NotificationService";
 
-export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+const api = withApiHandler();
+
+export const GET = api.GET(async (ctx) => {
+  const projectId = ctx.request.nextUrl.searchParams.get("projectId") || null;
+  const files = await knowledgeService.list(ctx.user.id, projectId);
+  return ok({ files });
+});
+
+export const POST = api.POST(async (ctx) => {
+  // multipart/form-data — the wrapper skips JSON body parsing for this content type
+  const formData = await ctx.request.formData();
+  const file = formData.get("file") as File | null;
+  const projectId = (formData.get("projectId") as string | null) || null;
+
+  if (!file) return fail("BAD_REQUEST", "No file provided", 400);
+  if (file.size > 25 * 1024 * 1024) {
+    return fail("PAYLOAD_TOO_LARGE", "File too large (max 25MB)", 413);
   }
-  const projectId = req.nextUrl.searchParams.get("projectId") || null;
-  const files = await knowledgeService.list(session.user.id, projectId);
-  return NextResponse.json({ files });
-}
 
-export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  try {
-    const formData = await req.formData();
-    const file = formData.get("file") as File | null;
-    const projectId = (formData.get("projectId") as string | null) || null;
-
-    if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 });
-    }
-    if (file.size > 25 * 1024 * 1024) {
-      return NextResponse.json({ error: "File too large (max 25MB)" }, { status: 413 });
-    }
-
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const created = await knowledgeService.create(session.user.id, file.name, buffer, projectId);
-    return NextResponse.json(created, { status: 201 });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Upload failed";
-    return NextResponse.json({ error: message }, { status: 400 });
-  }
-}
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const created = await knowledgeService.create(ctx.user.id, file.name, buffer, projectId);
+  void notificationService.create(
+    ctx.user.id,
+    "knowledge_indexed",
+    "Document indexed",
+    `"${created.name}" is ready to ground your responses.`,
+    "/library"
+  );
+  return ok(created, 201);
+});

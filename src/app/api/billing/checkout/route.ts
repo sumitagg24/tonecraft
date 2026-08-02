@@ -1,5 +1,4 @@
-import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { ok, fail, withApiHandler } from "@/lib/withApiHandler";
 import { ApiError } from "@paddle/paddle-node-sdk";
 import { billingService } from "@/billing/BillingService";
 import { prisma } from "@/lib/prisma";
@@ -10,30 +9,27 @@ const PLAN_PRICE_MAP: Record<string, string | undefined> = {
   Enterprise: process.env.PADDLE_PRICE_ENTERPRISE ?? "pri_01kyn5rt66qd17jq4b67v85j6v",
 };
 
-export async function POST(req: Request) {
-  try {
-    const { userId: clerkId } = await auth();
-    if (!clerkId) {
-      return NextResponse.json({ error: "Authentication required." }, { status: 401 });
-    }
+const api = withApiHandler();
 
-    const { plan } = (await req.json()) as { plan?: string };
+export const POST = api.POST(async (ctx, body) => {
+  try {
+    const { plan } = (body ?? {}) as { plan?: string };
     if (!plan || !PLAN_PRICE_MAP[plan]) {
-      return NextResponse.json({ error: "Invalid request." }, { status: 400 });
+      return fail("BAD_REQUEST", "Invalid request.", 400);
     }
 
     const priceId = PLAN_PRICE_MAP[plan];
 
     const user = await prisma.user.findUnique({
-      where: { clerkId },
+      where: { id: ctx.user.id },
       select: { id: true, email: true, name: true, subscription: true },
     });
     if (!user) {
-      return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+      return fail("UNAUTHORIZED", "Authentication required.", 401);
     }
 
     if (user.subscription?.status === "active" || user.subscription?.status === "trialing") {
-      return NextResponse.json({ error: "Subscription already active." }, { status: 409 });
+      return fail("CONFLICT", "Subscription already active.", 409);
     }
 
     let customerId = user.subscription?.providerCustomerId;
@@ -67,26 +63,17 @@ export async function POST(req: Request) {
     });
 
     logger.info("Checkout created", { userId: user.id, plan });
-    return NextResponse.json({ url: checkout.url });
+    return ok({ url: checkout.url });
   } catch (err) {
     if (err instanceof ApiError) {
       if (err.retryAfter != null) {
         logger.error("Paddle rate limited", { detail: err.detail, retryAfter: err.retryAfter });
-        return NextResponse.json(
-          { error: "Paddle temporarily rate limited." },
-          { status: 429 }
-        );
+        return fail("RATE_LIMITED", "Paddle temporarily rate limited.", 429);
       }
       logger.error("Paddle API error", { code: err.code, detail: err.detail });
-      return NextResponse.json(
-        { error: "Billing provider unavailable." },
-        { status: 503 }
-      );
+      return fail("SERVICE_UNAVAILABLE", "Billing provider unavailable.", 503);
     }
     logger.error("Unexpected checkout error", { error: String(err) });
-    return NextResponse.json(
-      { error: "Unexpected billing error." },
-      { status: 500 }
-    );
+    return fail("INTERNAL_ERROR", "Unexpected billing error.", 500);
   }
-}
+});
