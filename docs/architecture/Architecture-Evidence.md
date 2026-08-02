@@ -127,7 +127,7 @@ if (options.userId && options.plan) {
 - **Service**: `src/services/ProjectService.ts`
   - CRUD methods: `createProject`, `updateProject`, `deleteProject`
   - `moveChat()` — Moves chats between projects
-- **API Routes**: `src/pages/api/projects/route.ts`, `[id]/route.ts`
+- **API Routes**: `src/app/api/projects/route.ts`, `[id]/route.ts`
 - **UI**: Project tree sidebar (`src/components/sidebar/ProjectTree.tsx`)
 
 ---
@@ -158,7 +158,7 @@ if (options.userId && options.plan) {
 - **Service**: `src/services/PromptService.ts`
   - `renderTemplate()` — Replaces `{{variable}}` tokens
   - `extractVariables()` — Discovers template variables
-- **API Routes**: `src/pages/api/prompts/route.ts`, `[id]/route.ts`, `import/route.ts`
+- **API Routes**: `src/app/api/prompts/route.ts`, `[id]/route.ts`, `import/route.ts`
 - **Library UI**: `src/app/(dashboard)/library/prompts/page.tsx`
 
 ---
