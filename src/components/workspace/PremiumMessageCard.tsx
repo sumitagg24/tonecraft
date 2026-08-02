@@ -155,7 +155,7 @@ export const PremiumMessageCard = memo(function PremiumMessageCard({
           {/* Tone badge for AI messages */}
           {!isUser && !isStreaming && tone && (
             <div className="mb-2">
-              <PremiumBadge variant="tone" className="border-border/40 text-[10px] py-0.5 h-5">
+              <PremiumBadge variant="tone" className="border-border/40 text-micro py-0.5 h-5">
                 <span className="text-xs">{tone.emoji}</span>
                 {tone.label}
               </PremiumBadge>
@@ -170,7 +170,7 @@ export const PremiumMessageCard = memo(function PremiumMessageCard({
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: duration.fast }}
-                className="mb-3 p-2.5 rounded-xl bg-muted/40 border border-border/20 text-[10px] text-muted-foreground space-y-1 overflow-hidden"
+                className="mb-3 p-2.5 rounded-xl bg-muted/40 border border-border/20 text-micro text-muted-foreground space-y-1 overflow-hidden"
               >
                 {message.model && <MetaRow label="Model" value={message.model} />}
                 {message.tokens && <MetaRow label="Tokens" value={message.tokens.toLocaleString()} />}
@@ -214,9 +214,9 @@ export const PremiumMessageCard = memo(function PremiumMessageCard({
                   {message.content}
                 </p>
                 {message.isEdited && (
-                  <span className="text-[10px] text-primary-foreground/50 mt-1.5 block">(edited)</span>
+                  <span className="text-micro text-primary-foreground/50 mt-1.5 block">(edited)</span>
                 )}
-                <span className="text-[10px] text-primary-foreground/50 block mt-1.5">
+                <span className="text-micro text-primary-foreground/50 block mt-1.5">
                   {formatTime(message.createdAt)}
                 </span>
               </div>
@@ -309,11 +309,11 @@ export const PremiumMessageCard = memo(function PremiumMessageCard({
               {/* Timestamp + tokens */}
               {!isStreaming && (
                 <div className="flex items-center justify-between mt-2.5">
-                  <span className="text-[10px] text-muted-foreground/40">
+                  <span className="text-micro text-muted-foreground/40">
                     {formatTime(message.createdAt)}
                   </span>
                   {message.tokens ? (
-                    <span className="text-[9px] text-muted-foreground/30">
+                    <span className="text-nano text-muted-foreground/30">
                       {message.tokens.toLocaleString()} tokens
                     </span>
                   ) : null}
@@ -329,7 +329,7 @@ export const PremiumMessageCard = memo(function PremiumMessageCard({
                 <span
                   key={a.id}
                   className={cn(
-                    "flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[10px]",
+                    "flex items-center gap-1.5 px-2 py-1 rounded-lg border text-micro",
                     isUser
                       ? "bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground/80"
                       : "bg-muted/20 border-border/20 text-muted-foreground/70"

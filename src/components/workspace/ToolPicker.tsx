@@ -65,14 +65,14 @@ export function ToolPicker({ onSelect, onClose, loading }: ToolPickerProps) {
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block text-xs font-medium truncate">{tool.title}</span>
-                <span className="block text-[10px] text-muted-foreground/60 truncate">{tool.description}</span>
+                <span className="block text-micro text-muted-foreground/60 truncate">{tool.description}</span>
               </span>
               {loading && <Loader2 className="w-3 h-3 text-muted-foreground/50 animate-spin shrink-0" />}
             </button>
           );
         })}
         {filtered.length === 0 && (
-          <p className="px-2 py-3 text-center text-[11px] text-muted-foreground/50">No tools match</p>
+          <p className="px-2 py-3 text-center text-tiny text-muted-foreground/50">No tools match</p>
         )}
       </div>
     </PickerSurface>
@@ -84,7 +84,7 @@ function CategoryChip({ active, onClick, children }: { active: boolean; onClick:
     <button
       onClick={onClick}
       className={cn(
-        "shrink-0 px-2.5 h-6 rounded-full text-[10px] font-medium transition-all",
+        "shrink-0 px-2.5 h-6 rounded-full text-micro font-medium transition-all",
         active ? "bg-primary text-primary-foreground" : "bg-muted/30 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
       )}
     >

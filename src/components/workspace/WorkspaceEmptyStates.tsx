@@ -137,10 +137,10 @@ export function NoConversationEmptyState() {
         Your premium AI communication studio. Select a conversation or start something new.
       </p>
       <div className="flex items-center gap-2 text-xs text-muted-foreground/40">
-        <kbd className="px-2 py-1 rounded-md border border-border/30 bg-muted/30 text-[10px] font-mono">⌘K</kbd>
+        <kbd className="px-2 py-1 rounded-md border border-border/30 bg-muted/30 text-micro font-mono">⌘K</kbd>
         <span>Command palette</span>
         <span className="w-px h-3 bg-border/30" />
-        <kbd className="px-2 py-1 rounded-md border border-border/30 bg-muted/30 text-[10px] font-mono">⌘B</kbd>
+        <kbd className="px-2 py-1 rounded-md border border-border/30 bg-muted/30 text-micro font-mono">⌘B</kbd>
         <span>Toggle sidebar</span>
       </div>
     </div>

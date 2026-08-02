@@ -132,7 +132,7 @@ export function GenerationComplete() {
       initial={{ scale: 0.8, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={spring.snappy}
-      className="flex items-center gap-1.5 text-[10px] text-muted-foreground/50 mt-2"
+      className="flex items-center gap-1.5 text-micro text-muted-foreground/50 mt-2"
     >
       <motion.div
         initial={{ pathLength: 0 }}

@@ -66,7 +66,7 @@ export function ChatList() {
                   >
                     <MessageSquare className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                     <span className="truncate flex-1">{chat.title}</span>
-                    <Badge variant="outline" className="text-[9px] py-0 h-4 border-border/30 capitalize hidden group-hover:flex">
+                    <Badge variant="outline" className="text-nano py-0 h-4 border-border/30 capitalize hidden group-hover:flex">
                       {chat.tone}
                     </Badge>
                   </Link>

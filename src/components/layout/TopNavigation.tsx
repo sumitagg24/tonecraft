@@ -49,7 +49,7 @@ export function TopNavigation() {
         >
           <Search className="h-4 w-4 shrink-0" />
           <span className="flex-1 text-left">Search anything...</span>
-          <kbd className="hidden sm:inline-flex items-center gap-1 rounded-md border border-border/30 bg-muted/50 px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground/70">
+          <kbd className="hidden sm:inline-flex items-center gap-1 rounded-md border border-border/30 bg-muted/50 px-1.5 py-0.5 text-micro font-mono text-muted-foreground/70">
             <Command className="h-2.5 w-2.5" />K
           </kbd>
         </button>
@@ -79,7 +79,7 @@ export function TopNavigation() {
               <Button variant="ghost" className="gap-2 rounded-xl pl-1.5 pr-3">
                 <Avatar className="h-7 w-7">
                   <AvatarImage src={user?.imageUrl} />
-                  <AvatarFallback className="text-[10px] bg-muted">{initials}</AvatarFallback>
+                  <AvatarFallback className="text-micro bg-muted">{initials}</AvatarFallback>
                 </Avatar>
                 <span className="hidden sm:inline text-sm font-medium max-w-[100px] truncate">
                   {user?.firstName || "User"}

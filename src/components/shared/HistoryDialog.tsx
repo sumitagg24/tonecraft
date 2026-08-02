@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Clock, RotateCcw, X, ChevronDown, ChevronRight } from "lucide-react";
+import { Clock, RotateCcw, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/shared/Modal";
 
 interface Version {
   id: string;
@@ -20,26 +20,8 @@ export function HistoryDialog({ versions, onRestore, onClose }: HistoryDialogPro
   const [expanded, setExpanded] = useState<string | null>(null);
 
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
-        onClick={onClose}
-      >
-        <motion.div
-          className="bg-background rounded-xl border border-border/40 shadow-xl w-full max-w-lg mx-4 overflow-hidden"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border/20">
-            <span className="text-sm font-semibold">Version History</span>
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
-
-          <div className="max-h-80 overflow-y-auto scrollbar-thin">
+    <Modal open onOpenChange={(o) => { if (!o) onClose(); }} title="Version History">
+      <div className="max-h-80 overflow-y-auto scrollbar-thin">
             {versions.length === 0 ? (
               <div className="text-center py-8 text-sm text-muted-foreground">
                 No version history yet
@@ -56,7 +38,7 @@ export function HistoryDialog({ versions, onRestore, onClose }: HistoryDialogPro
                       <span className="block text-xs font-medium">
                         {v.source === "autosave" ? "Autosave" : v.source === "manual" ? "Manual save" : "Restore"}
                       </span>
-                      <span className="block text-[10px] text-muted-foreground/50">
+                      <span className="block text-micro text-muted-foreground/50">
                         {new Date(v.createdAt).toLocaleString()}
                       </span>
                     </div>
@@ -86,9 +68,7 @@ export function HistoryDialog({ versions, onRestore, onClose }: HistoryDialogPro
                 </div>
               ))
             )}
-          </div>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
+      </div>
+    </Modal>
   );
 }

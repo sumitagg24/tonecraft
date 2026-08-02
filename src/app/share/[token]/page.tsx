@@ -44,13 +44,13 @@ export default function SharePage() {
             </span>
             <span className="text-sm font-semibold">Shared with you</span>
           </div>
-          <span className="text-[10px] text-muted-foreground/50 flex items-center gap-1">
+          <span className="text-micro text-muted-foreground/50 flex items-center gap-1">
             <Lock className="w-3 h-3" /> Read-only view
           </span>
         </header>
 
         {loading ? (
-          <div className="flex items-center justify-center py-20">
+          <div className="flex items-center justify-center py-20" role="status" aria-label="Loading">
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
           </div>
         ) : error ? (
@@ -71,7 +71,7 @@ export default function SharePage() {
                     ? "bg-muted/30 border border-border/30 rounded-xl p-4 ml-auto max-w-[85%]"
                     : "bg-primary/5 border border-primary/10 rounded-xl p-4 mr-auto max-w-[85%]"}
                 >
-                  <div className="text-[10px] text-muted-foreground/60 mb-1.5 uppercase tracking-wider">
+                  <div className="text-micro text-muted-foreground/60 mb-1.5 uppercase tracking-wider">
                     {m.role === "user" ? "You" : "ToneCraft"}
                     {m.model ? ` · ${m.model}` : ""}
                   </div>

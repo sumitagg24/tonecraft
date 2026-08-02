@@ -295,11 +295,11 @@ export function PersonasLibraryPage() {
                 className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-xs hover:bg-muted/20 transition-colors"
                 style={{ borderColor: `${c.color}44` }}
               >
-                <span className="w-5 h-5 rounded-md flex items-center justify-center text-[10px]" style={{ backgroundColor: `${c.color}22`, color: c.color }}>
+                <span className="w-5 h-5 rounded-md flex items-center justify-center text-micro" style={{ backgroundColor: `${c.color}22`, color: c.color }}>
                   {c.icon}
                 </span>
                 {c.name}
-                <span className="text-[9px] text-muted-foreground/50 flex items-center gap-0.5"><Plus className="w-2.5 h-2.5" /> add</span>
+                <span className="text-nano text-muted-foreground/50 flex items-center gap-0.5"><Plus className="w-2.5 h-2.5" /> add</span>
               </button>
             ))}
           </div>
@@ -315,9 +315,9 @@ export function PersonasLibraryPage() {
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-sm truncate flex items-center gap-1.5">
                     {p.name}
-                    {p.id === defaultPersonaId && <Badge variant="secondary" className="text-[9px] px-1.5 py-0">default</Badge>}
+                    {p.id === defaultPersonaId && <Badge variant="secondary" className="text-nano px-1.5 py-0">default</Badge>}
                   </p>
-                  {p.description && <p className="text-[11px] text-muted-foreground/70 line-clamp-1 mt-0.5">{p.description}</p>}
+                  {p.description && <p className="text-tiny text-muted-foreground/70 line-clamp-1 mt-0.5">{p.description}</p>}
                 </div>
                 <button
                   onClick={() => toggleFavorite(p)}
@@ -328,16 +328,16 @@ export function PersonasLibraryPage() {
                 </button>
               </div>
               <div className="flex flex-wrap gap-1.5">
-                <Badge variant="outline" className="text-[10px]">{p.tone || "professional"}</Badge>
-                <Badge variant="outline" className="text-[10px]">emoji: {p.emojiUsage || "subtle"}</Badge>
-                {p.writingStyle && p.writingStyle !== "standard" && <Badge variant="outline" className="text-[10px]">{p.writingStyle}</Badge>}
+                <Badge variant="outline" className="text-micro">{p.tone || "professional"}</Badge>
+                <Badge variant="outline" className="text-micro">emoji: {p.emojiUsage || "subtle"}</Badge>
+                {p.writingStyle && p.writingStyle !== "standard" && <Badge variant="outline" className="text-micro">{p.writingStyle}</Badge>}
               </div>
-              <p className="text-[11px] text-muted-foreground/50 line-clamp-2 flex-1 font-mono text-[10px] leading-relaxed">{p.systemPrompt}</p>
+              <p className="text-tiny text-muted-foreground/50 line-clamp-2 flex-1 font-mono text-micro leading-relaxed">{p.systemPrompt}</p>
               <div className="flex items-center justify-between pt-2 border-t border-border/20">
                 {p.id === defaultPersonaId ? (
-                  <span className="text-[10px] text-muted-foreground/50 flex items-center gap-1"><Check className="w-3 h-3" /> Default</span>
+                  <span className="text-micro text-muted-foreground/50 flex items-center gap-1"><Check className="w-3 h-3" /> Default</span>
                 ) : (
-                  <button onClick={() => setDefault(p.id)} className="text-[10px] text-muted-foreground/60 hover:text-primary transition-colors">
+                  <button onClick={() => setDefault(p.id)} className="text-micro text-muted-foreground/60 hover:text-primary transition-colors">
                     Set as default
                   </button>
                 )}

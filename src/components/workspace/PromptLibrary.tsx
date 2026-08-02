@@ -188,7 +188,7 @@ export function PromptLibrary({ onClose }: { onClose?: () => void }) {
               key={cat.id}
               onClick={() => setSelectedCategory(selectedCategory === cat.id ? "all" : cat.id)}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-medium whitespace-nowrap transition-all border",
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-micro font-medium whitespace-nowrap transition-all border",
                 selectedCategory === cat.id
                   ? "bg-primary/10 border-primary/30 text-primary"
                   : "border-border/20 text-muted-foreground/70 hover:border-border/40 hover:text-foreground"
@@ -288,11 +288,11 @@ function PromptCard({
         </button>
       </div>
       <h3 className="text-xs font-semibold mb-1">{template.title}</h3>
-      <p className="text-[10px] text-muted-foreground/60 leading-relaxed line-clamp-2">{template.description}</p>
+      <p className="text-micro text-muted-foreground/60 leading-relaxed line-clamp-2">{template.description}</p>
       <div className="flex items-center gap-1.5 mt-2.5">
-        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-muted/30 text-muted-foreground/60 capitalize">{template.tone}</span>
+        <span className="text-nano px-1.5 py-0.5 rounded-full bg-muted/30 text-muted-foreground/60 capitalize">{template.tone}</span>
         {template.isPro && (
-          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-gradient-to-r from-violet-600/20 to-indigo-600/20 text-violet-500 font-medium">PRO</span>
+          <span className="text-nano px-1.5 py-0.5 rounded-full bg-gradient-to-r from-violet-600/20 to-indigo-600/20 text-violet-500 font-medium">PRO</span>
         )}
       </div>
     </div>
@@ -315,7 +315,7 @@ function PromptListItem({
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-xs font-medium truncate">{template.title}</p>
-        <p className="text-[10px] text-muted-foreground/60 truncate">{template.description}</p>
+        <p className="text-micro text-muted-foreground/60 truncate">{template.description}</p>
       </div>
       <button
         onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }}

@@ -67,7 +67,7 @@ export function SmartSuggestions({ chatId, onSend }: SmartSuggestionsProps) {
             whileHover={{ scale: 1.03, y: -1 }}
             whileTap={{ scale: 0.97 }}
             onClick={() => handleSuggestion(suggestion)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-medium border border-border/20 bg-background/40 backdrop-blur-sm hover:bg-muted/30 hover:border-border/40 transition-all whitespace-nowrap"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-micro font-medium border border-border/20 bg-background/40 backdrop-blur-sm hover:bg-muted/30 hover:border-border/40 transition-all whitespace-nowrap"
           >
             <suggestion.icon className="w-3 h-3" style={{ color: toneColors[suggestion.tone || "professional"] || "#888" }} />
             {suggestion.label}

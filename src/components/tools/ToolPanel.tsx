@@ -155,7 +155,7 @@ export function ToolPanel({ tool, onClose }: ToolPanelProps) {
                 <span className="text-xs font-medium text-muted-foreground">Result</span>
                 <div className="flex items-center gap-2">
                   {metadata && (
-                    <span className="text-[10px] text-muted-foreground bg-muted/30 px-2 py-0.5 rounded-full">
+                    <span className="text-micro text-muted-foreground bg-muted/30 px-2 py-0.5 rounded-full">
                       {metadata.model} · {metadata.tokens} tokens · {(metadata.latency / 1000).toFixed(1)}s
                     </span>
                   )}

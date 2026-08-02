@@ -161,7 +161,7 @@ export function ConversationSidebar() {
         <button
           onClick={() => setView("all")}
           className={cn(
-            "flex-1 h-7 rounded-lg text-[11px] font-medium transition-all",
+            "flex-1 h-7 rounded-lg text-tiny font-medium transition-all",
             view === "all" ? "bg-muted/50 text-foreground" : "text-muted-foreground/60 hover:text-foreground hover:bg-muted/20"
           )}
         >
@@ -170,7 +170,7 @@ export function ConversationSidebar() {
         <button
           onClick={() => setView("archived")}
           className={cn(
-            "flex flex-1 items-center justify-center gap-1 h-7 rounded-lg text-[11px] font-medium transition-all",
+            "flex flex-1 items-center justify-center gap-1 h-7 rounded-lg text-tiny font-medium transition-all",
             view === "archived" ? "bg-muted/50 text-foreground" : "text-muted-foreground/60 hover:text-foreground hover:bg-muted/20"
           )}
           aria-pressed={view === "archived"}
@@ -178,7 +178,7 @@ export function ConversationSidebar() {
           <Archive className="w-3 h-3" />
           Archived
           {archivedCount > 0 && (
-            <span className="text-[9px] px-1 rounded-full bg-muted-foreground/15 text-muted-foreground/70">{archivedCount}</span>
+            <span className="text-nano px-1 rounded-full bg-muted-foreground/15 text-muted-foreground/70">{archivedCount}</span>
           )}
         </button>
       </div>
@@ -192,7 +192,7 @@ export function ConversationSidebar() {
               </div>
             </div>
             <h3 className="text-sm font-semibold mb-1">No conversations yet</h3>
-            <p className="text-[11px] text-muted-foreground/60 max-w-[200px] mb-4 leading-relaxed">
+            <p className="text-tiny text-muted-foreground/60 max-w-[200px] mb-4 leading-relaxed">
               Start your first AI-powered conversation
             </p>
             <button
@@ -230,7 +230,7 @@ export function ConversationSidebar() {
             {pinned.length > 0 && (
               <div className="px-3 pt-3 pb-1">
                 <div className="mb-1.5 px-2">
-                  <span className="text-[10px] font-medium text-muted-foreground/50 uppercase tracking-wider">Pinned</span>
+                  <span className="text-micro font-medium text-muted-foreground/50 uppercase tracking-wider">Pinned</span>
                 </div>
                 <AnimatePresence mode="popLayout">
                   {pinned.map((chat) => (
@@ -249,7 +249,7 @@ export function ConversationSidebar() {
               groupChats.length > 0 ? (
                 <div key={group} className="px-3 pt-3 pb-1">
                   <div className="mb-1.5 px-2">
-                    <span className="text-[10px] font-medium text-muted-foreground/50 uppercase tracking-wider">
+                    <span className="text-micro font-medium text-muted-foreground/50 uppercase tracking-wider">
                       {groupLabels[group as GroupLabel]}
                     </span>
                   </div>
@@ -386,7 +386,7 @@ const ChatItem = memo(function ChatItem({
         </div>
 
         {!renaming && (
-          <span className="text-[10px] text-muted-foreground/40 shrink-0">
+          <span className="text-micro text-muted-foreground/40 shrink-0">
             {formatTime(chat.createdAt)}
           </span>
         )}

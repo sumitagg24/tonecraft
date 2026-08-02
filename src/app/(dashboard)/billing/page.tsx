@@ -186,7 +186,7 @@ function BillingContent() {
           </CardHeader>
           <CardContent>
             {usageLoading ? (
-              <div className="flex items-center justify-center py-8">
+              <div className="flex items-center justify-center py-8" role="status" aria-label="Loading usage">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
               </div>
             ) : usageData ? (
@@ -255,7 +255,7 @@ export default function BillingPage() {
     <Suspense
       fallback={
         <div className="flex-1 overflow-auto p-6">
-          <div className="max-w-4xl mx-auto flex items-center justify-center h-64">
+          <div className="max-w-4xl mx-auto flex items-center justify-center h-64" role="status" aria-label="Loading">
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
           </div>
         </div>

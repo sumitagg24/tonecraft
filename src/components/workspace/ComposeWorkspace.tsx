@@ -168,7 +168,7 @@ export function ComposeWorkspace({ children }: ComposeWorkspaceProps) {
 
         {isFocus && (
           <div className="absolute top-3 left-1/2 -translate-x-1/2">
-            <span className="text-[10px] text-muted-foreground/30 uppercase tracking-[0.2em] font-medium">
+            <span className="text-micro text-muted-foreground/30 uppercase tracking-[0.2em] font-medium">
               {mode === "focus" ? "Focus Mode" : "Writer Mode"}
             </span>
           </div>
@@ -246,7 +246,7 @@ function ModeSwitcher({ current, onChange }: { current: WorkspaceMode; onChange:
           data-mode={m.id}
           onClick={() => onChange(m.id)}
           className={cn(
-            "h-6 px-2 rounded-md text-[9px] font-medium transition-all uppercase tracking-wider",
+            "h-6 px-2 rounded-md text-nano font-medium transition-all uppercase tracking-wider",
             current === m.id
               ? "bg-background text-foreground shadow-sm border border-border/20"
               : "text-muted-foreground/50 hover:text-foreground hover:bg-muted/20"

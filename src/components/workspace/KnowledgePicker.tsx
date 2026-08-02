@@ -36,7 +36,7 @@ export function KnowledgePicker({
 
   return (
     <PickerSurface label="Ground with knowledge" onClose={onClose} className="w-72 bottom-full left-0 mb-1.5">
-      <p className="text-[10px] text-muted-foreground/50 px-2.5 pb-1.5">
+      <p className="text-micro text-muted-foreground/50 px-2.5 pb-1.5">
         Selected files guide this response with citations.
       </p>
       {loading ? (
@@ -44,7 +44,7 @@ export function KnowledgePicker({
           <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
         </div>
       ) : files.length === 0 ? (
-        <p className="px-2.5 py-3 text-[11px] text-muted-foreground/50 flex items-center gap-2">
+        <p className="px-2.5 py-3 text-tiny text-muted-foreground/50 flex items-center gap-2">
           <FileText className="w-3.5 h-3.5" /> No documents indexed yet. Add files in the Knowledge tab.
         </p>
       ) : (

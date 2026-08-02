@@ -163,7 +163,7 @@ export function ProjectPage({ projectId }: ProjectPageProps) {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium truncate">{chat.title}</p>
-                      <p className="text-[10px] text-muted-foreground/40">
+                      <p className="text-micro text-muted-foreground/40">
                         {new Date(chat.updatedAt).toLocaleDateString()} · {chat._count?.messages ?? 0} messages
                       </p>
                     </div>

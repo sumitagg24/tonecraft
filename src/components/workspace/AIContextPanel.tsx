@@ -165,7 +165,7 @@ function ActiveSettings({ context }: { context: { platform: string; language: st
       {rows.map((row) => (
         <InfoRow key={row.label} icon={row.icon} label={row.label} value={row.value} />
       ))}
-      <p className="text-[10px] text-muted-foreground/40 pt-1">
+      <p className="text-micro text-muted-foreground/40 pt-1">
         These are applied to every message you send in this conversation.
       </p>
     </div>
@@ -213,7 +213,7 @@ function PersonasSection() {
 
   if (personas.length === 0) {
     return (
-      <p className="text-[11px] text-muted-foreground/50">
+      <p className="text-tiny text-muted-foreground/50">
         No personas yet. Create one to apply a consistent voice.
       </p>
     );
@@ -231,7 +231,7 @@ function PersonasSection() {
             aria-pressed={active}
           >
             <span
-              className="w-6 h-6 rounded-lg shrink-0 flex items-center justify-center text-[11px]"
+              className="w-6 h-6 rounded-lg shrink-0 flex items-center justify-center text-tiny"
               style={{ backgroundColor: `${persona.color}22`, color: persona.color }}
             >
               {persona.icon || persona.name.charAt(0).toUpperCase()}
@@ -240,11 +240,11 @@ function PersonasSection() {
               <span className="block text-xs font-medium truncate">
                 {persona.name}
                 {persona.id === defaultPersonaId && (
-                  <span className="ml-1.5 text-[9px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary align-middle">default</span>
+                  <span className="ml-1.5 text-nano px-1.5 py-0.5 rounded-full bg-primary/10 text-primary align-middle">default</span>
                 )}
               </span>
               {persona.description && (
-                <span className="block text-[10px] text-muted-foreground/60 truncate">{persona.description}</span>
+                <span className="block text-micro text-muted-foreground/60 truncate">{persona.description}</span>
               )}
             </span>
             {active && <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
@@ -267,7 +267,7 @@ function cnPersonaRow(active: boolean) {
 function AttachmentsSection({ attachments }: { attachments: { id: string; fileName: string; fileSize: number; fileType: string }[] }) {
   if (attachments.length === 0) {
     return (
-      <p className="text-[11px] text-muted-foreground/50">
+      <p className="text-tiny text-muted-foreground/50">
         No attachments in this conversation.
       </p>
     );
@@ -278,7 +278,7 @@ function AttachmentsSection({ attachments }: { attachments: { id: string; fileNa
         <div key={a.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-muted/20 text-xs">
           <Paperclip className="w-3 h-3 text-muted-foreground/50 shrink-0" />
           <span className="flex-1 truncate">{a.fileName}</span>
-          <span className="text-[10px] text-muted-foreground/50 shrink-0">{formatBytes(a.fileSize)}</span>
+          <span className="text-micro text-muted-foreground/50 shrink-0">{formatBytes(a.fileSize)}</span>
         </div>
       ))}
     </div>
@@ -299,7 +299,7 @@ function UsageBadge({ wordCount, estTokens }: { wordCount: number; estTokens: nu
   const pct = Math.min(100, Math.round((estTokens / 16000) * 100));
   return (
     <div className="space-y-1.5">
-      <div className="flex items-center justify-between text-[10px] text-muted-foreground/60">
+      <div className="flex items-center justify-between text-micro text-muted-foreground/60">
         <span>Context usage</span>
         <span>{pct}%</span>
       </div>
@@ -311,7 +311,7 @@ function UsageBadge({ wordCount, estTokens }: { wordCount: number; estTokens: nu
           className="h-full rounded-full bg-gradient-to-r from-violet-500 to-indigo-500"
         />
       </div>
-      <p className="text-[10px] text-muted-foreground/40">{wordCount} words · ~{estTokens.toLocaleString()} tokens</p>
+      <p className="text-micro text-muted-foreground/40">{wordCount} words · ~{estTokens.toLocaleString()} tokens</p>
     </div>
   );
 }

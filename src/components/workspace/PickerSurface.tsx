@@ -38,7 +38,7 @@ export function PickerSurface({ label, onClose, className, children }: PickerSur
           className="fixed inset-x-0 bottom-0 z-50 rounded-t-2xl border-t border-border/40 bg-popover shadow-premium p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
         >
           <div className="mx-auto mb-2.5 h-1 w-10 rounded-full bg-muted-foreground/20" />
-          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/50 px-1.5 pb-1.5">
+          <p className="text-micro font-medium uppercase tracking-wider text-muted-foreground/50 px-1.5 pb-1.5">
             {label}
           </p>
           <div className="max-h-[60vh] overflow-y-auto scrollbar-thin -mx-1 px-1">{children}</div>
@@ -60,7 +60,7 @@ export function PickerSurface({ label, onClose, className, children }: PickerSur
         className
       )}
     >
-      <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/50 px-1.5 pb-1.5">
+      <p className="text-micro font-medium uppercase tracking-wider text-muted-foreground/50 px-1.5 pb-1.5">
         {label}
       </p>
       {children}

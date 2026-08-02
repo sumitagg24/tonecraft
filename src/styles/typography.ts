@@ -15,8 +15,9 @@ export const fontFamily = {
 } as const;
 
 export const fontSize = {
-  micro: "0.625rem", // 10px — deprecated; migrate to sm
-  tiny: "0.6875rem", // 11px — deprecated; migrate to sm
+  nano: "0.5625rem", // 9px — decorative metadata only
+  micro: "0.625rem", // 10px — decorative metadata only
+  tiny: "0.6875rem", // 11px — decorative metadata only
   xs: "0.75rem", // 12px
   sm: "0.875rem", // 14px
   base: "1rem", // 16px

@@ -129,7 +129,7 @@ export function InlineActionRing({ containerRef }: { containerRef: React.RefObje
                   aria-label={action.label}
                 >
                   <action.icon className="w-3.5 h-3.5" style={{ color: action.color }} />
-                  <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[9px] text-muted-foreground/70 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                  <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-nano text-muted-foreground/70 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                     {action.label}
                   </span>
                 </button>
@@ -146,7 +146,7 @@ export function InlineActionRing({ containerRef }: { containerRef: React.RefObje
                   aria-label={action.label}
                 >
                   <action.icon className="w-3.5 h-3.5" style={{ color: action.color }} />
-                  <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[9px] text-muted-foreground/70 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                  <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-nano text-muted-foreground/70 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                     {action.label}
                   </span>
                 </button>

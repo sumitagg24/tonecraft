@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bell, CheckCheck, Zap, Users, BookOpen, Download, CreditCard, AtSign, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { duration, ease } from "@/styles/motion";
 import { useNotifications } from "@/hooks/use-notifications";
 
 interface NotificationItem {
@@ -49,7 +50,7 @@ export function NotificationCenter() {
       >
         <Bell className="w-4 h-4" />
         {unread > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center">
+          <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-primary text-primary-foreground text-nano font-bold flex items-center justify-center">
             {unread > 99 ? "99+" : unread}
           </span>
         )}
@@ -63,7 +64,7 @@ export function NotificationCenter() {
               initial={{ opacity: 0, y: 6, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 6, scale: 0.98 }}
-              transition={{ duration: 0.12 }}
+              transition={{ duration: duration.fast, ease: ease.default }}
               className="absolute right-0 top-full mt-1.5 z-50 w-80 rounded-xl border border-border/40 bg-popover shadow-premium overflow-hidden"
             >
               <div className="flex items-center justify-between px-3 py-2.5 border-b border-border/20">
@@ -71,14 +72,14 @@ export function NotificationCenter() {
                 <div className="flex items-center gap-1">
                   <button
                     onClick={markAllRead}
-                    className="h-6 px-1.5 rounded-md flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground hover:bg-muted/30"
+                    className="h-6 px-1.5 rounded-md flex items-center gap-1 text-micro text-muted-foreground hover:text-foreground hover:bg-muted/30"
                     aria-label="Mark all read"
                   >
                     <CheckCheck className="w-3 h-3" /> Read all
                   </button>
                   <button
                     onClick={clearAll}
-                    className="h-6 px-1.5 rounded-md flex items-center gap-1 text-[10px] text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                    className="h-6 px-1.5 rounded-md flex items-center gap-1 text-micro text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                     aria-label="Clear all"
                   >
                     <Trash2 className="w-3 h-3" /> Clear
@@ -112,8 +113,8 @@ export function NotificationCenter() {
                         </span>
                         <span className="min-w-0 flex-1">
                           <span className="block text-xs font-medium truncate">{n.title}</span>
-                          {n.body && <span className="block text-[11px] text-muted-foreground/70 line-clamp-2 mt-0.5">{n.body}</span>}
-                          <span className="block text-[9px] text-muted-foreground/40 mt-1">
+                          {n.body && <span className="block text-tiny text-muted-foreground/70 line-clamp-2 mt-0.5">{n.body}</span>}
+                          <span className="block text-nano text-muted-foreground/40 mt-1">
                             {new Date(n.createdAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
                           </span>
                         </span>

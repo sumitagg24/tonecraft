@@ -5,6 +5,7 @@ import { Download, Share2, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
+import { duration, ease } from "@/styles/motion";
 
 const FORMATS = [
   { id: "md", label: "Markdown (.md)", mime: "text/markdown" },
@@ -90,13 +91,13 @@ export function ExportMenu({
               initial={{ opacity: 0, y: 6, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 6, scale: 0.98 }}
-              transition={{ duration: 0.12 }}
+              transition={{ duration: duration.fast, ease: ease.default }}
               className={cn(
                 "absolute z-50 mt-1.5 w-52 rounded-xl border border-border/40 bg-popover shadow-premium p-1.5",
                 align === "right" ? "right-0" : "left-0"
               )}
             >
-              <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/50 px-2 py-1">
+              <p className="text-micro font-medium uppercase tracking-wider text-muted-foreground/50 px-2 py-1">
                 Export chat
               </p>
               {FORMATS.map((f) => (

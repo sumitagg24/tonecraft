@@ -104,7 +104,7 @@ export function NavigationRail({ variant, onNavigate }: NavigationRailProps) {
                 <item.icon className={cn("w-[18px] h-[18px] shrink-0", active && "text-primary")} />
                 {!collapsed && <span className="truncate">{item.label}</span>}
                 {!collapsed && item.shortcut && (
-                  <kbd className="ml-auto text-[10px] font-mono text-muted-foreground/50 border border-border/30 rounded px-1.5 py-0.5">
+                  <kbd className="ml-auto text-micro font-mono text-muted-foreground/50 border border-border/30 rounded px-1.5 py-0.5">
                     ⌘{item.shortcut}
                   </kbd>
                 )}
@@ -127,7 +127,7 @@ export function NavigationRail({ variant, onNavigate }: NavigationRailProps) {
         >
           <Plus className="w-[18px] h-[18px] shrink-0" />
           {!collapsed && <span>New Chat</span>}
-          {!collapsed && <kbd className="ml-auto text-[10px] font-mono opacity-60 border border-white/20 rounded px-1.5 py-0.5">⌘N</kbd>}
+          {!collapsed && <kbd className="ml-auto text-micro font-mono opacity-60 border border-white/20 rounded px-1.5 py-0.5">⌘N</kbd>}
         </button>
         <button
           onClick={() => { toggle(); onNavigate?.(); }}
@@ -139,7 +139,7 @@ export function NavigationRail({ variant, onNavigate }: NavigationRailProps) {
         >
           <Command className="w-[18px] h-[18px] shrink-0" />
           {!collapsed && <span>Command</span>}
-          {!collapsed && <kbd className="ml-auto text-[10px] font-mono text-muted-foreground/50 border border-border/30 rounded px-1.5 py-0.5">⌘K</kbd>}
+          {!collapsed && <kbd className="ml-auto text-micro font-mono text-muted-foreground/50 border border-border/30 rounded px-1.5 py-0.5">⌘K</kbd>}
         </button>
       </div>
 

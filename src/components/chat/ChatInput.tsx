@@ -95,7 +95,7 @@ export function ChatInput({ chatId, onSend }: ChatInputProps) {
               <path d="M6 9l6 6 6-6" />
             </svg>
           </motion.button>
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-micro text-muted-foreground">
             {isLoading ? "AI is thinking..." : "⌘+Enter to send"}
           </span>
         </div>

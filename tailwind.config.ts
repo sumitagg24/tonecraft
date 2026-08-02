@@ -88,6 +88,10 @@ const config: Config = {
         mono: ["var(--font-mono)", "JetBrains Mono", "monospace"],
       },
       fontSize: {
+        // micro-scale tokens (Phase 8.16): replace arbitrary text-[9/10/11px]
+        nano: ["0.5625rem", { lineHeight: "1.4" }], // 9px — decorative metadata only
+        micro: ["0.625rem", { lineHeight: "1.4" }], // 10px
+        tiny: ["0.6875rem", { lineHeight: "1.45" }], // 11px
         xs: ["0.75rem", { lineHeight: "1.5" }],
         sm: ["0.875rem", { lineHeight: "1.5" }],
         base: ["1rem", { lineHeight: "1.6" }],

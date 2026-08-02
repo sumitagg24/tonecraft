@@ -157,7 +157,7 @@ export function CommandPalette() {
                   className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/40"
                   aria-label="Command palette search"
                 />
-                <kbd className="hidden sm:inline-flex items-center gap-1 rounded-md border border-border/30 bg-muted/50 px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground/70">
+                <kbd className="hidden sm:inline-flex items-center gap-1 rounded-md border border-border/30 bg-muted/50 px-1.5 py-0.5 text-micro font-mono text-muted-foreground/70">
                   ESC
                 </kbd>
               </div>
@@ -167,7 +167,7 @@ export function CommandPalette() {
                   {grouped.map((group) => (
                     <div key={group.category}>
                       <div className="flex items-center gap-2 px-3 py-1">
-                        <span className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider">
+                        <span className="text-micro font-semibold text-muted-foreground/60 uppercase tracking-wider">
                           {group.label}
                         </span>
                         <div className="flex-1 h-px bg-border/20" />
@@ -192,7 +192,7 @@ export function CommandPalette() {
                               <div className="flex-1 min-w-0">
                                 <p className="font-medium truncate">{item.label}</p>
                                 {item.description && (
-                                  <p className="text-[11px] text-muted-foreground/60 truncate">{item.description}</p>
+                                  <p className="text-tiny text-muted-foreground/60 truncate">{item.description}</p>
                                 )}
                               </div>
                               <ArrowRight className={cn(
@@ -214,13 +214,13 @@ export function CommandPalette() {
               )}
 
               <div className="flex items-center gap-3 px-4 py-2.5 border-t border-border/20 bg-muted/10">
-                <div className="flex items-center gap-3 text-[10px] text-muted-foreground/50">
+                <div className="flex items-center gap-3 text-micro text-muted-foreground/50">
                   <span><kbd className="px-1 py-0.5 rounded border border-border/20 bg-muted/30">↑↓</kbd> Navigate</span>
                   <span><kbd className="px-1 py-0.5 rounded border border-border/20 bg-muted/30">↵</kbd> Select</span>
                   <span><kbd className="px-1 py-0.5 rounded border border-border/20 bg-muted/30">Esc</kbd> Close</span>
                 </div>
                 <div className="flex-1" />
-                <span className="text-[10px] text-muted-foreground/30">{results.length} results</span>
+                <span className="text-micro text-muted-foreground/30">{results.length} results</span>
               </div>
             </div>
           </motion.div>

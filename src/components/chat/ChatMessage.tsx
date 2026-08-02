@@ -128,7 +128,7 @@ export function ChatMessage({ message, isStreaming, onRegenerate, onContinue }: 
             <div>
               <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
               {message.isEdited && (
-                <span className="text-[10px] opacity-60 mt-1 block">(edited)</span>
+                <span className="text-micro opacity-60 mt-1 block">(edited)</span>
               )}
             </div>
           )
@@ -137,13 +137,13 @@ export function ChatMessage({ message, isStreaming, onRegenerate, onContinue }: 
             {!isStreaming && (
               <div className="flex items-center gap-2 mb-3">
                 {tone && (
-                  <Badge variant="outline" className="text-[10px] py-0.5 h-4 border-border/40"
+                  <Badge variant="outline" className="text-micro py-0.5 h-4 border-border/40"
                     style={{ color: tone.color, borderColor: `${tone.color}40` }}
                   >
                     {tone.emoji} {tone.label}
                   </Badge>
                 )}
-                <button onClick={() => setShowMeta(!showMeta)} className="text-[10px] text-muted-foreground hover:text-foreground transition-colors">
+                <button onClick={() => setShowMeta(!showMeta)} className="text-micro text-muted-foreground hover:text-foreground transition-colors">
                   <MoreHorizontal className="w-3 h-3" />
                 </button>
               </div>
@@ -154,7 +154,7 @@ export function ChatMessage({ message, isStreaming, onRegenerate, onContinue }: 
                 variants={{ initial: { opacity: 0, height: 0 }, animate: { opacity: 1, height: "auto" } }}
                 initial="initial" animate="animate"
                 transition={{ duration: duration.fast }}
-                className="mb-3 p-2 rounded-lg bg-muted/30 text-[10px] text-muted-foreground space-y-1"
+                className="mb-3 p-2 rounded-lg bg-muted/30 text-micro text-muted-foreground space-y-1"
               >
                 {message.model && <p>Model: {message.model}</p>}
                 {message.tokens && <p>Tokens: {message.tokens}</p>}

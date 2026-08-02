@@ -58,7 +58,7 @@ export function DraftTray({ drafts, onOpen, onDelete }: DraftTrayProps) {
                     <span className="block text-xs font-medium truncate">
                       {draft.chatId ? `Chat draft` : "Scratchpad"}
                     </span>
-                    <span className="block text-[10px] text-muted-foreground/50 line-clamp-1">
+                    <span className="block text-micro text-muted-foreground/50 line-clamp-1">
                       {draft.content.slice(0, 60)}
                     </span>
                   </span>

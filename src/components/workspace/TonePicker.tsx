@@ -107,13 +107,13 @@ export function TonePicker({ onSelect, onClose }: TonePickerProps) {
           <span className="text-lg leading-none">{preview.emoji}</span>
           <span className="text-xs font-semibold" style={{ color: preview.color }}>{preview.label}</span>
         </div>
-        <p className="text-[11px] leading-relaxed text-muted-foreground italic">{preview.example}</p>
+        <p className="text-tiny leading-relaxed text-muted-foreground italic">{preview.example}</p>
       </div>
 
       {/* Favorites */}
       {favTones.length > 0 && (
         <div className="mb-1.5">
-          <p className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground/40 px-1.5 pb-1">
+          <p className="text-nano font-medium uppercase tracking-wider text-muted-foreground/40 px-1.5 pb-1">
             Favorites
           </p>
           <div className="grid grid-cols-2 gap-1">{favTones.map(toneRow)}</div>
@@ -123,7 +123,7 @@ export function TonePicker({ onSelect, onClose }: TonePickerProps) {
       {/* Recent */}
       {recentTones.length > 0 && (
         <div className="mb-1.5">
-          <p className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground/40 px-1.5 pb-1">
+          <p className="text-nano font-medium uppercase tracking-wider text-muted-foreground/40 px-1.5 pb-1">
             Recent
           </p>
           <div className="flex flex-wrap gap-1 px-1">
@@ -131,7 +131,7 @@ export function TonePicker({ onSelect, onClose }: TonePickerProps) {
               <button
                 key={tone.id}
                 onClick={() => pick(tone.id)}
-                className="flex items-center gap-1 rounded-full border border-border/30 bg-muted/20 px-2 py-0.5 text-[10px] text-muted-foreground hover:text-foreground hover:border-border/60 transition-all"
+                className="flex items-center gap-1 rounded-full border border-border/30 bg-muted/20 px-2 py-0.5 text-micro text-muted-foreground hover:text-foreground hover:border-border/60 transition-all"
               >
                 <span className="text-xs leading-none">{tone.emoji}</span>
                 {tone.label}
@@ -142,7 +142,7 @@ export function TonePicker({ onSelect, onClose }: TonePickerProps) {
       )}
 
       {/* All tones */}
-      <p className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground/40 px-1.5 pb-1 pt-0.5">
+      <p className="text-nano font-medium uppercase tracking-wider text-muted-foreground/40 px-1.5 pb-1 pt-0.5">
         All tones
       </p>
       <div className="grid grid-cols-2 gap-1 max-h-40 overflow-y-auto scrollbar-thin pr-0.5">

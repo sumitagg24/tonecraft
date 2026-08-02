@@ -28,7 +28,7 @@ export default function SearchPage() {
         </div>
 
         {loading && (
-          <div className="flex items-center justify-center py-12">
+          <div className="flex items-center justify-center py-12" role="status" aria-label="Searching">
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
           </div>
         )}
@@ -134,7 +134,7 @@ export default function SearchPage() {
                         className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-muted/30 transition-colors"
                       >
                         <span
-                          className="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] shrink-0"
+                          className="w-6 h-6 rounded-lg flex items-center justify-center text-micro shrink-0"
                           style={{ backgroundColor: `${p.color}22`, color: p.color }}
                         >
                           {p.icon || p.name.charAt(0).toUpperCase()}

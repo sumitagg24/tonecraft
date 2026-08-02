@@ -221,7 +221,7 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
                 {attachments.map((a) => (
                   <span
                     key={a.id}
-                    className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/30 border border-border/30 text-[10px]"
+                    className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/30 border border-border/30 text-micro"
                   >
                     <Paperclip className="w-3 h-3 text-muted-foreground/60 shrink-0" />
                     <span className="max-w-[140px] truncate">{a.file.name}</span>
@@ -420,12 +420,12 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
 
               <div className="flex items-center gap-2">
                 {!isLoading && input && (
-                  <span className="text-[10px] text-muted-foreground/50 whitespace-nowrap">
+                  <span className="text-micro text-muted-foreground/50 whitespace-nowrap">
                     {charCount} chars · ~{estTokens} tokens
                   </span>
                 )}
                 {!isLoading && !input && (
-                  <span className="hidden md:inline text-[10px] text-muted-foreground/40 whitespace-nowrap">⌘Enter to send</span>
+                  <span className="hidden md:inline text-micro text-muted-foreground/40 whitespace-nowrap">⌘Enter to send</span>
                 )}
 
                 <div className="flex items-center gap-1">
@@ -537,7 +537,7 @@ function AdvancedControlsPanel() {
     },
   ];
 
-  const selectClass = "text-[11px] bg-muted/30 border border-border/30 rounded-md px-2 py-1 outline-none focus:ring-1 focus:ring-primary/30 max-w-[130px]";
+  const selectClass = "text-tiny bg-muted/30 border border-border/30 rounded-md px-2 py-1 outline-none focus:ring-1 focus:ring-primary/30 max-w-[130px]";
 
   return (
     <div className="mx-3 sm:mx-4 mt-2 p-3.5 rounded-xl border border-border/20 bg-muted/10 backdrop-blur-sm">
@@ -548,7 +548,7 @@ function AdvancedControlsPanel() {
         </span>
         <button
           onClick={() => useWorkspaceStore.getState().setShowAdvancedControls(false)}
-          className="text-[10px] text-muted-foreground/50 hover:text-foreground transition-colors"
+          className="text-micro text-muted-foreground/50 hover:text-foreground transition-colors"
           aria-label="Close advanced controls"
         >
           <X className="w-3 h-3" />
@@ -558,7 +558,7 @@ function AdvancedControlsPanel() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2.5">
         {selects.map((control) => (
           <div key={control.key} className="flex items-center justify-between">
-            <span className="text-[11px] text-muted-foreground/70">{control.label}</span>
+            <span className="text-tiny text-muted-foreground/70">{control.label}</span>
             <select
               value={String(context[control.key])}
               onChange={(e) => setContext({ [control.key]: e.target.value })}
@@ -572,17 +572,17 @@ function AdvancedControlsPanel() {
         ))}
 
         <div className="flex items-center justify-between">
-          <span className="text-[11px] text-muted-foreground/70">Audience</span>
+          <span className="text-tiny text-muted-foreground/70">Audience</span>
           <input
             value={context.audience}
             onChange={(e) => setContext({ audience: e.target.value })}
             placeholder="e.g. customers, team"
-            className="text-[11px] bg-muted/30 border border-border/30 rounded-md px-2 py-1 outline-none focus:ring-1 focus:ring-primary/30 w-[130px]"
+            className="text-tiny bg-muted/30 border border-border/30 rounded-md px-2 py-1 outline-none focus:ring-1 focus:ring-primary/30 w-[130px]"
           />
         </div>
 
         <div className="flex items-center justify-between">
-          <span className="text-[11px] text-muted-foreground/70">Emojis</span>
+          <span className="text-tiny text-muted-foreground/70">Emojis</span>
           <button
             onClick={() => setContext({ emojis: !context.emojis })}
             role="switch"
@@ -600,7 +600,7 @@ function AdvancedControlsPanel() {
         </div>
 
         <div className="flex items-center justify-between">
-          <span className="text-[11px] text-muted-foreground/70">Creativity</span>
+          <span className="text-tiny text-muted-foreground/70">Creativity</span>
           <div className="flex items-center gap-2">
             <input
               type="range"
@@ -611,7 +611,7 @@ function AdvancedControlsPanel() {
               className="w-20 h-1 accent-primary"
               aria-label="Creativity"
             />
-            <span className="text-[10px] text-muted-foreground/60 w-6 text-right">{context.creativity}%</span>
+            <span className="text-micro text-muted-foreground/60 w-6 text-right">{context.creativity}%</span>
           </div>
         </div>
       </div>

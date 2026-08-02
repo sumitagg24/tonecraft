@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { usePrompts } from "@/hooks/use-prompts";
 import { usePromptsStore, type PromptItem, type PromptVariableDef } from "@/stores/prompts-store";
+import { Modal } from "@/components/shared/Modal";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
@@ -182,7 +183,7 @@ export function PromptLibraryPage({ projectId }: { projectId?: string }) {
         <button
           onClick={() => setSelectedCategory("all")}
           className={cn(
-            "shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all border",
+            "shrink-0 px-3 py-1.5 rounded-lg text-tiny font-medium transition-all border",
             selectedCategory === "all" ? "bg-primary/10 border-primary/30 text-primary" : "border-border/20 text-muted-foreground/70 hover:border-border/40"
           )}
         >
@@ -193,7 +194,7 @@ export function PromptLibraryPage({ projectId }: { projectId?: string }) {
             key={cat}
             onClick={() => setSelectedCategory(cat)}
             className={cn(
-              "shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all border capitalize",
+              "shrink-0 px-3 py-1.5 rounded-lg text-tiny font-medium transition-all border capitalize",
               selectedCategory === cat ? "bg-primary/10 border-primary/30 text-primary" : "border-border/20 text-muted-foreground/70 hover:border-border/40"
             )}
           >
@@ -289,11 +290,11 @@ function PromptCard({
         </button>
       </div>
       <h3 className="text-sm font-semibold mb-1 truncate">{prompt.title}</h3>
-      <p className="text-[11px] text-muted-foreground/60 line-clamp-2 mb-3 min-h-[2rem]">
+      <p className="text-tiny text-muted-foreground/60 line-clamp-2 mb-3 min-h-[2rem]">
         {prompt.description || prompt.content}
       </p>
       <div className="flex items-center justify-between">
-        <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted/40 text-muted-foreground/70 capitalize">{prompt.category}</span>
+        <span className="text-micro px-2 py-0.5 rounded-full bg-muted/40 text-muted-foreground/70 capitalize">{prompt.category}</span>
         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
           <button onClick={onPreview} className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground/60 hover:text-foreground hover:bg-muted/40" aria-label="Preview"><Eye className="w-3.5 h-3.5" /></button>
           <button onClick={onRun} className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground/60 hover:text-foreground hover:bg-muted/40" aria-label="Run"><Play className="w-3.5 h-3.5" /></button>
@@ -344,20 +345,13 @@ function PromptEditor({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96, y: 8 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.96, y: 8 }}
-        className="relative w-full max-w-lg max-h-[85vh] overflow-y-auto scrollbar-thin rounded-2xl bg-background border border-border/40 shadow-premium p-5"
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold">{initial ? "Edit Prompt" : "New Prompt"}</h2>
-          <button onClick={onClose} className="h-7 w-7 rounded-lg text-muted-foreground/60 hover:text-foreground" aria-label="Close"><X className="w-4 h-4" /></button>
-        </div>
-
-        <div className="space-y-3">
+    <Modal
+      open
+      onOpenChange={(o) => { if (!o) onClose(); }}
+      title={initial ? "Edit Prompt" : "New Prompt"}
+      contentClassName="max-h-[85vh] overflow-y-auto scrollbar-thin"
+    >
+      <div className="space-y-3">
           <div>
             <label className="text-xs font-medium text-muted-foreground/70">Title</label>
             <input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1 w-full h-9 bg-muted/30 border border-border/40 rounded-lg px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30" placeholder="e.g. Cold outreach email" />
@@ -394,7 +388,7 @@ function PromptEditor({
               <div className="space-y-2">
                 {detectedVariables.map((name) => (
                   <div key={name} className="flex items-center gap-2">
-                    <span className="text-[11px] font-mono text-primary px-1.5 py-0.5 rounded bg-primary/10">{"{{" + name + "}}"}</span>
+                    <span className="text-tiny font-mono text-primary px-1.5 py-0.5 rounded bg-primary/10">{"{{" + name + "}}"}</span>
                     <input
                       value={variableNames.has(name) ? variables.find((v) => v.name === name)?.label ?? "" : ""}
                       onChange={(e) => {
@@ -421,8 +415,7 @@ function PromptEditor({
             Save
           </button>
         </div>
-      </motion.div>
-    </div>
+    </Modal>
   );
 }
 
@@ -471,23 +464,13 @@ function PromptRunDialog({
   }, [autoRun, run]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96, y: 8 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.96, y: 8 }}
-        className="relative w-full max-w-lg max-h-[85vh] overflow-y-auto scrollbar-thin rounded-2xl bg-background border border-border/40 shadow-premium p-5"
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold flex items-center gap-2">
-            <Play className="w-4 h-4 text-primary" />
-            {prompt.title}
-          </h2>
-          <button onClick={onClose} className="h-7 w-7 rounded-lg text-muted-foreground/60 hover:text-foreground" aria-label="Close"><X className="w-4 h-4" /></button>
-        </div>
-
-        {allVars.length > 0 && (
+    <Modal
+      open
+      onOpenChange={(o) => { if (!o) onClose(); }}
+      title={`▶ ${prompt.title}`}
+      contentClassName="max-h-[85vh] overflow-y-auto scrollbar-thin"
+    >
+      {allVars.length > 0 && (
           <div className="space-y-2.5 mb-4">
             {allVars.map((v) => (
               <div key={v.name}>
@@ -532,7 +515,6 @@ function PromptRunDialog({
             <Play className="w-3.5 h-3.5" /> Run &amp; Copy
           </button>
         </div>
-      </motion.div>
-    </div>
+    </Modal>
   );
 }

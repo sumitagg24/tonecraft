@@ -99,7 +99,7 @@ export function WhyToneCraftComparison() {
                             <X className="w-3 h-3 text-red-500" />
                           </div>
                           <div>
-                            <span className="text-[10px] font-medium text-red-400 uppercase tracking-wider">Generic AI</span>
+                            <span className="text-micro font-medium text-red-400 uppercase tracking-wider">Generic AI</span>
                             <p className="text-sm text-muted-foreground mt-0.5">{item.traditional}</p>
                           </div>
                         </div>
@@ -109,7 +109,7 @@ export function WhyToneCraftComparison() {
                             <Check className="w-3 h-3 text-emerald-500" />
                           </div>
                           <div>
-                            <span className="text-[10px] font-medium text-emerald-400 uppercase tracking-wider">ToneCraft</span>
+                            <span className="text-micro font-medium text-emerald-400 uppercase tracking-wider">ToneCraft</span>
                             <p className="text-sm text-foreground/90 mt-0.5">{item.tonecraft}</p>
                           </div>
                         </div>

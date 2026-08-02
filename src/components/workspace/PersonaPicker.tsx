@@ -93,9 +93,9 @@ export function PersonaPicker({
       <span className="flex-1 min-w-0">
         <span className="block text-xs font-medium truncate">
           {p.name}
-          {isDefault && <span className="ml-1.5 text-[9px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary align-middle">default</span>}
+          {isDefault && <span className="ml-1.5 text-nano px-1.5 py-0.5 rounded-full bg-primary/10 text-primary align-middle">default</span>}
         </span>
-        {p.description && <span className="block text-[10px] text-muted-foreground/60 truncate">{p.description}</span>}
+        {p.description && <span className="block text-micro text-muted-foreground/60 truncate">{p.description}</span>}
       </span>
       <span className="flex items-center gap-0.5 shrink-0">
         <span
@@ -128,24 +128,24 @@ export function PersonaPicker({
     <PickerSurface label="Personas" onClose={onClose} className={cn("w-72 bottom-full left-0 mb-1.5", className)}>
       {favoritePersonas.length > 0 && (
         <div className="mb-1.5">
-          <p className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground/40 px-2.5 py-1">Favorites</p>
+          <p className="text-nano font-medium uppercase tracking-wider text-muted-foreground/40 px-2.5 py-1">Favorites</p>
           {favoritePersonas.map((p) => renderRow(p, p.id === defaultPersonaId))}
         </div>
       )}
       {recentPersonas.length > 0 && (
         <div className="mb-1.5">
-          <p className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground/40 px-2.5 py-1">Recent</p>
+          <p className="text-nano font-medium uppercase tracking-wider text-muted-foreground/40 px-2.5 py-1">Recent</p>
           {recentPersonas.map((p) => renderRow(p, p.id === defaultPersonaId))}
         </div>
       )}
       {others.length > 0 && (
         <div>
-          <p className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground/40 px-2.5 py-1">All</p>
+          <p className="text-nano font-medium uppercase tracking-wider text-muted-foreground/40 px-2.5 py-1">All</p>
           {others.map((p) => renderRow(p, p.id === defaultPersonaId))}
         </div>
       )}
       {personas.length === 0 && (
-        <p className="px-2.5 py-3 text-[11px] text-muted-foreground/50 flex items-center gap-2">
+        <p className="px-2.5 py-3 text-tiny text-muted-foreground/50 flex items-center gap-2">
           <User className="w-3.5 h-3.5" /> No personas yet
         </p>
       )}

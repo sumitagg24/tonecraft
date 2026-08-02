@@ -170,7 +170,7 @@ useEffect(() => {
             >
               Unread
               {unread > 0 && (
-                <Badge variant="secondary" className="ml-1 h-4 w-4 p-0 text-[10px]">
+                <Badge variant="secondary" className="ml-1 h-4 w-4 p-0 text-micro">
                   {unread}
                 </Badge>
               )}
@@ -179,7 +179,7 @@ useEffect(() => {
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-12">
+          <div className="flex items-center justify-center py-12" role="status" aria-label="Loading notifications">
             <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
         ) : filtered.length === 0 ? (
@@ -220,7 +220,7 @@ useEffect(() => {
                           {n.body}
                         </span>
                       )}
-                      <span className="block text-[10px] text-muted-foreground/40 mt-1 flex items-center gap-1">
+                      <span className="block text-micro text-muted-foreground/40 mt-1 flex items-center gap-1">
                         <Clock className="w-2.5 h-2.5" />
                         {new Date(n.createdAt).toLocaleString(undefined, {
                           month: "short",

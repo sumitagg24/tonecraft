@@ -98,7 +98,7 @@ export function TopBar() {
           aria-label="Command palette"
         >
           <Command className="w-3.5 h-3.5" />
-          <kbd className="hidden sm:inline-flex text-[10px] font-mono text-muted-foreground/50">⌘K</kbd>
+          <kbd className="hidden sm:inline-flex text-micro font-mono text-muted-foreground/50">⌘K</kbd>
         </button>
 
         <NotificationCenter />

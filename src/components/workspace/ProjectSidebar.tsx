@@ -65,7 +65,7 @@ export function ProjectSidebar() {
     <div className="flex flex-col h-full">
       <div className="px-3 pt-2 pb-1">
         <div className="flex items-center justify-between mb-1 px-1">
-          <span className="text-[10px] font-medium text-muted-foreground/50 uppercase tracking-wider">Projects</span>
+          <span className="text-micro font-medium text-muted-foreground/50 uppercase tracking-wider">Projects</span>
           <button
             onClick={() => setCreating(true)}
             className="h-5 w-5 rounded-md flex items-center justify-center text-muted-foreground/60 hover:text-foreground hover:bg-muted/40 transition-all"
@@ -107,13 +107,13 @@ export function ProjectSidebar() {
         >
           <Inbox className="w-3.5 h-3.5 shrink-0" />
           <span className="flex-1 text-left truncate">All chats</span>
-          <span className="text-[10px] text-muted-foreground/40">{unfiled}</span>
+          <span className="text-micro text-muted-foreground/40">{unfiled}</span>
         </button>
 
         {loading ? (
-          <p className="px-2 py-3 text-[11px] text-muted-foreground/40">Loading projects…</p>
+          <p className="px-2 py-3 text-tiny text-muted-foreground/40">Loading projects…</p>
         ) : topLevel.length === 0 && !creating ? (
-          <p className="px-2 py-3 text-[11px] text-muted-foreground/40">
+          <p className="px-2 py-3 text-tiny text-muted-foreground/40">
             No projects yet. Create one to organize your chats.
           </p>
         ) : (
@@ -154,7 +154,7 @@ export function ProjectSidebar() {
                   ) : (
                     <span className="flex-1 text-left truncate">{project.name}</span>
                   )}
-                  <span className="text-[10px] text-muted-foreground/40">{chatCount}</span>
+                  <span className="text-micro text-muted-foreground/40">{chatCount}</span>
                   <div className="flex items-center opacity-0 group-hover:opacity-100">
                     <button
                       onClick={(e) => { e.stopPropagation(); setEditingId(project.id); setEditName(project.name); }}
@@ -205,7 +205,7 @@ export function ProjectSidebar() {
         <div className="h-2" />
         <button
           onClick={() => { setCreating(true); }}
-          className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] text-muted-foreground/50 hover:text-foreground hover:bg-muted/20 transition-all"
+          className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-tiny text-muted-foreground/50 hover:text-foreground hover:bg-muted/20 transition-all"
         >
           <FolderPlus className="w-3 h-3" />
           New project

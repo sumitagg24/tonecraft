@@ -129,7 +129,7 @@ export function ContextPanel() {
           <CardContent className="p-4 space-y-4">
             <div className="flex items-center justify-between">
               <Label className="text-xs font-medium text-muted-foreground">Creativity</Label>
-              <span className="text-[10px] text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">
+              <span className="text-micro text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">
                 {creativity[0]}%
               </span>
             </div>

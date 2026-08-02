@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/shared/EmptyState";
 import {
   Files, Upload, Trash2, FileText, Loader2, Search, CheckCircle2, AlertCircle,
 } from "lucide-react";
@@ -137,19 +138,29 @@ export function KnowledgeLibraryPage({ projectId }: { projectId?: string }) {
           <button onClick={() => document.getElementById("knowledge-file-input")?.click()} className="w-full">
             <Upload className="w-6 h-6 mx-auto mb-2 text-muted-foreground/50" />
             <p className="text-sm font-medium">Drop files here or <span className="text-primary">browse</span></p>
-            <p className="text-[11px] text-muted-foreground/50 mt-1">TXT, MD, CSV, JSON, HTML — up to 25MB</p>
+            <p className="text-tiny text-muted-foreground/50 mt-1">TXT, MD, CSV, JSON, HTML — up to 25MB</p>
           </button>
         )}
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-16">
+        <div className="flex items-center justify-center py-16" role="status" aria-label="Loading documents">
           <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16 text-xs text-muted-foreground/60">
-          {files.length === 0 ? "No documents yet. Upload a file to start building your knowledge base." : "No files match your search."}
-        </div>
+        files.length === 0 ? (
+          <EmptyState
+            icon={Files}
+            title="No documents yet"
+            description="Upload a file to start building your knowledge base."
+          />
+        ) : (
+          <EmptyState
+            icon={Search}
+            title="No files match"
+            description="Try a different search term."
+          />
+        )
       ) : (
         <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
           {filtered.map((f) => (
@@ -159,16 +170,16 @@ export function KnowledgeLibraryPage({ projectId }: { projectId?: string }) {
               </span>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm truncate">{f.name}</p>
-                <p className="text-[11px] text-muted-foreground/70 truncate mt-0.5">{f.fileName} · {formatBytes(f.fileSize)}</p>
+                <p className="text-tiny text-muted-foreground/70 truncate mt-0.5">{f.fileName} · {formatBytes(f.fileSize)}</p>
                 <div className="flex items-center gap-2 mt-2">
                   <StatusBadge status={f.status} />
                   {f.status === "ready" && (
-                    <Badge variant="outline" className="text-[10px]">
+                    <Badge variant="outline" className="text-micro">
                       {f.chunkCount.toLocaleString()} chunks
                     </Badge>
                   )}
                 </div>
-                {f.error && <p className="text-[11px] text-destructive mt-1.5 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {f.error}</p>}
+                {f.error && <p className="text-tiny text-destructive mt-1.5 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {f.error}</p>}
               </div>
               <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive shrink-0" onClick={() => removeFile(f.id)} aria-label="Delete">
                 <Trash2 className="w-3.5 h-3.5" />
@@ -184,20 +195,20 @@ export function KnowledgeLibraryPage({ projectId }: { projectId?: string }) {
 function StatusBadge({ status }: { status: string }) {
   if (status === "ready") {
     return (
-      <Badge variant="secondary" className="text-[10px] gap-1 text-emerald-600">
+      <Badge variant="secondary" className="text-micro gap-1 text-emerald-600">
         <CheckCircle2 className="w-3 h-3" /> Ready
       </Badge>
     );
   }
   if (status === "failed") {
     return (
-      <Badge variant="secondary" className="text-[10px] gap-1 text-destructive">
+      <Badge variant="secondary" className="text-micro gap-1 text-destructive">
         <AlertCircle className="w-3 h-3" /> Failed
       </Badge>
     );
   }
   return (
-    <Badge variant="secondary" className="text-[10px] gap-1">
+    <Badge variant="secondary" className="text-micro gap-1">
       <Loader2 className="w-3 h-3 animate-spin" /> {status}
     </Badge>
   );
