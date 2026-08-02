@@ -118,6 +118,11 @@ export interface EngineOptions {
   history?: ConversationMessage[];
   workflow?: Workflow;
   context?: Record<string, unknown>;
+  persona?: {
+    name?: string;
+    systemPrompt?: string;
+    tone?: string;
+  };
   modelId?: string;
   userId?: string;
   plan?: PlanTier;

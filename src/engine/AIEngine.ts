@@ -52,6 +52,7 @@ export class AIEngine {
       {
         history: options.history,
         currentMessage: promptText,
+        persona: options.persona,
         preferences: {
           language: options.language,
           creativity: options.creativity,
@@ -135,6 +136,7 @@ export class AIEngine {
       {
         history: options.history,
         currentMessage: promptText,
+        persona: options.persona,
         preferences: {
           language: options.language,
           creativity: options.creativity,

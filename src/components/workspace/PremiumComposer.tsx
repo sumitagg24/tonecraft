@@ -3,13 +3,14 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Send, Mic, Loader2, X, ChevronDown, Sliders,
-  Globe, Paperclip, Square, Check, Wand2,
+  Globe, Paperclip, Square, Check, Wand2, Sparkles,
 } from "lucide-react";
 import { useChatStore } from "@/stores/chat-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { SmartSuggestions } from "./SmartSuggestions";
 import { ToolPicker } from "./ToolPicker";
 import { TonePicker } from "./TonePicker";
+import { PersonaPicker } from "./PersonaPicker";
 import { PickerSurface } from "./PickerSurface";
 import type { ToolDefinition } from "@/components/tools/ToolDefinitions";
 import { cn } from "@/lib/utils";
@@ -40,7 +41,7 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
   const [input, setInput] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [attachments, setAttachments] = useState<PendingAttachment[]>([]);
-  const [openPicker, setOpenPicker] = useState<"tone" | "platform" | "tool" | null>(null);
+  const [openPicker, setOpenPicker] = useState<"tone" | "platform" | "tool" | "persona" | null>(null);
   const [uploading, setUploading] = useState(false);
   const [toolLoading, setToolLoading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -290,6 +291,26 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
                   <AnimatePresence>
                     {openPicker === "tone" && (
                       <TonePicker onSelect={() => setOpenPicker(null)} onClose={() => setOpenPicker(null)} />
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Persona picker */}
+                <div className="relative">
+                  <ToolbarButton
+                    onClick={() => setOpenPicker(openPicker === "persona" ? null : "persona")}
+                    active={openPicker === "persona"}
+                    disabled={isLoading}
+                    label="Select persona"
+                    aria-expanded={openPicker === "persona"}
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span className="text-xs font-medium hidden sm:inline">Persona</span>
+                    <ChevronDown className={cn("w-3 h-3 opacity-50 transition-transform", openPicker === "persona" && "rotate-180")} />
+                  </ToolbarButton>
+                  <AnimatePresence>
+                    {openPicker === "persona" && (
+                      <PersonaPicker onClose={() => setOpenPicker(null)} />
                     )}
                   </AnimatePresence>
                 </div>

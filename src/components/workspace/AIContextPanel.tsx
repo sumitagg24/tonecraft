@@ -189,13 +189,16 @@ function StatsSection({ messages, wordCount, charCount, estTokens }: any) {
 function PersonasSection() {
   const { selectedPersona, setSelectedPersona } = useChatStore();
   const [personas, setPersonas] = useState<Persona[]>([]);
+  const [defaultPersonaId, setDefaultPersonaId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     fetch("/api/personas")
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data: Persona[]) => {
-        if (!cancelled) setPersonas(Array.isArray(data) ? data : []);
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled) return;
+        setPersonas(Array.isArray(data) ? data : data?.personas ?? []);
+        setDefaultPersonaId(Array.isArray(data) ? null : data?.defaultPersonaId ?? null);
       })
       .catch(() => {});
     return () => {
@@ -214,7 +217,7 @@ function PersonasSection() {
   return (
     <div className="space-y-1.5">
       {personas.map((persona) => {
-        const active = selectedPersona === persona.id;
+        const active = selectedPersona === persona.id || (selectedPersona === null && persona.id === defaultPersonaId);
         return (
           <button
             key={persona.id}
@@ -229,7 +232,12 @@ function PersonasSection() {
               {persona.icon || persona.name.charAt(0).toUpperCase()}
             </span>
             <span className="min-w-0 flex-1 text-left">
-              <span className="block text-xs font-medium truncate">{persona.name}</span>
+              <span className="block text-xs font-medium truncate">
+                {persona.name}
+                {persona.id === defaultPersonaId && (
+                  <span className="ml-1.5 text-[9px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary align-middle">default</span>
+                )}
+              </span>
               {persona.description && (
                 <span className="block text-[10px] text-muted-foreground/60 truncate">{persona.description}</span>
               )}

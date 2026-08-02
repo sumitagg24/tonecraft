@@ -42,8 +42,8 @@ export default function SettingsPage() {
   useEffect(() => {
     fetch("/api/personas")
       .then((res) => res.json())
-      .then((data: Persona[]) => {
-        setPersonas(data);
+      .then((data: Persona[] | { personas: Persona[] }) => {
+        setPersonas(Array.isArray(data) ? data : data.personas);
         setPersonaLoading(false);
       })
       .catch(() => setPersonaLoading(false));

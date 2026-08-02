@@ -69,6 +69,13 @@ export interface Persona {
   icon: string | null;
   color: string;
   isDefault: boolean;
+  isFavorite: boolean;
+  tone: string;
+  temperature: number | null;
+  emojiUsage: string;
+  writingStyle: string;
+  platformDefaults: Record<string, string> | null;
+  projectId: string | null;
 }
 
 export interface Usage {

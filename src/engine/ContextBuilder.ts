@@ -15,6 +15,10 @@ export interface ContextSource {
   persona?: {
     name?: string;
     systemPrompt?: string;
+    tone?: string;
+    writingStyle?: string;
+    emojiUsage?: string;
+    temperature?: number | null;
   };
   metadata?: Record<string, unknown>;
 }
@@ -35,13 +39,23 @@ export class ContextBuilder {
     }
 
     // Tone
-    const tone = config.tone || source.preferences?.tone || "professional";
+    const tone = source.persona?.tone || config.tone || source.preferences?.tone || "professional";
     systemParts.push(this.getToneDescription(tone as Tone));
 
     // Style
-    const style = source.preferences?.style || "standard";
+    const style = source.persona?.writingStyle || source.preferences?.style || "standard";
     if (style !== "standard") {
       systemParts.push(`Writing style: ${style}`);
+    }
+
+    // Persona emoji usage
+    if (source.persona?.emojiUsage && source.persona.emojiUsage !== "none") {
+      const emojiMap: Record<string, string> = {
+        subtle: "Use emojis sparingly.",
+        moderate: "Use emojis moderately.",
+        heavy: "Use emojis liberally.",
+      };
+      systemParts.push(`Emoji: ${emojiMap[source.persona.emojiUsage] || ""}`);
     }
 
     // User preferences

@@ -8,7 +8,7 @@ let activeController: AbortController | null = null;
 export function useChat() {
   const sendMessage = useCallback(
     async (content: string, chatId: string) => {
-      const { selectedTone, selectedModel, setIsLoading, clearStreamingContent, addMessage, appendStreamingContent, setMessages, context } = useChatStore.getState();
+      const { selectedTone, selectedModel, selectedPersona, setIsLoading, clearStreamingContent, addMessage, appendStreamingContent, setMessages, context } = useChatStore.getState();
       setIsLoading(true);
       clearStreamingContent();
 
@@ -38,7 +38,7 @@ export function useChat() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           signal: controller.signal,
-          body: JSON.stringify({ content, tone: selectedTone, model: selectedModel, ...context }),
+          body: JSON.stringify({ content, tone: selectedTone, model: selectedModel, personaId: selectedPersona, ...context }),
         });
 
         if (!response.ok) {

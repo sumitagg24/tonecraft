@@ -20,6 +20,7 @@ const messageSchema = z.object({
   emojis: z.boolean().optional(),
   audience: z.string().optional(),
   formality: z.enum(["casual", "neutral", "formal"]).optional(),
+  personaId: z.string().nullable().optional(),
 });
 
 export async function POST(
@@ -49,11 +50,40 @@ export async function POST(
     return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
 
-  const { content, tone, platform, language, length, creativity, audience, formality } = parsed.data;
+  const { content, tone, platform, language, length, creativity, audience, formality, personaId } = parsed.data;
 
   const chat = await chatRepository.findByIdAndUser(chatId, userId);
   if (!chat) {
     return NextResponse.json({ error: "Chat not found" }, { status: 404 });
+  }
+
+  let persona: { name?: string; systemPrompt?: string; tone?: string; writingStyle?: string; emojiUsage?: string } | undefined;
+  if (personaId) {
+    const p = await prisma.persona.findFirst({ where: { id: personaId, userId } });
+    if (p) {
+      persona = {
+        name: p.name,
+        systemPrompt: p.systemPrompt,
+        tone: p.tone || undefined,
+        writingStyle: p.writingStyle || undefined,
+        emojiUsage: p.emojiUsage || undefined,
+      };
+    }
+  }
+  if (!persona) {
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { defaultPersonaId: true } });
+    if (user?.defaultPersonaId) {
+      const p = await prisma.persona.findFirst({ where: { id: user.defaultPersonaId, userId } });
+      if (p) {
+        persona = {
+          name: p.name,
+          systemPrompt: p.systemPrompt,
+          tone: p.tone || undefined,
+          writingStyle: p.writingStyle || undefined,
+          emojiUsage: p.emojiUsage || undefined,
+        };
+      }
+    }
   }
 
   await messageRepository.create({ chatId, role: "user", content, tone, platform, language });
@@ -91,6 +121,7 @@ export async function POST(
           formality: formality as any,
           audience,
           history,
+          persona,
           userId,
           plan: plan.tier,
         });

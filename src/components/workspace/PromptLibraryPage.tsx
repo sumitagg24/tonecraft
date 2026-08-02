@@ -464,7 +464,10 @@ function PromptRunDialog({
   }, [renderPrompt, prompt.content, values]);
 
   useEffect(() => {
-    if (autoRun) run();
+    if (autoRun) {
+      const timer = setTimeout(run, 0);
+      return () => clearTimeout(timer);
+    }
   }, [autoRun, run]);
 
   return (

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 // Strict allowlist for color values (CSS hex)
@@ -21,6 +22,13 @@ const updateSchema = z.object({
     "Color must be a valid hex color (e.g. #6366F1)"
   ).optional(),
   isDefault: z.boolean().optional(),
+  isFavorite: z.boolean().optional(),
+  tone: z.string().max(50).optional(),
+  temperature: z.number().int().min(0).max(100).optional(),
+  emojiUsage: z.enum(["none", "subtle", "moderate", "heavy"]).optional(),
+  writingStyle: z.string().max(50).optional(),
+  platformDefaults: z.record(z.string(), z.string()).optional(),
+  projectId: z.string().nullable().optional(),
 });
 
 export async function PATCH(
@@ -49,14 +57,20 @@ export async function PATCH(
   }
 
   // Guard: strip isDefault for user personas (never allow elevating to global default)
-  const data = { ...parsed.data };
+  const data = { ...parsed.data } as Record<string, unknown>;
   if (data.isDefault === true) {
     delete data.isDefault;
+  }
+  if (data.platformDefaults !== undefined) {
+    data.platformDefaults = data.platformDefaults as Prisma.InputJsonValue;
+  }
+  if (data.projectId === null) {
+    data.projectId = null;
   }
 
   const updated = await prisma.persona.update({
     where: { id },
-    data,
+    data: data as Prisma.PersonaUpdateInput,
   });
   return NextResponse.json(updated);
 }
