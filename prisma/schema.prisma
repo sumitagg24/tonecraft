@@ -23,11 +23,23 @@ model User {
   preferredStyle    String?       @default("standard")
   responseLength    String?       @default("medium")
   streamingEnabled  Boolean       @default(true)
+  defaultPersonaId  String?
   chats             Chat[]
   personas          Persona[]
   subscription      Subscription?
   usage             Usage?
   usageRecords      UsageRecord[]
+  projects          Project[]
+  projectMembership ProjectMember[]
+  prompts           Prompt[]
+  knowledgeFiles    KnowledgeFile[]
+  drafts            Draft[]
+  notifications     Notification[]
+  notificationPrefs NotificationPreference?
+  shareLinks        ShareLink[]
+  exportJobs        ExportJob[]
+  bookmarks         Bookmark[]
+  comments          Comment[]
 
   @@index([clerkId])
   @@index([email])
@@ -46,13 +58,19 @@ model Chat {
   isPinned   Boolean   @default(false)
   language   String?
   platform   String?
+  projectId  String?
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project    Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
   messages   Message[]
+  drafts     Draft[]
+  shareLinks ShareLink[]
+  exportJobs ExportJob[]
 
   @@index([userId, updatedAt])
   @@index([userId, isPinned])
   @@index([userId, isFavorite])
   @@index([userId, isArchived])
+  @@index([projectId])
 }
 
 model Message {
@@ -75,6 +93,8 @@ model Message {
   chat        Chat         @relation(fields: [chatId], references: [id], onDelete: Cascade)
   parent      Message?     @relation("MessageChain", fields: [parentId], references: [id])
   children    Message[]    @relation("MessageChain")
+  knowledge   MessageKnowledge[]
+  comments    Comment[]
 
   @@index([chatId, createdAt])
   @@index([chatId, feedback])
@@ -94,18 +114,27 @@ model Attachment {
 }
 
 model Persona {
-  id           String   @id @default(cuid())
-  userId       String
-  name         String
-  description  String?
-  systemPrompt String
-  icon         String?
-  color        String   @default("#6366F1")
-  isDefault    Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id              String   @id @default(cuid())
+  userId          String
+  name            String
+  description     String?
+  systemPrompt    String
+  icon            String?
+  color           String   @default("#6366F1")
+  isDefault       Boolean  @default(false)
+  tone            String   @default("professional")
+  temperature     Int?     @default(70)
+  emojiUsage      String   @default("subtle")
+  writingStyle    String   @default("standard")
+  platformDefaults Json?
+  isFavorite      Boolean  @default(false)
+  projectId       String?
+  createdAt       DateTime @default(now())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project         Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([projectId])
 }
 
 model Usage {
@@ -159,4 +188,243 @@ model Subscription {
   providerSubscriptionId String?   @unique
   providerPriceId        String?
   user                   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Project {
+  id          String          @id @default(cuid())
+  userId      String
+  name        String
+  emoji       String?
+  color       String          @default("#6366F1")
+  description String?
+  parentId    String?
+  parent      Project?        @relation("ProjectTree", fields: [parentId], references: [id])
+  children    Project[]       @relation("ProjectTree")
+  archived    Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chats       Chat[]
+  personas    Persona[]
+  prompts     Prompt[]
+  knowledgeFiles KnowledgeFile[]
+  members     ProjectMember[]
+  shareLinks  ShareLink[]
+  exportJobs  ExportJob[]
+
+  @@index([userId, parentId])
+  @@index([userId, archived])
+}
+
+model ProjectMember {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String
+  role      String   @default("viewer")
+  createdAt DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@index([userId])
+}
+
+model Prompt {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  description String?
+  content     String
+  category    String   @default("general")
+  variables   Json?
+  isFavorite  Boolean  @default(false)
+  isArchived  Boolean  @default(false)
+  projectId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project     Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  bookmarks   Bookmark[]
+
+  @@index([userId, category])
+  @@index([projectId])
+}
+
+model KnowledgeFile {
+  id          String   @id @default(cuid())
+  userId      String
+  projectId   String?
+  name        String
+  fileName    String
+  fileType    String
+  fileSize    Int
+  storageKey  String
+  status      String   @default("pending")
+  error       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project     Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  chunks      KnowledgeChunk[]
+  job         KnowledgeJob?
+  messageLinks MessageKnowledge[]
+
+  @@index([userId])
+  @@index([projectId, status])
+}
+
+model KnowledgeChunk {
+  id        String   @id @default(cuid())
+  fileId    String
+  content   String
+  index     Int
+  embedding Json?
+  createdAt DateTime @default(now())
+  file      KnowledgeFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@index([fileId, index])
+}
+
+model KnowledgeJob {
+  id        String        @id @default(cuid())
+  fileId    String        @unique
+  status    String        @default("queued")
+  error     String?
+  attempts  Int           @default(0)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  file      KnowledgeFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+}
+
+model MessageKnowledge {
+  id        String         @id @default(cuid())
+  messageId String
+  fileId    String
+  createdAt DateTime       @default(now())
+  message   Message        @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  file      KnowledgeFile  @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@index([fileId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  body      String?
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
+}
+
+model NotificationPreference {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  emailEnabled       Boolean  @default(true)
+  inAppEnabled       Boolean  @default(true)
+  generationComplete Boolean  @default(true)
+  creditsLow         Boolean  @default(true)
+  knowledgeReady     Boolean  @default(true)
+  exportReady        Boolean  @default(true)
+  invite             Boolean  @default(true)
+  comment            Boolean  @default(true)
+  updatedAt          DateTime @updatedAt
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Draft {
+  id        String   @id @default(cuid())
+  userId    String
+  chatId    String?
+  content   String
+  tone      String?
+  personaId String?
+  platform  String?
+  language  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chat      Chat?    @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  versions  DraftVersion[]
+
+  @@unique([userId, chatId])
+  @@index([userId, updatedAt])
+}
+
+model DraftVersion {
+  id        String   @id @default(cuid())
+  draftId   String
+  content   String
+  createdAt DateTime @default(now())
+  draft     Draft    @relation(fields: [draftId], references: [id], onDelete: Cascade)
+
+  @@index([draftId, createdAt])
+}
+
+model ShareLink {
+  id        String    @id @default(cuid())
+  token     String    @unique
+  userId    String
+  chatId    String?
+  projectId String?
+  role      String    @default("viewer")
+  expiresAt DateTime?
+  revoked   Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chat      Chat?     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  project   Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+}
+
+model ExportJob {
+  id         String    @id @default(cuid())
+  userId     String
+  chatId     String?
+  projectId  String?
+  format     String
+  status     String    @default("queued")
+  resultKey  String?
+  error      String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chat       Chat?     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  project    Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  userId    String
+  messageId String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId, createdAt])
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  userId    String
+  messageId String?
+  chatId    String?
+  promptId  String?
+  label     String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prompt    Prompt?  @relation(fields: [promptId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }
