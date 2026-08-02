@@ -9,6 +9,7 @@ import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { cn } from "@/lib/utils";
 import { duration, ease } from "@/styles/motion";
 import { ConversationSidebar } from "./ConversationSidebar";
+import { ProjectSidebar } from "./ProjectSidebar";
 import { AIContextPanel } from "./AIContextPanel";
 import { PanelRightOpen, PanelRightClose, PanelLeftOpen, PanelLeftClose } from "lucide-react";
 
@@ -82,7 +83,16 @@ export function ComposeWorkspace({ children }: ComposeWorkspaceProps) {
         transition={t({ duration: duration.normal, ease: ease.default })}
         className="hidden md:block shrink-0 overflow-hidden border-r border-border/30"
       >
-        {sidebarOpen && <ConversationSidebar />}
+        {sidebarOpen && (
+          <div className="flex flex-col h-full">
+            <div className="shrink-0 border-b border-border/10">
+              <ProjectSidebar />
+            </div>
+            <div className="flex-1 min-h-0 border-t border-border/10">
+              <ConversationSidebar />
+            </div>
+          </div>
+        )}
       </motion.aside>
 
       {/* Mobile: conversation drawer */}

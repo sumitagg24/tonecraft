@@ -12,6 +12,7 @@ const chatSelect = {
   isPinned: true,
   isFavorite: true,
   isArchived: true,
+  projectId: true,
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -68,6 +69,7 @@ export class ChatRepository {
     title: string; tone: string; model: string;
     platform: string; language: string;
     isPinned: boolean; isFavorite: boolean; isArchived: boolean;
+    projectId: string | null;
   }>): Promise<boolean> {
     const result = await prisma.chat.updateMany({
       where: { id, userId },

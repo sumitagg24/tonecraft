@@ -24,6 +24,7 @@ export interface Chat {
   isPinned: boolean;
   isFavorite: boolean;
   isArchived: boolean;
+  projectId?: string | null;
   createdAt: Date;
   updatedAt: Date;
   messages?: Message[];
