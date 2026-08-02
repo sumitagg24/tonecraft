@@ -1,5 +1,7 @@
-import { ok, withApiHandler } from "@/lib/withApiHandler";
+import { ok, fail, withApiHandler } from "@/lib/withApiHandler";
 import { toolService } from "@/services/ToolService";
+import { planService } from "@/services/PlanService";
+import { checkMessageLimit } from "@/lib/ratelimit";
 import { z } from "zod";
 
 const toolSchema = z.object({
@@ -19,6 +21,17 @@ const api = withApiHandler({ schema: toolSchema });
 
 export const POST = api.POST(async (ctx, body) => {
   const { toolId, input, model, ...context } = body as typeof toolSchema._output;
+
+  // Tool execution is LLM-costly — same caps as messages (audit 12 P0.3).
+  const plan = await planService.getPlan(ctx.user.id);
+  const limit = await checkMessageLimit(ctx.user.id, plan.tier);
+  if (!limit.allowed) {
+    return fail("RATE_LIMITED", "Rate limit exceeded", 429, {
+      limit: limit.limit,
+      window: limit.window,
+      remaining: limit.remaining,
+    });
+  }
 
   const result = await toolService.execute({
     toolId,

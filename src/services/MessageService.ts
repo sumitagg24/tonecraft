@@ -1,7 +1,6 @@
 import { messageRepository } from "@/repositories/MessageRepository";
 import { chatRepository } from "@/repositories/ChatRepository";
 import { aiEngine } from "@/engine/AIEngine";
-import { prisma } from "@/lib/prisma";
 import { planService } from "@/services/PlanService";
 
 export class MessageService {
@@ -97,7 +96,7 @@ export class MessageService {
   async continueMessage(messageId: string, userId: string) {
     const [plan, original] = await Promise.all([
       planService.getPlan(userId),
-      messageRepository.findById(messageId),
+      messageRepository.findByIdAndUser(messageId, userId),
     ]);
     if (!original) throw new Error("Message not found");
 
@@ -120,18 +119,9 @@ export class MessageService {
       latency: result.latency,
     });
   }
-
-  async editMessage(messageId: string, newContent: string) {
-    return messageRepository.update(messageId, { content: newContent, isEdited: true, editedAt: new Date() });
-  }
-
-  async setFeedback(messageId: string, fb: "liked" | "disliked" | null) {
-    return messageRepository.updateFeedback(messageId, fb);
-  }
-
-  async deleteMessage(messageId: string) {
-    return prisma.message.delete({ where: { id: messageId } }).then(() => true);
-  }
+  // NOTE: edit/delete/feedback live in the ownership-scoped API routes
+  // (MessageRepository.updateForUser/deleteForUser/updateFeedbackForUser).
+  // Unscoped variants were removed — they were dead code and an IDOR trap.
 }
 
 export const messageService = new MessageService();

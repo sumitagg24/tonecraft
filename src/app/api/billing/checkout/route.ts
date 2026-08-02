@@ -3,6 +3,8 @@ import { ApiError } from "@paddle/paddle-node-sdk";
 import { billingService } from "@/billing/BillingService";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { planService } from "@/services/PlanService";
+import { checkMessageLimit } from "@/lib/ratelimit";
 
 const PLAN_PRICE_MAP: Record<string, string | undefined> = {
   Pro: process.env.PADDLE_PRICE_PRO ?? "pri_01kyn5577vywxh8z8b40h96ka5",
@@ -16,6 +18,13 @@ export const POST = api.POST(async (ctx, body) => {
     const { plan } = (body ?? {}) as { plan?: string };
     if (!plan || !PLAN_PRICE_MAP[plan]) {
       return fail("BAD_REQUEST", "Invalid request.", 400);
+    }
+
+    // Checkout creates Paddle customers/sessions — throttle (audit 12 P1.8).
+    const currentPlan = await planService.getPlan(ctx.user.id);
+    const limit = await checkMessageLimit(ctx.user.id, currentPlan.tier);
+    if (!limit.allowed) {
+      return fail("RATE_LIMITED", "Too many requests, try again later", 429);
     }
 
     const priceId = PLAN_PRICE_MAP[plan];

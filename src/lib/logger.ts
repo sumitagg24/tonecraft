@@ -1,3 +1,5 @@
+import { reportError } from "@/lib/error-reporting";
+
 type LogLevel = "debug" | "info" | "warn" | "error";
 
 type LogEntry = {
@@ -64,15 +66,19 @@ export const logger = {
     }
   },
   error: (message: string, meta?: unknown, error?: Error) => {
+    // Callers sometimes pass an Error as `meta` (e.g. caught unknowns) — normalize it.
+    const err = error ?? (meta instanceof Error ? meta : undefined);
+    const cleanMeta = meta instanceof Error ? undefined : meta;
     const entry = {
       timestamp: new Date().toISOString(),
       level: "error" as LogLevel,
       message,
-      meta,
-      error: error?.stack,
+      meta: cleanMeta,
+      error: err?.stack,
     };
-    console.error(formatMessage("error", message, meta), error ?? "");
+    console.error(formatMessage("error", message, cleanMeta), err ?? "");
     persistLog(entry);
+    reportError(err ?? new Error(message), { message, ...(cleanMeta !== undefined && typeof cleanMeta === "object" ? (cleanMeta as Record<string, unknown>) : {}) });
   },
   getLogs: (): LogEntry[] => {
     try {

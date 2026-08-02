@@ -19,6 +19,48 @@ export class MessageRepository {
     }) as unknown as Message | null;
   }
 
+  /** Ownership-scoped lookup — message must belong to a chat owned by `userId`. */
+  async findByIdAndUser(id: string, userId: string) {
+    return prisma.message.findFirst({
+      where: { id, chat: { userId } },
+      include: { attachments: true },
+    }) as unknown as Message | null;
+  }
+
+  /** Ownership-scoped update — returns false when the message doesn't belong to `userId`. */
+  async updateForUser(
+    id: string,
+    userId: string,
+    data: Partial<{
+      content: string; model: string; tokens: number;
+      latency: number; isEdited: boolean; editedAt: Date;
+      feedback: string | null;
+    }>
+  ): Promise<boolean> {
+    const result = await prisma.message.updateMany({
+      where: { id, chat: { userId } },
+      data,
+    });
+    return result.count > 0;
+  }
+
+  /** Ownership-scoped feedback update. */
+  async updateFeedbackForUser(id: string, userId: string, feedback: "liked" | "disliked" | null): Promise<boolean> {
+    const result = await prisma.message.updateMany({
+      where: { id, chat: { userId } },
+      data: { feedback },
+    });
+    return result.count > 0;
+  }
+
+  /** Ownership-scoped delete. */
+  async deleteForUser(id: string, userId: string): Promise<boolean> {
+    const result = await prisma.message.deleteMany({
+      where: { id, chat: { userId } },
+    });
+    return result.count > 0;
+  }
+
   async create(data: {
     chatId: string; role: string; content: string;
     tone?: string; platform?: string; language?: string;
@@ -38,20 +80,6 @@ export class MessageRepository {
       },
       include: { attachments: true },
     }) as unknown as Message;
-  }
-
-  async update(id: string, data: Partial<{
-    content: string; model: string; tokens: number;
-    latency: number; isEdited: boolean; editedAt: Date;
-    feedback: string | null;
-  }>): Promise<boolean> {
-    const result = await prisma.message.update({ where: { id }, data });
-    return !!result;
-  }
-
-  async updateFeedback(id: string, feedback: "liked" | "disliked" | null): Promise<boolean> {
-    const result = await prisma.message.update({ where: { id }, data: { feedback } });
-    return !!result;
   }
 
   async regenerate(originalMessage: Message, newContent: string, model: string, tokens: number, latency: number) {

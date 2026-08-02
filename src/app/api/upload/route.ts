@@ -4,28 +4,7 @@ import { getR2Client } from "@/lib/r2";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { v4 as uuidv4 } from "uuid";
 import { capabilities } from "@/lib/capabilities";
-
-const ALLOWED_MIME_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/gif",
-  "image/webp",
-  "application/pdf",
-  "text/plain",
-  "text/html",
-  "text/css",
-  "text/javascript",
-  "application/json",
-  "application/xml",
-  "audio/mpeg",
-  "audio/wav",
-]);
-
-const ALLOWED_EXTENSIONS = new Set([
-  "jpg", "jpeg", "png", "gif", "webp",
-  "pdf", "txt", "html", "css", "js", "json", "xml",
-  "mp3", "wav",
-]);
+import { validateFile } from "@/lib/file-validation";
 
 function sanitizeFilename(name: string): string {
   // Remove path traversal sequences and null bytes
@@ -35,11 +14,6 @@ function sanitizeFilename(name: string): string {
     .replace(/[^a-zA-Z0-9._-]/g, "_");
   // Ensure it doesn't start with dot (hidden file)
   return sanitized.startsWith(".") ? sanitized.slice(1) : sanitized || "unnamed";
-}
-
-function getExtension(name: string): string {
-  const lastDot = name.lastIndexOf(".");
-  return lastDot >= 0 ? name.slice(lastDot + 1).toLowerCase() : "";
 }
 
 const api = withApiHandler();
@@ -54,25 +28,12 @@ export const POST = api.POST(async (ctx) => {
     return fail("BAD_REQUEST", "No file provided", 400);
   }
 
-  // Validate MIME type against allowlist
-  const mimeType = (file.type || "application/octet-stream").toLowerCase();
-  if (!ALLOWED_MIME_TYPES.has(mimeType)) {
-    return fail("UNSUPPORTED_MEDIA_TYPE", "File type not allowed", 415);
-  }
-
-  // Validate extension against allowlist
-  const ext = getExtension(file.name);
-  if (!ALLOWED_EXTENSIONS.has(ext)) {
-    return fail("UNSUPPORTED_MEDIA_TYPE", "File extension not allowed", 415);
-  }
-
-  // Sanitize filename to prevent path traversal
-  const safeName = sanitizeFilename(file.name);
-  const safeMimeType = mimeType; // Already validated above
-
-  // Plan-aware size limit
+  // Plan-aware limits first (audit 12 P0.4): reject oversized files BEFORE reading
+  // the body into memory, so a large upload can never be a memory DoS.
   const plan = await capabilities.require({ userId: ctx.user.id, action: "upload-file" });
   const maxSize = plan.limits.maxFileSize;
+  const maxFilesPerDay = plan.limits.maxFilesPerDay;
+  const maxStorageBytes = plan.limits.maxStorageMB * 1024 * 1024;
 
   if (file.size > maxSize) {
     return fail(
@@ -82,8 +43,28 @@ export const POST = api.POST(async (ctx) => {
     );
   }
 
-  const key = `uploads/${ctx.user.id}/${uuidv4()}-${safeName}`;
+  const usage = await prisma.usage.findUnique({ where: { userId: ctx.user.id } });
+  if (maxFilesPerDay !== Infinity && (usage?.filesUploaded ?? 0) >= maxFilesPerDay) {
+    return fail("RATE_LIMITED", "Daily upload limit reached", 429);
+  }
+  if ((usage?.storageUsed ?? 0) + file.size > maxStorageBytes) {
+    return fail("PAYLOAD_TOO_LARGE", "Storage limit reached", 413);
+  }
+
+  // Now read and validate content (never trust the client MIME).
   const bytes = await file.arrayBuffer();
+  const buffer = new Uint8Array(bytes);
+
+  const validation = validateFile(file.name, file.type, buffer);
+  if (!validation.ok) {
+    return fail("UNSUPPORTED_MEDIA_TYPE", validation.reason, 415);
+  }
+  const safeMimeType = validation.mime;
+
+  // Sanitize filename to prevent path traversal
+  const safeName = sanitizeFilename(file.name);
+
+  const key = `uploads/${ctx.user.id}/${uuidv4()}-${safeName}`;
 
   await getR2Client().send(
     new PutObjectCommand({

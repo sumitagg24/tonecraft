@@ -4,18 +4,25 @@
 Accepted
 
 ## Context
-ToneCraft uses Paddle for billing but also supports per-token credits for fine-grained usage tracking and to maintain a balance for users who buy directly (e.g., token packs). The system must expose credit usage, rollover, and bulk discounts while integrating with Paddle subscriptions.
+Billing must expose a transparent, per-user credit ledger that integrates with Paddle subscriptions and tracks usage for AI generations.
 
 ## Decision
-Maintain Paddle for subscriptions but add an internal credits ledger powered by Postgres. Each user has a credits balance that can be increased via purchases (one-time token packs, subscriptions, or manual credit additions). Every AI generation consumes credits according to the provider/model token rate.
+Maintain an internal credit ledger (`Usage` model) that logs each generation's token consumption. Paddle handles recurring subscriptions; the ledger supplements them with token-level granularity.
+
+## Evidence
+- **Models**: `Usage`, `UsageRecord`, `Subscription` in `prisma/schema.prisma` (lines 140-191)
+- **Guard**: `src/services/UsageGuard.ts` — `canAfford()` (lines 62-67), `record()` (lines 69-117)
+- **Integration**: `AIEngine.generate()` calls `usageGuard.canAfford()` (line 71) and `usageGuard.record()` (line 95)
+- **Credits Config**: `src/config/credits.ts` — `getMonthlyCredits()`, `isUnlimited()`
+- **Plan Service**: `src/services/PlanService.ts` — resolves user plan tier
 
 ## Alternatives Considered
-1. Only Paddle usage events - Higher cost for per-token accuracy; usage is reported rather than metered.
-2. Stripe with custom metering - More granular but adds complexity for tax and global payments.
+1. **Paddle usage events only** — Rejected; insufficient granularity for per-token tracking
+2. **Stripe metered billing** — Rejected; Paddle already handles subscriptions
 
 ## Tradeoffs
-- Pro: Granular control, supports promotions and internal credit adjustments, gives users transparency over token consumption.
-- Con: Requires maintenance of credit balance, separate from Paddle's metering (could lead to double charging if not careful).
+- **Pro**: Granular control, supports promotions and internal credit adjustments
+- **Con**: Requires maintenance of credit balance, separate from Paddle's metering
 
 ## Consequences
-All generation calls must check credit balance before proceeding and update the ledger. The billing dashboard displays both subscription usage and credit balance. Internal services (e.g., admin) can add/remove credits. Integration with Paddle webhooks ensures synchronization on subscription events.
+All generation calls check credit balance before proceeding and update the ledger. The billing dashboard displays both subscription status and credit balance.

@@ -35,7 +35,7 @@ import {
   Video,
   Wand,
   Wrench,
-  Zap,
+  Zap
 } from "lucide-react";
 
 export const toolIcons = {
@@ -75,5 +75,5 @@ export const toolIcons = {
   Video,
   Wand,
   Wrench,
-  Zap,
+  Zap
 } as const;

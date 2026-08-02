@@ -1,22 +1,34 @@
 # ADR-001: Multi-Provider AI Engine
 
 ## Status
-Accepted
+Accepted (with partial implementation)
 
 ## Context
-ToneCraft serves diverse writing tasks (creative, technical, code-assist). Relying on a single model risks cost spikes, vendor lock-in, and degraded quality across task types. Users expect provider flexibility and usage transparency.
+ToneCraft serves diverse writing tasks and must avoid vendor lock‑in. Users expect flexibility to switch between AI providers while maintaining usage transparency and cost efficiency. The architecture requires a unified interface that selects providers based on capability needs, cost, and health.
 
 ## Decision
-Adopt a unified multi-provider AI engine that abstracts OpenAI, Anthropic, Google Gemini, and other providers behind a single interface. Routing selects the cheapest capable model based on task, fallback routing, user preference, provider health, and remaining credits.
+Adopt a unified multi‑provider AI engine that abstracts OpenAI, Anthropic, Google Gemini, and other providers behind a single interface. Routing selects the cheapest capable model based on:
+- Task‑level capability requirements (vision, JSON mode, tool calling)
+- User preference
+- Remaining credits
+- Provider health status
+
+The router is implemented in `src/engine/ProviderRouter.ts`. Provider capabilities are resolved via `src/services/ModelRegistry.ts`, which reads from `src/config/models.ts`.
 
 ## Alternatives Considered
-1. Single vendor (OpenAI only) — simpler integration, higher cost, lock-in.
-2. Single vendor (Anthropic) — advanced reasoning but limited vision and higher latency.
-3. OpenRouter as sole aggregator — reduced provider control, variable latency.
+1. **Static provider mapping** – Simple but inflexible to cost or capability changes.
+2. **Round‑robin with health checks** – Ignores cost and capability level.
+3. **User‑initiated provider selection only** – Burdens users for all requests.
 
 ## Tradeoffs
-- Pro: Cost efficiency, resilience, provider flexibility, future-proofing.
-- Con: Increased complexity, routing logic maintenance, provider API drift risk.
+- **Pro**: Cost efficiency, resilience to provider outages, flexibility for future providers.
+- **Con**: Increases routing complexity; requires up‑to‑date capability metadata.
 
 ## Consequences
-All downstream components (Composer, Chat, Knowledge, Export) must consume the unified engine interface. Adding a new provider requires only a new adapter; no workflow changes needed.
+All generation requests pass through `ProviderRouter.route()` (or `stream()`). Adding a new provider requires only a new model entry in `ModelRegistry`. The routing logic ensures fallback to a capable provider if the primary choice fails.
+
+## Evidence
+- **Routes & Logic**: `src/engine/ProviderRouter.ts` (lines 154‑160, 156‑159) resolves queue based on `intents` and capacity.
+- **Model Registry**: `src/services/ModelRegistry.ts` (lines 47‑49) provides `resolve(plan, modelId?)`.  
+- **Capabilities**: `src/lib/capabilities.ts` defines `capabilities.resolveCapabilityTier(intent, capabilityContext)`.
+- **Provider Health**: `src/services/ProviderHealthService.ts` is consulted by the routing queue filter.

@@ -3,13 +3,15 @@ import { providerHealthService, type HealthReport } from "@/services/ProviderHea
 
 const PROVIDER_NAMES = ["database", "groq", "gemini", "openrouter", "clerk", "paddle"] as const;
 
-export async function GET(req: Request) {
-  const url = new URL(req.url);
-  const force = url.searchParams.get("force") === "true";
-
+/**
+ * Public liveness endpoint.
+ * - No `force` param (audit 12 P2.6): real upstream probes are internal-only.
+ * - Sanitized payload (audit 12 P1.2): provider error text is never exposed.
+ */
+export async function GET() {
   let report: HealthReport;
   try {
-    report = await providerHealthService.checkAll(force);
+    report = await providerHealthService.checkAll(false);
   } catch {
     report = {
       status: "offline",
@@ -26,5 +28,20 @@ export async function GET(req: Request) {
     }
   }
 
-  return NextResponse.json(report, { status: report.status === "offline" ? 503 : 200 });
+  const sanitized = {
+    status: report.status,
+    checkedAt: report.checkedAt,
+    providers: Object.fromEntries(
+      Object.entries(report.providers).map(([name, p]) => [
+        name,
+        {
+          name: p.name,
+          status: p.status,
+          lastChecked: p.lastChecked,
+        },
+      ]),
+    ),
+  };
+
+  return NextResponse.json(sanitized, { status: report.status === "offline" ? 503 : 200 });
 }

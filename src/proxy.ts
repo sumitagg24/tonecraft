@@ -15,6 +15,9 @@ const PUBLIC_PATHS: ReadonlyArray<string> = [
     "/api/webhook",
   "/api/auth",
   "/api/health",
+  // Paddle webhook — public by design; the Paddle signature check is the auth.
+  // (Audit 12 P0.2: it was previously behind Clerk auth, so subscriptions never activated.)
+  "/api/billing/webhook",
 ];
 
 function isPublicPath(pathname: string): boolean {

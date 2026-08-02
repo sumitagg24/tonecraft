@@ -1,22 +1,32 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
+import { logger } from "@/lib/logger";
 
-function createRedis(): Redis {
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (!url || !token || url === "https://...") {
-    return new Redis({
-      url: "https://placeholder.upstash.dev",
-      token: "placeholder_token_for_build",
-    });
-  }
-  return new Redis({ url, token });
-}
+/**
+ * Rate limiting for LLM-costly and abuse-prone endpoints.
+ *
+ * Fail-closed contract (audit 12 P0.8): when Upstash is not configured,
+ * production requests are DENIED (loud error) rather than silently allowed
+ * with no limit. Development keeps a permissive fallback so local work is
+ * not blocked.
+ */
+
+const CONFIGURED = Boolean(
+  process.env.UPSTASH_REDIS_REST_URL &&
+    process.env.UPSTASH_REDIS_REST_TOKEN &&
+    process.env.UPSTASH_REDIS_REST_URL !== "https://..."
+);
 
 let _redis: Redis | null = null;
 function getRedis(): Redis {
   if (!_redis) {
-    _redis = createRedis();
+    const url = process.env.UPSTASH_REDIS_REST_URL;
+    const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+    if (!url || !token) {
+      // Callers gate on CONFIGURED first; this is a defensive guard.
+      throw new Error("Upstash Redis is not configured");
+    }
+    _redis = new Redis({ url, token });
   }
   return _redis;
 }
@@ -60,7 +70,40 @@ function getProHourly() {
   return _proHourly;
 }
 
-export async function checkMessageLimit(userId: string, plan: string) {
+export interface RateLimitCheck {
+  allowed: boolean;
+  limit: number;
+  window: string;
+  remaining: number;
+}
+
+let _unconfiguredWarned = false;
+function unconfiguredCheck(): RateLimitCheck {
+  // Log the misconfiguration once per process, not per request (avoids log/report spam).
+  if (!_unconfiguredWarned) {
+    _unconfiguredWarned = true;
+    if (process.env.NODE_ENV === "production") {
+      logger.error(
+        "Rate limiting is not configured (UPSTASH_REDIS_REST_URL/TOKEN missing). Failing closed.",
+      );
+    } else {
+      // Dev fallback: permissive, but visible so it never silently ships.
+      logger.warn(
+        "Rate limiting is not configured (UPSTASH_REDIS_REST_URL/TOKEN missing). Allowing in development.",
+      );
+    }
+  }
+  if (process.env.NODE_ENV === "production") {
+    return { allowed: false, limit: 0, window: "hour", remaining: 0 };
+  }
+  return { allowed: true, limit: Number.MAX_SAFE_INTEGER, window: "hour", remaining: Number.MAX_SAFE_INTEGER };
+}
+
+export async function checkMessageLimit(userId: string, plan: string): Promise<RateLimitCheck> {
+  if (!CONFIGURED) {
+    return unconfiguredCheck();
+  }
+
   if (plan === "pro" || plan === "enterprise") {
     const { success, remaining } = await getProHourly().limit(userId);
     return { allowed: success, limit: 100, window: "hour", remaining: remaining ?? 0 };
@@ -76,4 +119,9 @@ export async function checkMessageLimit(userId: string, plan: string) {
     return { allowed: false, limit: 10, window: "hour", remaining: daily.remaining ?? 0 };
   }
   return { allowed: true, limit: 50, window: "day", remaining: daily.remaining ?? 0 };
+}
+
+/** True when Upstash is configured (used by startup validation to decide strictness). */
+export function isRateLimitConfigured(): boolean {
+  return CONFIGURED;
 }
