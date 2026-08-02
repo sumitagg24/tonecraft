@@ -1,7 +1,7 @@
 "use client";
 import { useSearch } from "@/hooks/use-search";
 import { Input } from "@/components/ui/input";
-import { Search, MessageSquare, FileText, Loader2 } from "lucide-react";
+import { Search, MessageSquare, FileText, Loader2, BookOpen, Users, Files } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
@@ -13,7 +13,7 @@ export default function SearchPage() {
       <div className="max-w-3xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-bold">Search</h1>
-          <p className="text-sm text-muted-foreground mt-1">Search across your chats and messages</p>
+          <p className="text-sm text-muted-foreground mt-1">Search across chats, messages, prompts, personas, and knowledge</p>
         </div>
 
         <div className="relative">
@@ -93,7 +93,89 @@ export default function SearchPage() {
               </section>
             )}
 
-            {results.chats.length === 0 && results.messages.length === 0 && (
+            {results.prompts.length > 0 && (
+              <section>
+                <h2 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                  <BookOpen className="w-4 h-4" />
+                  Prompts ({results.prompts.length})
+                </h2>
+                <div className="space-y-1">
+                  {results.prompts.map((p) => (
+                    <motion.div key={p.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+                      <Link
+                        href="/library"
+                        className="flex items-start gap-3 px-4 py-3 rounded-xl hover:bg-muted/30 transition-colors"
+                      >
+                        <BookOpen className="w-4 h-4 text-muted-foreground mt-0.5" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{p.title}</p>
+                          <p className="text-xs text-muted-foreground line-clamp-1">
+                            {p.category} · {p.description || p.content}
+                          </p>
+                        </div>
+                      </Link>
+                    </motion.div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {results.personas.length > 0 && (
+              <section>
+                <h2 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  Personas ({results.personas.length})
+                </h2>
+                <div className="space-y-1">
+                  {results.personas.map((p) => (
+                    <motion.div key={p.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+                      <Link
+                        href="/library"
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-muted/30 transition-colors"
+                      >
+                        <span
+                          className="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] shrink-0"
+                          style={{ backgroundColor: `${p.color}22`, color: p.color }}
+                        >
+                          {p.icon || p.name.charAt(0).toUpperCase()}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{p.name}</p>
+                          {p.description && <p className="text-xs text-muted-foreground line-clamp-1">{p.description}</p>}
+                        </div>
+                      </Link>
+                    </motion.div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {results.knowledge.length > 0 && (
+              <section>
+                <h2 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                  <Files className="w-4 h-4" />
+                  Knowledge ({results.knowledge.length})
+                </h2>
+                <div className="space-y-1">
+                  {results.knowledge.map((f) => (
+                    <motion.div key={f.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+                      <Link
+                        href="/library"
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-muted/30 transition-colors"
+                      >
+                        <Files className="w-4 h-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm font-medium">{f.name}</p>
+                          <p className="text-xs text-muted-foreground">{f.fileName}</p>
+                        </div>
+                      </Link>
+                    </motion.div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {results.chats.length === 0 && results.messages.length === 0 && results.prompts.length === 0 && results.personas.length === 0 && results.knowledge.length === 0 && (
               <div className="text-center py-12 text-muted-foreground text-sm">
                 No results found for &ldquo;{query}&rdquo;
               </div>

@@ -6,13 +6,13 @@ export function useSearch() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [results, setResults] = useState<SearchResult>({ chats: [], messages: [] });
+  const [results, setResults] = useState<SearchResult>({ chats: [], messages: [], prompts: [], personas: [], knowledge: [] });
   const abortRef = useRef<AbortController | null>(null);
 
   const search = useCallback(async (q: string) => {
     abortRef.current?.abort();
     if (!q.trim()) {
-      setResults({ chats: [], messages: [] });
+      setResults({ chats: [], messages: [], prompts: [], personas: [], knowledge: [] });
       setError(null);
       return;
     }

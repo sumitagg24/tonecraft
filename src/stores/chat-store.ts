@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Chat, Message } from "@/types";
+import type { Chat, Message, SearchResult } from "@/types";
 
 interface ChatState {
   chats: Chat[];
@@ -11,7 +11,7 @@ interface ChatState {
   selectedModel: string;
   selectedPersona: string | null;
   searchQuery: string;
-  searchResults: { chats: Chat[]; messages: Pick<Message, "id" | "content" | "chatId" | "role" | "createdAt">[] };
+  searchResults: SearchResult;
   context: {
     platform: string;
     language: string;
@@ -52,7 +52,7 @@ export const useChatStore = create<ChatState>((set) => ({
   selectedModel: "auto",
   selectedPersona: null,
   searchQuery: "",
-  searchResults: { chats: [], messages: [] },
+  searchResults: { chats: [], messages: [], prompts: [], personas: [], knowledge: [] },
   context: {
     platform: "email",
     language: "en",

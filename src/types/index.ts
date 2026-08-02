@@ -112,6 +112,9 @@ export interface ToolResult {
 export interface SearchResult {
   chats: Chat[];
   messages: Pick<Message, "id" | "content" | "chatId" | "role" | "createdAt">[];
+  prompts: { id: string; title: string; description: string | null; category: string; content: string }[];
+  personas: { id: string; name: string; description: string | null; icon: string | null; color: string }[];
+  knowledge: { id: string; name: string; fileName: string; fileType: string }[];
 }
 
 export interface UserPreferences {
