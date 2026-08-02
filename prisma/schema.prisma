@@ -7,22 +7,22 @@ datasource db {
 }
 
 model User {
-  id                String        @id @default(cuid())
-  clerkId           String        @unique
+  id                String                  @id @default(cuid())
+  clerkId           String                  @unique
   name              String?
-  email             String        @unique
+  email             String                  @unique
   image             String?
-  preferredLanguage String        @default("english")
-  defaultTone       String        @default("professional")
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  autoSave          Boolean       @default(true)
-  creativityLevel   Int?          @default(70)
-  preferredModel    String?       @default("auto")
-  preferredPlatform String?       @default("email")
-  preferredStyle    String?       @default("standard")
-  responseLength    String?       @default("medium")
-  streamingEnabled  Boolean       @default(true)
+  preferredLanguage String                  @default("english")
+  defaultTone       String                  @default("professional")
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  autoSave          Boolean                 @default(true)
+  creativityLevel   Int?                    @default(70)
+  preferredModel    String?                 @default("auto")
+  preferredPlatform String?                 @default("email")
+  preferredStyle    String?                 @default("standard")
+  responseLength    String?                 @default("medium")
+  streamingEnabled  Boolean                 @default(true)
   defaultPersonaId  String?
   chats             Chat[]
   personas          Persona[]
@@ -41,26 +41,25 @@ model User {
   bookmarks         Bookmark[]
   comments          Comment[]
 
-  @@index([clerkId])
-  @@index([email])
+  // NOTE: no redundant @@index on clerkId/email — @unique already builds them.
 }
 
 model Chat {
-  id         String    @id @default(cuid())
+  id         String      @id @default(cuid())
   userId     String
-  title      String    @default("New Chat")
-  tone       String    @default("professional")
-  model      String    @default("auto")
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  isArchived Boolean   @default(false)
-  isFavorite Boolean   @default(false)
-  isPinned   Boolean   @default(false)
+  title      String      @default("New Chat")
+  tone       String      @default("professional")
+  model      String      @default("auto")
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  isArchived Boolean     @default(false)
+  isFavorite Boolean     @default(false)
+  isPinned   Boolean     @default(false)
   language   String?
   platform   String?
   projectId  String?
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  project    Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project    Project?    @relation(fields: [projectId], references: [id], onDelete: SetNull)
   messages   Message[]
   drafts     Draft[]
   shareLinks ShareLink[]
@@ -74,7 +73,7 @@ model Chat {
 }
 
 model Message {
-  id          String       @id @default(cuid())
+  id          String             @id @default(cuid())
   chatId      String
   role        String
   content     String
@@ -84,20 +83,21 @@ model Message {
   model       String?
   platform    String?
   language    String?
-  createdAt   DateTime     @default(now())
+  createdAt   DateTime           @default(now())
   editedAt    DateTime?
   feedback    String?
-  isEdited    Boolean      @default(false)
+  isEdited    Boolean            @default(false)
   parentId    String?
   attachments Attachment[]
-  chat        Chat         @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  parent      Message?     @relation("MessageChain", fields: [parentId], references: [id])
-  children    Message[]    @relation("MessageChain")
+  chat        Chat               @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  parent      Message?           @relation("MessageChain", fields: [parentId], references: [id])
+  children    Message[]          @relation("MessageChain")
   knowledge   MessageKnowledge[]
   comments    Comment[]
 
   @@index([chatId, createdAt])
   @@index([chatId, feedback])
+  @@index([parentId])
 }
 
 model Attachment {
@@ -114,24 +114,24 @@ model Attachment {
 }
 
 model Persona {
-  id              String   @id @default(cuid())
-  userId          String
-  name            String
-  description     String?
-  systemPrompt    String
-  icon            String?
-  color           String   @default("#6366F1")
-  isDefault       Boolean  @default(false)
-  tone            String   @default("professional")
-  temperature     Int?     @default(70)
-  emojiUsage      String   @default("subtle")
-  writingStyle    String   @default("standard")
+  id               String   @id @default(cuid())
+  userId           String
+  name             String
+  description      String?
+  systemPrompt     String
+  icon             String?
+  color            String   @default("#6366F1")
+  isDefault        Boolean  @default(false)
+  tone             String   @default("professional")
+  temperature      Int?     @default(70)
+  emojiUsage       String   @default("subtle")
+  writingStyle     String   @default("standard")
   platformDefaults Json?
-  isFavorite      Boolean  @default(false)
-  projectId       String?
-  createdAt       DateTime @default(now())
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  project         Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  isFavorite       Boolean  @default(false)
+  projectId        String?
+  createdAt        DateTime @default(now())
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project          Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([projectId])
@@ -191,26 +191,26 @@ model Subscription {
 }
 
 model Project {
-  id          String          @id @default(cuid())
-  userId      String
-  name        String
-  emoji       String?
-  color       String          @default("#6366F1")
-  description String?
-  parentId    String?
-  parent      Project?        @relation("ProjectTree", fields: [parentId], references: [id])
-  children    Project[]       @relation("ProjectTree")
-  archived    Boolean         @default(false)
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  chats       Chat[]
-  personas    Persona[]
-  prompts     Prompt[]
+  id             String          @id @default(cuid())
+  userId         String
+  name           String
+  emoji          String?
+  color          String          @default("#6366F1")
+  description    String?
+  parentId       String?
+  parent         Project?        @relation("ProjectTree", fields: [parentId], references: [id])
+  children       Project[]       @relation("ProjectTree")
+  archived       Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chats          Chat[]
+  personas       Persona[]
+  prompts        Prompt[]
   knowledgeFiles KnowledgeFile[]
-  members     ProjectMember[]
-  shareLinks  ShareLink[]
-  exportJobs  ExportJob[]
+  members        ProjectMember[]
+  shareLinks     ShareLink[]
+  exportJobs     ExportJob[]
 
   @@index([userId, parentId])
   @@index([userId, archived])
@@ -230,20 +230,20 @@ model ProjectMember {
 }
 
 model Prompt {
-  id          String   @id @default(cuid())
+  id          String     @id @default(cuid())
   userId      String
   title       String
   description String?
   content     String
-  category    String   @default("general")
+  category    String     @default("general")
   variables   Json?
-  isFavorite  Boolean  @default(false)
-  isArchived  Boolean  @default(false)
+  isFavorite  Boolean    @default(false)
+  isArchived  Boolean    @default(false)
   projectId   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  project     Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project     Project?   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   bookmarks   Bookmark[]
 
   @@index([userId, category])
@@ -251,22 +251,22 @@ model Prompt {
 }
 
 model KnowledgeFile {
-  id          String   @id @default(cuid())
-  userId      String
-  projectId   String?
-  name        String
-  fileName    String
-  fileType    String
-  fileSize    Int
-  storageKey  String
-  status      String   @default("pending")
-  error       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  project     Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  chunks      KnowledgeChunk[]
-  job         KnowledgeJob?
+  id           String             @id @default(cuid())
+  userId       String
+  projectId    String?
+  name         String
+  fileName     String
+  fileType     String
+  fileSize     Int
+  storageKey   String
+  status       String             @default("pending")
+  error        String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project      Project?           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  chunks       KnowledgeChunk[]
+  job          KnowledgeJob?
   messageLinks MessageKnowledge[]
 
   @@index([userId])
@@ -274,12 +274,12 @@ model KnowledgeFile {
 }
 
 model KnowledgeChunk {
-  id        String   @id @default(cuid())
+  id        String        @id @default(cuid())
   fileId    String
   content   String
   index     Int
   embedding Json?
-  createdAt DateTime @default(now())
+  createdAt DateTime      @default(now())
   file      KnowledgeFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
 
   @@index([fileId, index])
@@ -297,27 +297,27 @@ model KnowledgeJob {
 }
 
 model MessageKnowledge {
-  id        String         @id @default(cuid())
+  id        String        @id @default(cuid())
   messageId String
   fileId    String
-  createdAt DateTime       @default(now())
-  message   Message        @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  file      KnowledgeFile  @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  createdAt DateTime      @default(now())
+  message   Message       @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  file      KnowledgeFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
 
   @@index([messageId])
   @@index([fileId])
 }
 
 model Notification {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
   type      String
   title     String
   body      String?
   link      String?
   readAt    DateTime?
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, readAt])
   @@index([userId, createdAt])
@@ -339,7 +339,7 @@ model NotificationPreference {
 }
 
 model Draft {
-  id        String   @id @default(cuid())
+  id        String         @id @default(cuid())
   userId    String
   chatId    String?
   content   String
@@ -347,12 +347,16 @@ model Draft {
   personaId String?
   platform  String?
   language  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  chat      Chat?    @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chat      Chat?          @relation(fields: [chatId], references: [id], onDelete: Cascade)
   versions  DraftVersion[]
 
+  // @unique([userId, chatId]) with nullable chatId: Postgres treats NULLs as
+  // distinct in unique indexes, so multiple untethered drafts (chatId = null)
+  // are allowed while non-null chatId stays unique. Do NOT "fix" into a partial
+  // index without accounting for this.
   @@unique([userId, chatId])
   @@index([userId, updatedAt])
 }
@@ -381,23 +385,23 @@ model ShareLink {
   chat      Chat?     @relation(fields: [chatId], references: [id], onDelete: Cascade)
   project   Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  @@index([token])
+  // NOTE: no redundant @@index on token — @unique already builds it.
 }
 
 model ExportJob {
-  id         String    @id @default(cuid())
-  userId     String
-  chatId     String?
-  projectId  String?
-  format     String
-  status     String    @default("queued")
-  resultKey  String?
-  error      String?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  chat       Chat?     @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  project    Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  userId    String
+  chatId    String?
+  projectId String?
+  format    String
+  status    String   @default("queued")
+  resultKey String?
+  error     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chat      Chat?    @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
 }
