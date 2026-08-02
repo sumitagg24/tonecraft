@@ -1,14 +1,14 @@
 "use client";
 import Link from "next/link";
 import { Bot, Mail } from "lucide-react";
-import { motion } from "framer-motion";
 
 const links = {
   Product: [
     { label: "Features", href: "/#features" },
-    { label: "Pricing", href: "/#pricing" },
+    { label: "How it works", href: "/#how" },
     { label: "Demo", href: "/#demo" },
-    { label: "Playground", href: "/#playground" },
+    { label: "Pricing", href: "/#pricing" },
+    { label: "FAQ", href: "/#faq" },
   ],
   Resources: [
     { label: "Docs", href: "/docs" },
@@ -61,13 +61,9 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-16">
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center gap-2.5 font-semibold mb-3 group">
-              <motion.div
-                whileHover={{ rotate: [0, -10, 10, 0] }}
-                transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 5 }}
-                className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-glow"
-              >
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-glow">
                 <Bot className="w-4 h-4 text-white" />
-              </motion.div>
+              </div>
               <span className="group-hover:text-primary transition-colors">ToneCraft</span>
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-xs mb-5">

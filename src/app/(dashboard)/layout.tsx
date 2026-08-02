@@ -1,9 +1,7 @@
 "use client";
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { WorkspaceLayout } from "@/components/workspace/WorkspaceLayout";
-import { CommandPalette } from "@/components/layout/CommandPalette";
-import { PremiumCursor } from "@/components/ui/effects/PremiumCursor";
+import { AppShell } from "@/components/shell/AppShell";
 
 export default function DashboardLayout({
   children,
@@ -23,13 +21,11 @@ export default function DashboardLayout({
 
   return (
     <QueryClientProvider client={queryClient}>
-      <WorkspaceLayout>
+      <AppShell>
         <div className="h-full animate-content-in">
           {children}
         </div>
-      </WorkspaceLayout>
-      <CommandPalette />
-      <PremiumCursor />
+      </AppShell>
     </QueryClientProvider>
   );
 }

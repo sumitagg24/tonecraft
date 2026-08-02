@@ -3,6 +3,8 @@ import { useChatStore } from "@/stores/chat-store";
 import type { Message } from "@/types";
 import { toast } from "sonner";
 
+let activeController: AbortController | null = null;
+
 export function useChat() {
   const sendMessage = useCallback(
     async (content: string, chatId: string) => {
@@ -28,10 +30,14 @@ export function useChat() {
       };
       addMessage(tempUserMessage);
 
+      const controller = new AbortController();
+      activeController = controller;
+
       try {
         const response = await fetch(`/api/chats/${chatId}/messages`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
           body: JSON.stringify({ content, tone: selectedTone, model: selectedModel, ...context }),
         });
 
@@ -72,14 +78,40 @@ export function useChat() {
         setMessages(chat.messages);
         clearStreamingContent();
       } catch (error) {
-        console.error("Chat error:", error);
-        toast.error(error instanceof Error ? error.message : "Failed to send message");
+        if (controller.signal.aborted) {
+          // user stopped: pull the partial response the server saved.
+          // retry briefly in case the server's save hasn't landed yet.
+          for (let attempt = 0; attempt < 3; attempt++) {
+            await new Promise((r) => setTimeout(r, 250));
+            try {
+              const refreshRes = await fetch(`/api/chats/${chatId}`);
+              if (!refreshRes.ok) continue;
+              const chat = await refreshRes.json();
+              const lastAssistant = [...chat.messages].reverse().find((m) => m.role === "assistant");
+              if (lastAssistant && lastAssistant.content) {
+                setMessages(chat.messages);
+                break;
+              }
+            } catch {
+              /* ignore */
+            }
+          }
+          clearStreamingContent();
+        } else {
+          console.error("Chat error:", error);
+          toast.error(error instanceof Error ? error.message : "Failed to send message");
+        }
       } finally {
+        if (activeController === controller) activeController = null;
         setIsLoading(false);
       }
     },
     []
   );
+
+  const stopStreaming = useCallback(() => {
+    activeController?.abort();
+  }, []);
 
   const createChat = useCallback(async (data?: { title?: string; tone?: string }) => {
     const res = await fetch("/api/chats", {
@@ -182,7 +214,7 @@ export function useChat() {
   }, []);
 
   return {
-    sendMessage, createChat, fetchChats, deleteChat,
+    sendMessage, stopStreaming, createChat, fetchChats, deleteChat,
     renameChat, togglePin, toggleFavorite, archiveChat,
     regenerateMessage, continueMessage, editMessage, setMessageFeedback,
   };

@@ -1,3 +1,5 @@
+import { color } from "@/styles/colors";
+
 export const APP_NAME = "ToneCraft";
 export const APP_TAGLINE = "Write Once. Speak Perfectly. Everywhere.";
 export const APP_DESCRIPTION =
@@ -5,21 +7,22 @@ export const APP_DESCRIPTION =
 
 export const NAV_LINKS = [
   { label: "Features", href: "#features" },
-  { label: "How It Works", href: "#demo" },
+  { label: "Demo", href: "#demo" },
+  { label: "How It Works", href: "#how" },
   { label: "Pricing", href: "#pricing" },
   { label: "FAQ", href: "#faq" },
 ];
 
-export const TONES: { id: string; label: string; description: string; color: string; emoji: string }[] = [
-  { id: "professional", label: "Professional", description: "Formal consultant tone", color: "#3b82f6", emoji: "💼" },
-  { id: "friendly", label: "Friendly", description: "Warm and approachable", color: "#10b981", emoji: "😊" },
-  { id: "creative", label: "Creative", description: "Imaginative storyteller", color: "#a855f7", emoji: "🎨" },
-  { id: "romantic", label: "Romantic", description: "Tender and heartfelt", color: "#f43f5e", emoji: "❤️" },
-  { id: "luxury", label: "Luxury", description: "Premium and refined", color: "#d4a853", emoji: "✨" },
-  { id: "funny", label: "Funny", description: "Witty and lighthearted", color: "#f97316", emoji: "😂" },
-  { id: "minimal", label: "Minimal", description: "Clean and concise", color: "#e4e4e7", emoji: "⚪" },
-  { id: "corporate", label: "Corporate", description: "Executive business style", color: "#6366f1", emoji: "🏢" },
-  { id: "academic", label: "Academic", description: "Research and evidence-based", color: "#14b8a6", emoji: "🎓" },
+export const TONES: { id: string; label: string; description: string; color: string; emoji: string; example: string }[] = [
+  { id: "professional", label: "Professional", description: "Formal consultant tone", color: color.tone.professional, emoji: "💼", example: "I've attached the revised proposal for your review. Please let me know if you have any questions." },
+  { id: "friendly", label: "Friendly", description: "Warm and approachable", color: color.tone.friendly, emoji: "😊", example: "Hey! Just sent over the updated doc — hope you're having a great day!" },
+  { id: "creative", label: "Creative", description: "Imaginative storyteller", color: color.tone.creative, emoji: "🎨", example: "Picture this: a story that blooms in the reader's mind like a garden at dawn." },
+  { id: "romantic", label: "Romantic", description: "Tender and heartfelt", color: color.tone.romantic, emoji: "❤️", example: "Every moment with you feels like a page from my favorite love story." },
+  { id: "luxury", label: "Luxury", description: "Premium and refined", color: color.tone.luxury, emoji: "✨", example: "Indulge in an experience crafted with meticulous attention to every exquisite detail." },
+  { id: "funny", label: "Funny", description: "Witty and lighthearted", color: color.tone.funny, emoji: "😂", example: "I'd tell you a joke about my diet, but you'd probably lose your appetite for it." },
+  { id: "minimal", label: "Minimal", description: "Clean and concise", color: color.tone.minimal, emoji: "⚪", example: "Done is better than perfect. Ship it." },
+  { id: "corporate", label: "Corporate", description: "Executive business style", color: color.tone.corporate, emoji: "🏢", example: "We are pleased to announce the successful completion of the strategic initiative, aligned with our quarterly objectives." },
+  { id: "academic", label: "Academic", description: "Research and evidence-based", color: color.tone.academic, emoji: "🎓", example: "The extant literature suggests that tone modulation significantly influences perceived message credibility." },
 ];
 
 export const FREE_TIER_LIMITS = {
@@ -94,7 +97,7 @@ export const FEATURES = [
     title: "Rewrite Messages",
     description:
       "Transform any message into the perfect tone instantly.",
-    color: "#3b82f6",
+    color: color.tone.professional,
     accent: "rgba(59, 130, 246, 0.1)",
   },
   {
@@ -102,7 +105,7 @@ export const FEATURES = [
     title: "Reply Generator",
     description:
       "Generate intelligent replies for any conversation context.",
-    color: "#10b981",
+    color: color.tone.friendly,
     accent: "rgba(16, 185, 129, 0.1)",
   },
   {
@@ -110,7 +113,7 @@ export const FEATURES = [
     title: "Email Generator",
     description:
       "Craft professional emails that get responses every time.",
-    color: "#a855f7",
+    color: color.tone.creative,
     accent: "rgba(168, 85, 247, 0.1)",
   },
   {
@@ -118,7 +121,7 @@ export const FEATURES = [
     title: "Grammar Fix",
     description:
       "Perfect grammar and clarity with AI-powered corrections.",
-    color: "#f97316",
+    color: color.tone.funny,
     accent: "rgba(249, 115, 22, 0.1)",
   },
   {
@@ -126,7 +129,7 @@ export const FEATURES = [
     title: "Humanizer",
     description:
       "Make AI text sound authentically human and natural.",
-    color: "#f43f5e",
+    color: color.tone.romantic,
     accent: "rgba(244, 63, 94, 0.1)",
   },
   {
@@ -134,20 +137,20 @@ export const FEATURES = [
     title: "Translation",
     description:
       "Translate seamlessly across 50+ languages while preserving tone.",
-    color: "#14b8a6",
+    color: color.tone.academic,
     accent: "rgba(20, 184, 166, 0.1)",
   },
 ];
 
 export const PLATFORMS = [
-  { name: "WhatsApp", icon: "MessageCircle", color: "#25D366" },
-  { name: "Instagram", icon: "Camera", color: "#E4405F" },
-  { name: "Slack", icon: "Hash", color: "#4A154B" },
-  { name: "Discord", icon: "MessageSquare", color: "#5865F2" },
-  { name: "LinkedIn", icon: "Linkedin", color: "#0A66C2" },
-  { name: "Twitter", icon: "Twitter", color: "#1DA1F2" },
-  { name: "Telegram", icon: "Send", color: "#0088cc" },
-  { name: "Email", icon: "Mail", color: "#EA4335" },
+  { name: "WhatsApp", icon: "MessageCircle", color: color.platform.whatsapp },
+  { name: "Instagram", icon: "Camera", color: color.platform.instagram },
+  { name: "Slack", icon: "Hash", color: color.platform.slack },
+  { name: "Discord", icon: "MessageSquare", color: color.platform.discord },
+  { name: "LinkedIn", icon: "Linkedin", color: color.platform.linkedin },
+  { name: "Twitter", icon: "Twitter", color: color.platform.twitter },
+  { name: "Telegram", icon: "Send", color: color.platform.telegram },
+  { name: "Email", icon: "Mail", color: color.platform.email },
 ];
 
 export const AI_THINKING_STATES = [

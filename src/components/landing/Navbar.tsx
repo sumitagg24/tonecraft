@@ -47,13 +47,9 @@ export function Navbar() {
             className="flex items-center gap-2.5 font-semibold"
           >
             <Link href="/" className="flex items-center gap-2.5">
-              <motion.div
-                animate={{ rotate: [0, -10, 10, 0] }}
-                transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 5 }}
-                className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-glow"
-              >
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-glow">
                 <Bot className="w-4 h-4 text-white" />
-              </motion.div>
+              </div>
               <span className="text-lg font-bold tracking-tight">ToneCraft</span>
             </Link>
           </motion.div>
