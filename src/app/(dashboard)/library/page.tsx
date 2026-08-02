@@ -1,31 +1,53 @@
 "use client";
-import { useRouter } from "next/navigation";
-import { Library as LibraryIcon, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { BookOpen, Users, Files } from "lucide-react";
+import { PromptLibraryPage } from "@/components/workspace/PromptLibraryPage";
+
+type Tab = "prompts" | "personas" | "knowledge";
 
 export default function LibraryPage() {
-  const router = useRouter();
+  const [tab, setTab] = useState<Tab>("prompts");
+
+  const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
+    { id: "prompts", label: "Prompts", icon: BookOpen },
+    { id: "personas", label: "Personas", icon: Users },
+    { id: "knowledge", label: "Knowledge", icon: Files },
+  ];
+
   return (
-    <div className="flex-1 h-full flex items-center justify-center p-6">
-      <div className="max-w-md w-full text-center">
-        <div className="relative inline-flex mb-5">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500/10 to-indigo-600/10 border border-border/30 flex items-center justify-center">
-            <LibraryIcon className="w-7 h-7 text-primary" />
-          </div>
-        </div>
-        <h1 className="text-xl font-bold mb-2">Library</h1>
-        <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
-          Your reusable assets — prompts, tones, and knowledge — will live here
-          in the next step of the redesign.
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-3">
+    <div className="h-full flex flex-col">
+      <div className="flex gap-1 border-b border-border/20 px-4 sm:px-6 shrink-0">
+        {tabs.map((t) => (
           <button
-            onClick={() => router.push("/chat")}
-            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl text-xs font-medium text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 shadow-glow transition-all active:scale-[0.98]"
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={cn(
+              "relative flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium transition-all",
+              tab === t.id ? "text-foreground" : "text-muted-foreground/60 hover:text-foreground"
+            )}
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            Start writing
+            <t.icon className="w-3.5 h-3.5" />
+            {t.label}
+            {tab === t.id && (
+              <motion.div layoutId="library-tab" className="absolute inset-x-0 -bottom-px h-0.5 bg-gradient-to-r from-violet-500 to-indigo-500" />
+            )}
           </button>
-        </div>
+        ))}
+      </div>
+      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin">
+        {tab === "prompts" && <PromptLibraryPage />}
+        {tab === "personas" && (
+          <div className="h-full flex items-center justify-center text-xs text-muted-foreground/50">
+            Persona library arrives with the Personas feature.
+          </div>
+        )}
+        {tab === "knowledge" && (
+          <div className="h-full flex items-center justify-center text-xs text-muted-foreground/50">
+            Knowledge base arrives with the Knowledge feature.
+          </div>
+        )}
       </div>
     </div>
   );
