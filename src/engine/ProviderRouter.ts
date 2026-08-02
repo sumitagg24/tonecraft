@@ -2,7 +2,7 @@ import { streamText } from "ai";
 import { createGroq } from "@ai-sdk/groq";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { getPlanConfig } from "@/config/plans";
+import { PlanTier, getPlanConfig } from "@/config/plans";
 import { modelRegistry } from "@/services/ModelRegistry";
 import { capabilities } from "@/lib/capabilities";
 import { providerHealthService } from "@/services/ProviderHealthService";
@@ -10,16 +10,9 @@ import { logger } from "@/lib/logger";
 import type { RouteOptions, ProviderConfig, ProviderResult } from "./types";
 import type { ModelEntry } from "@/config/models";
 
-const TIMEOUT_MS = 60000;
-
-const PROVIDERS: ProviderConfig[] = [
-  { id: "groq-llama3-70b", name: "Llama 3.1 70B", provider: "groq", model: "llama-3.1-70b-versatile", temperature: 0.7, isFree: true },
-  { id: "groq-mixtral-8x7b", name: "Mixtral 8x7B", provider: "groq", model: "mixtral-8x7b-32768", temperature: 0.7, isFree: true },
-  { id: "gemini-flash", name: "Gemini 1.5 Flash", provider: "google", model: "gemini-1.5-flash", temperature: 0.7, isFree: true },
-  { id: "gemini-pro", name: "Gemini 1.5 Pro", provider: "google", model: "gemini-1.5-pro", temperature: 0.7, isFree: false },
-  { id: "openrouter-claude", name: "Claude 3.5 Sonnet", provider: "openrouter", model: "anthropic/claude-3.5-sonnet", temperature: 0.7, isFree: false },
-  { id: "openrouter-gpt4", name: "GPT-4o", provider: "openrouter", model: "openai/gpt-4o", temperature: 0.7, isFree: false },
-];
+// Idle timeout: abort only when no chunk arrives for this long, so a slow but
+// progressing stream is never killed by a wall-clock cap (audit A3).
+const IDLE_TIMEOUT_MS = 60000;
 
 function getClient(provider: string) {
   switch (provider) {
@@ -36,17 +29,14 @@ function getClient(provider: string) {
   }
 }
 
-export interface RouterOptions extends RouteOptions {
-  isPro?: boolean;
-}
-
 export class ProviderRouter {
-  async route(options: RouterOptions): Promise<ProviderResult> {
+  async route(options: RouteOptions): Promise<ProviderResult> {
     const startTime = Date.now();
     const queue = this.resolveQueue(options);
     let lastError: Error | null = null;
 
     for (const config of queue) {
+      const idle = createIdleAbort(options.signal, IDLE_TIMEOUT_MS);
       try {
         const client = getClient(config.provider);
         const model = client(config.model);
@@ -57,11 +47,13 @@ export class ProviderRouter {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           messages: options.messages as any,
           temperature: config.temperature,
-          abortSignal: AbortSignal.timeout(TIMEOUT_MS),
+          abortSignal: idle.signal,
+          ...(options.tools?.length ? { tools: toSDKTools(options.tools) } : {}),
         });
 
         let content = "";
         for await (const chunk of result.textStream) {
+          idle.reset();
           content += chunk;
         }
 
@@ -82,18 +74,21 @@ export class ProviderRouter {
         });
         if (this.isRetryable(error)) continue;
         throw error;
+      } finally {
+        idle.cleanup();
       }
     }
 
     throw lastError || new Error("All providers exhausted");
   }
 
-  async *stream(options: RouterOptions): AsyncGenerator<ProviderResult> {
+  async *stream(options: RouteOptions): AsyncGenerator<ProviderResult> {
     const startTime = Date.now();
     const queue = this.resolveQueue(options);
     let lastError: Error | null = null;
 
     for (const config of queue) {
+      const idle = createIdleAbort(options.signal, IDLE_TIMEOUT_MS);
       try {
         const client = getClient(config.provider);
         const model = client(config.model);
@@ -104,10 +99,12 @@ export class ProviderRouter {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           messages: options.messages as any,
           temperature: config.temperature,
-          abortSignal: AbortSignal.timeout(TIMEOUT_MS),
+          abortSignal: idle.signal,
+          ...(options.tools?.length ? { tools: toSDKTools(options.tools) } : {}),
         });
 
         for await (const chunk of result.textStream) {
+          idle.reset();
           yield { content: chunk, model: config.id, provider: config.provider, tokens: 0, latency: 0 };
         }
 
@@ -128,25 +125,20 @@ export class ProviderRouter {
         });
         if (this.isRetryable(error)) continue;
         throw error;
+      } finally {
+        idle.cleanup();
       }
     }
 
     throw lastError || new Error("All providers exhausted");
   }
 
-  private resolveQueue(options: RouterOptions): ProviderConfig[] {
-    const { modelId, plan, isPro, intent, capabilityContext } = options;
+  private resolveQueue(options: RouteOptions): ProviderConfig[] {
+    const { modelId, plan, intent, capabilityContext } = options;
 
-    // Backward compat: isPro path (no plan)
-    if (!plan) {
-      if (modelId && modelId !== "auto") {
-        const found = PROVIDERS.find((p) => p.id === modelId);
-        if (found) return [found];
-      }
-      return isPro ? PROVIDERS : PROVIDERS.filter((p) => p.isFree);
-    }
-
-    const planConfig = getPlanConfig(plan);
+    // Single source of truth: config/models.ts + ModelRegistry. The legacy
+    // hardcoded PROVIDERS array (with retired model IDs) has been removed.
+    const planConfig = plan ? getPlanConfig(plan) : getPlanConfig(PlanTier.FREE);
 
     // Explicit model requested
     if (modelId && modelId !== "auto") {
@@ -195,7 +187,14 @@ export class ProviderRouter {
         msg.includes("rate limit") ||
         msg.includes("too many requests") ||
         msg.includes("429") ||
-        msg.includes("timeout")
+        msg.includes("timeout") ||
+        // 5xx / network errors should ride the failover queue too (audit A12)
+        msg.includes("500") ||
+        msg.includes("502") ||
+        msg.includes("503") ||
+        msg.includes("network") ||
+        msg.includes("fetch failed") ||
+        msg.includes("econnrefused")
       );
     }
     return false;
@@ -203,3 +202,55 @@ export class ProviderRouter {
 }
 
 export const providerRouter = new ProviderRouter();
+
+/**
+ * Abort controller that fires on an idle timeout (reset on each chunk) and is
+ * also linked to an external signal (e.g. the HTTP request's abort) so a client
+ * disconnect cancels the upstream provider call (audit A3).
+ */
+function createIdleAbort(external: AbortSignal | undefined, idleMs: number): { signal: AbortSignal; reset: () => void; cleanup: () => void } {
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | null = null;
+
+  const onExternalAbort = () => {
+    controller.abort();
+  };
+
+  if (external) {
+    if (external.aborted) onExternalAbort();
+    else external.addEventListener("abort", onExternalAbort, { once: true });
+  }
+
+  const arm = () => {
+    timer = setTimeout(() => {
+      controller.abort(new DOMException("Idle timeout", "TimeoutError"));
+    }, idleMs);
+  };
+  arm();
+
+  return {
+    signal: controller.signal,
+    reset: () => {
+      if (timer) clearTimeout(timer);
+      if (!controller.signal.aborted) arm();
+    },
+    cleanup: () => {
+      if (timer) clearTimeout(timer);
+      external?.removeEventListener("abort", onExternalAbort);
+    },
+  };
+}
+
+/** Maps the typed protocol (engine/tools.ts) to the AI SDK's ToolSet. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function toSDKTools(tools: import("./tools").AITool[]): any {
+  const sdk: Record<string, unknown> = {};
+  for (const tool of tools) {
+    sdk[tool.name] = {
+      description: tool.description,
+      parameters: tool.inputSchema,
+      execute: async (input: Record<string, unknown>) => tool.handler(input),
+    };
+  }
+  return sdk;
+}

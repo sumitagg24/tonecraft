@@ -1,6 +1,8 @@
 import { PlanTier, getPlanConfig, type PlanConfig } from "./plans";
 
-export type ProviderName = "groq" | "openrouter" | "google" | "openai" | "anthropic";
+// NOTE: "anthropic" was removed — no client exists for it (audit A2); Claude
+// models route through openrouter. Re-add only with a real @ai-sdk/anthropic client.
+export type ProviderName = "groq" | "openrouter" | "google" | "openai";
 
 export type ModelStatus = "available" | "deprecated" | "unavailable";
 

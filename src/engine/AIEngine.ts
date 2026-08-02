@@ -82,6 +82,8 @@ export class AIEngine {
       plan: options.plan,
       intent: intentConfig.intent,
       capabilityContext: this.buildCapabilityContext(options, built),
+      signal: options.signal,
+      tools: options.tools,
     });
 
     // Deduct credits after success
@@ -176,6 +178,8 @@ export class AIEngine {
         plan: options.plan,
         intent: intentConfig.intent,
         capabilityContext: this.buildCapabilityContext(options, built),
+        signal: options.signal,
+        tools: options.tools,
       });
 
       for await (const chunk of stream) {

@@ -159,6 +159,7 @@ export async function POST(
           context: knowledge ? { knowledgeBlock: knowledge.systemBlock, sourceFiles: knowledge.sourceFiles } : undefined,
           userId,
           plan: plan.tier,
+          signal: req.signal,
         });
 
         for await (const chunk of gen) {

@@ -94,6 +94,10 @@ export interface RouteOptions {
   plan?: PlanTier;
   intent?: Intent;
   capabilityContext?: CapabilityContext;
+  /** External abort signal (e.g. HTTP request abort) — chains into the provider call. */
+  signal?: AbortSignal;
+  /** Registered AI tools to make available to the model (A7). */
+  tools?: import("./tools").AITool[];
 }
 
 export interface ConversationMessage {
@@ -126,6 +130,10 @@ export interface EngineOptions {
   modelId?: string;
   userId?: string;
   plan?: PlanTier;
+  /** External abort signal (e.g. HTTP request abort) — chains into the provider call. */
+  signal?: AbortSignal;
+  /** Registered AI tools to make available to the model (A7). */
+  tools?: import("./tools").AITool[];
 }
 
 export interface ProviderConfig {
