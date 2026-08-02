@@ -43,7 +43,7 @@ interface SmartSuggestionsProps {
 }
 
 export function SmartSuggestions({ chatId, onSend }: SmartSuggestionsProps) {
-  const { setSelectedTone } = useChatStore();
+  const setSelectedTone = useChatStore((s) => s.setSelectedTone);
 
   const handleSuggestion = async (suggestion: Suggestion) => {
     if (suggestion.tone) {

@@ -36,8 +36,8 @@ export function CommandPalette() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
-  const { chats } = useChatStore();
-  const { setMode } = useWorkspaceStore();
+  const chats = useChatStore((s) => s.chats);
+  const setMode = useWorkspaceStore((s) => s.setMode);
   const { createChat } = useChat();
 
   const allResults: Result[] = [

@@ -225,7 +225,6 @@ export function PromptLibrary({ onClose }: { onClose?: () => void }) {
                 <motion.div
                   key={template.id}
                   variants={MotionStagger.Grid.children}
-                  layout
                 >
                   <PromptCard
                     template={template}
@@ -248,7 +247,6 @@ export function PromptLibrary({ onClose }: { onClose?: () => void }) {
                 <motion.div
                   key={template.id}
                   variants={MotionStagger.Normal.children}
-                  layout
                 >
                   <PromptListItem
                     template={template}

@@ -29,6 +29,8 @@ function formatMessage(level: LogLevel, message: string, meta?: unknown): string
 }
 
 function persistLog(entry: LogEntry): void {
+  // Dev-only: keep synchronous localStorage writes out of production hot paths.
+  if (process.env.NODE_ENV !== "development") return;
   try {
     const logs = JSON.parse(localStorage.getItem("tonecraft-logs") || "[]");
     logs.push(entry);

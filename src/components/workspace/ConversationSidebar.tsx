@@ -1,5 +1,5 @@
 "use client";
-import { useState, useCallback, useMemo, useRef, useEffect } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter, usePathname } from "next/navigation";
 import { useChatStore } from "@/stores/chat-store";
@@ -58,7 +58,9 @@ function formatTime(date: Date) {
 export function ConversationSidebar() {
   const router = useRouter();
   const pathname = usePathname();
-  const { chats, searchQuery, setSearchQuery } = useChatStore();
+  const chats = useChatStore((s) => s.chats);
+  const searchQuery = useChatStore((s) => s.searchQuery);
+  const setSearchQuery = useChatStore((s) => s.setSearchQuery);
   const { createChat } = useChat();
   const { toggleSidebar, setMobileSidebarOpen } = useWorkspaceStore();
   const isMobile = useMediaQuery("(max-width: 767px)");
@@ -75,6 +77,11 @@ export function ConversationSidebar() {
     const chat = await createChat();
     router.push(`/chat/${chat.id}`);
   }, [createChat, router]);
+
+  // Stable handler so memoized ChatItem rows skip re-render
+  const handleSelectChat = useCallback((id: string) => {
+    router.push(`/chat/${id}`);
+  }, [router]);
 
   const list = useMemo(() => {
     let result = chats.filter((c) => (view === "archived") === c.isArchived);
@@ -231,7 +238,7 @@ export function ConversationSidebar() {
                       key={chat.id}
                       chat={chat}
                       isActive={activeChatId === chat.id}
-                      onSelect={() => router.push(`/chat/${chat.id}`)}
+                      onSelect={handleSelectChat}
                     />
                   ))}
                 </AnimatePresence>
@@ -253,7 +260,7 @@ export function ConversationSidebar() {
                         chat={chat}
                         isActive={activeChatId === chat.id}
                         archived={view === "archived"}
-                        onSelect={() => router.push(`/chat/${chat.id}`)}
+                        onSelect={handleSelectChat}
                       />
                     ))}
                   </AnimatePresence>
@@ -269,11 +276,11 @@ export function ConversationSidebar() {
   );
 }
 
-function ChatItem({
+const ChatItem = memo(function ChatItem({
   chat, isActive, archived, onSelect,
 }: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  chat: any; isActive: boolean; archived?: boolean; onSelect: () => void;
+  chat: any; isActive: boolean; archived?: boolean; onSelect: (id: string) => void;
 }) {
   const router = useRouter();
   const { deleteChat, renameChat, togglePin, toggleFavorite, archiveChat, createChat } = useChat();
@@ -329,7 +336,6 @@ function ChatItem({
 
   return (
     <motion.div
-      layout
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95, height: 0, marginBottom: 0 }}
@@ -337,7 +343,7 @@ function ChatItem({
       className="group relative"
     >
       <div
-        onClick={renaming ? undefined : onSelect}
+        onClick={renaming ? undefined : () => onSelect(chat.id)}
         className={cn(
           "relative flex items-center gap-2.5 px-2 py-1.5 rounded-xl cursor-pointer transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
           isActive
@@ -348,7 +354,7 @@ function ChatItem({
         role="button"
         tabIndex={0}
         aria-label={`Chat: ${chat.title}`}
-        onKeyDown={(e) => e.key === "Enter" && onSelect()}
+        onKeyDown={(e) => e.key === "Enter" && onSelect(chat.id)}
       >
         <div className={cn(
           "w-8 h-8 rounded-lg bg-gradient-to-br shrink-0 flex items-center justify-center text-white text-xs font-semibold select-none",
@@ -431,9 +437,9 @@ function ChatItem({
       </AnimatePresence>
     </motion.div>
   );
-}
+});
 
-function ContextMenuItem({ icon: Icon, label, onClick, destructive }: { icon: React.ElementType; label: string; onClick: () => void; destructive?: boolean }) {
+const ContextMenuItem = memo(function ContextMenuItem({ icon: Icon, label, onClick, destructive }: { icon: React.ElementType; label: string; onClick: () => void; destructive?: boolean }) {
   return (
     <button
       onClick={onClick}
@@ -446,4 +452,4 @@ function ContextMenuItem({ icon: Icon, label, onClick, destructive }: { icon: Re
       {label}
     </button>
   );
-}
+});

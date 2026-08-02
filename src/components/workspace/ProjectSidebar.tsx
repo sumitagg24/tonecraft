@@ -16,7 +16,7 @@ export function ProjectSidebar() {
   const pathname = usePathname();
   const { projects, unfiled, loading, setCurrentProjectId } = useProjectsStore();
   const { fetchProjects, createProject, updateProject, deleteProject } = useProjects();
-  const { chats } = useChatStore();
+  const chats = useChatStore((s) => s.chats);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");

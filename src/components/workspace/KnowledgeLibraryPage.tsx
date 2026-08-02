@@ -153,7 +153,7 @@ export function KnowledgeLibraryPage({ projectId }: { projectId?: string }) {
       ) : (
         <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
           {filtered.map((f) => (
-            <motion.div key={f.id} layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="border rounded-xl p-4 flex items-start gap-3 bg-card hover:border-border/50 transition-colors">
+            <motion.div key={f.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="border rounded-xl p-4 flex items-start gap-3 bg-card hover:border-border/50 transition-colors">
               <span className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
                 <FileText className="w-4 h-4" />
               </span>

@@ -50,7 +50,10 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const attachRef = useRef<HTMLInputElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
-  const { isLoading, selectedTone, context, setContext } = useChatStore();
+  const isLoading = useChatStore((s) => s.isLoading);
+  const selectedTone = useChatStore((s) => s.selectedTone);
+  const context = useChatStore((s) => s.context);
+  const setContext = useChatStore((s) => s.setContext);
   const { showAdvancedControls, toggleAdvancedControls, showSuggestions } = useWorkspaceStore();
 
   // Close tone/platform pickers when clicking outside the toolbar
@@ -506,7 +509,8 @@ async function uploadFile(file: File) {
 }
 
 function AdvancedControlsPanel() {
-  const { context, setContext } = useChatStore();
+  const context = useChatStore((s) => s.context);
+  const setContext = useChatStore((s) => s.setContext);
 
   const selects: { label: string; key: "language" | "length" | "formality"; options: { value: string; label: string }[] }[] = [
     {

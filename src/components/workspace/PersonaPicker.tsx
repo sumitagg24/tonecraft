@@ -20,7 +20,8 @@ export function PersonaPicker({
   onEdit?: (personaId: string) => void;
   className?: string;
 }) {
-  const { selectedPersona, setSelectedPersona } = useChatStore();
+  const selectedPersona = useChatStore((s) => s.selectedPersona);
+  const setSelectedPersona = useChatStore((s) => s.setSelectedPersona);
   const [personas, setPersonas] = useState<PersonaRecord[]>([]);
   const [defaultPersonaId, setDefaultPersonaId] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<string[]>(() => {

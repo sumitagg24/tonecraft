@@ -15,7 +15,11 @@ import {
 } from "lucide-react";
 
 export function AIContextPanel() {
-  const { currentChat, messages, selectedTone, selectedModel, context } = useChatStore();
+  const currentChat = useChatStore((s) => s.currentChat);
+  const messages = useChatStore((s) => s.messages);
+  const selectedTone = useChatStore((s) => s.selectedTone);
+  const selectedModel = useChatStore((s) => s.selectedModel);
+  const context = useChatStore((s) => s.context);
   const { setContextPanelOpen, setMobileContextOpen } = useWorkspaceStore();
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const isMobile = useMediaQuery("(max-width: 767px)");
@@ -188,7 +192,8 @@ function StatsSection({ messages, wordCount, charCount, estTokens }: any) {
 }
 
 function PersonasSection() {
-  const { selectedPersona, setSelectedPersona } = useChatStore();
+  const selectedPersona = useChatStore((s) => s.selectedPersona);
+  const setSelectedPersona = useChatStore((s) => s.setSelectedPersona);
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [defaultPersonaId, setDefaultPersonaId] = useState<string | null>(null);
 

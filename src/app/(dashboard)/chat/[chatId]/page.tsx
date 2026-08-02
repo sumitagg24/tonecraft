@@ -21,13 +21,24 @@ export default function ChatPage() {
   const params = useParams();
   const router = useRouter();
   const chatId = params.chatId as string;
-  const { currentChat, messages, isLoading, streamingContent } = useChatStore();
+  // Selector-based store subscriptions: during streaming only `streamingContent`
+  // changes per token, so the page body no longer re-renders on unrelated slices.
+  const currentChat = useChatStore((s) => s.currentChat);
+  const messages = useChatStore((s) => s.messages);
+  const isLoading = useChatStore((s) => s.isLoading);
+  const streamingContent = useChatStore((s) => s.streamingContent);
   const { sendMessage, stopStreaming, fetchChats, regenerateMessage, continueMessage } = useChat();
   const scrollRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number | null>(null);
   const [atBottom, setAtBottom] = useState(true);
   const lastMessageCount = useRef(messages.length);
   const lastContentLength = useRef(0);
+
+  // Cleanup the rAF scroll coalescer on unmount
+  useEffect(() => () => {
+    if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+  }, []);
 
 
   useEffect(() => {
@@ -58,7 +69,8 @@ export default function ChatPage() {
     setAtBottom(nearBottom);
   }, []);
 
-  // Smart auto-scroll: always for the first message of a run, then only if the user is near the bottom
+  // Smart auto-scroll: always for the first message of a run, then only if the user is near the bottom.
+  // Per-token scroll writes are coalesced to one per animation frame to avoid forced layout thrash.
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
@@ -68,8 +80,15 @@ export default function ChatPage() {
       lastMessageCount.current = messages.length;
       setAtBottom(true);
     } else if (atBottom && streamingContent.length !== lastContentLength.current) {
-      // streaming tokens — keep the user pinned only if they were already at the bottom
-      el.scrollTop = el.scrollHeight;
+      // streaming tokens — keep the user pinned only if they were already at the bottom,
+      // coalescing writes to one per frame
+      if (rafRef.current === null) {
+        rafRef.current = requestAnimationFrame(() => {
+          rafRef.current = null;
+          const target = scrollRef.current;
+          if (target) target.scrollTop = target.scrollHeight;
+        });
+      }
     }
     lastContentLength.current = streamingContent.length;
   }, [messages, streamingContent, atBottom]);

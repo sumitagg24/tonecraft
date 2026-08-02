@@ -33,7 +33,8 @@ function writeList(key: string, list: string[]) {
 }
 
 export function TonePicker({ onSelect, onClose }: TonePickerProps) {
-  const { selectedTone, setSelectedTone } = useChatStore();
+  const selectedTone = useChatStore((s) => s.selectedTone);
+  const setSelectedTone = useChatStore((s) => s.setSelectedTone);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<string[]>(() => readList(FAVORITES_KEY));
   const [recent, setRecent] = useState<string[]>(() => readList(RECENT_KEY));

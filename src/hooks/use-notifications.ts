@@ -82,27 +82,58 @@ export function useNotifications() {
   }, [fetchNotifications]);
 
   useEffect(() => {
-    const es = new EventSource("/api/notifications/stream");
-    eventSourceRef.current = es;
+    let retryDelay = 1000;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let es: EventSource | null = null;
+    let disposed = false;
 
-    es.addEventListener("message", (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === "unread_count") {
-          setUnread(data.count);
+    const connect = () => {
+      if (disposed) return;
+      es = new EventSource("/api/notifications/stream");
+      eventSourceRef.current = es;
+
+      es.addEventListener("message", (event) => {
+        retryDelay = 1000; // healthy stream — reset backoff
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === "unread_count") {
+            setUnread(data.count);
+          }
+        } catch {
+          // ignore parse errors from SSE
         }
-      } catch {
-        // ignore parse errors from SSE
-      }
-    });
+      });
 
-    es.onerror = () => {
-      es.close();
+      es.onerror = () => {
+        es?.close();
+        eventSourceRef.current = null;
+        // Reconnect with exponential backoff (EventSource does not auto-reconnect
+        // once we close it). Cap the delay at 30s.
+        retryTimer = setTimeout(connect, retryDelay);
+        retryDelay = Math.min(retryDelay * 2, 30000);
+      };
     };
 
+    connect();
+
+    // Pause the stream while the tab is hidden, resume when visible
+    const handleVisibility = () => {
+      if (document.hidden) {
+        es?.close();
+        eventSourceRef.current = null;
+        if (retryTimer) clearTimeout(retryTimer);
+      } else if (!eventSourceRef.current && !retryTimer) {
+        connect();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
     return () => {
-      es.close();
+      disposed = true;
+      es?.close();
       eventSourceRef.current = null;
+      if (retryTimer) clearTimeout(retryTimer);
+      document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, []);
 

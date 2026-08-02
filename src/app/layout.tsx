@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
-import { QueryProvider } from "@/components/providers/QueryProvider";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "@/components/ui/sonner";
 import { ReducedMotionProvider } from "@/hooks/use-reduced-motion";
@@ -93,11 +92,9 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <ReducedMotionProvider>
-              <QueryProvider>
-                {children}
-                <GlobalEffects />
-                <Toaster position="bottom-right" />
-              </QueryProvider>
+              {children}
+              <GlobalEffects />
+              <Toaster position="bottom-right" />
             </ReducedMotionProvider>
           </ThemeProvider>
         </ClerkProvider>

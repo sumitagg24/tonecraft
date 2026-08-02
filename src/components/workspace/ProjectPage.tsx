@@ -23,7 +23,7 @@ export function ProjectPage({ projectId }: ProjectPageProps) {
   const { projects, setCurrentProjectId } = useProjectsStore();
   const { fetchProjects, updateProject, deleteProject, createChatInProject } = useProjects();
   const { fetchChats } = useChat();
-  const { chats } = useChatStore();
+  const chats = useChatStore((s) => s.chats);
   const [tab, setTab] = useState<Tab>("chats");
   const [editingName, setEditingName] = useState(false);
   const [name, setName] = useState("");
