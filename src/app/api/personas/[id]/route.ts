@@ -1,32 +1,7 @@
 import { ok, fail, notFound, forbidden, withApiHandler } from "@/lib/withApiHandler";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
-import { z } from "zod";
-
-const HEX_COLOR = /^#[0-9a-fA-F]{3,8}$/;
-const ICON_RE = /^[\p{Emoji}\p{Emoji_Presentation}\s]{0,10}$/u;
-
-const updateSchema = z.object({
-  name: z.string().min(1).max(50).optional(),
-  description: z.string().max(200).optional(),
-  systemPrompt: z.string().min(1).max(5000).optional(),
-  icon: z.string().refine(
-    (v) => !v || ICON_RE.test(v),
-    "Icon must be a single emoji or empty"
-  ).optional(),
-  color: z.string().refine(
-    (v) => !v || HEX_COLOR.test(v),
-    "Color must be a valid hex color (e.g. #6366F1)"
-  ).optional(),
-  isDefault: z.boolean().optional(),
-  isFavorite: z.boolean().optional(),
-  tone: z.string().max(50).optional(),
-  temperature: z.number().int().min(0).max(100).optional(),
-  emojiUsage: z.enum(["none", "subtle", "moderate", "heavy"]).optional(),
-  writingStyle: z.string().max(50).optional(),
-  platformDefaults: z.record(z.string(), z.string()).optional(),
-  projectId: z.string().nullable().optional(),
-});
+import { personaUpdateSchema } from "@/lib/validators";
 
 const api = withApiHandler();
 
@@ -36,7 +11,7 @@ export const PATCH = api.PATCH(async (ctx, body) => {
   if (!exists) return notFound();
   if (exists.userId !== ctx.user.id) return forbidden();
 
-  const parsed = updateSchema.safeParse(body);
+  const parsed = personaUpdateSchema.safeParse(body);
   if (!parsed.success) {
     return fail(
       "VALIDATION_ERROR",
