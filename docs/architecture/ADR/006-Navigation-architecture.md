@@ -41,7 +41,7 @@ Accepted (Projects as workspace containers)
 Users need to organize their work—conversations, prompts, personas, and knowledge—into logical groups. The architecture calls this "workspace" but the implementation uses **Projects**.
 
 ## Decision
-Represent workspaces as **Project containers** modeled in `src/models/Project.ts`. Projects provide:
+Represent workspaces as **Project containers** modeled in `prisma/schema.prisma` (Project model). Projects provide:
 - Hierarchical organization (tree structure with `parentId`)
 - Scoping for all entity types (chats, prompts, personas, knowledge)
 - Member management for collaboration

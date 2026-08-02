@@ -13,8 +13,8 @@ Every **intended subsystem** (determined from the Information Architecture, App-
 | **Billing** | ADR‑002, Architecture‑Evidence.md | `src/billing/providers/paddle/PaddleProvider.ts`, `src/billing/BillingService.ts`, `src/services/UsageGuard.ts` | Implemented |
 | **Chat** | ADR‑006, Architecture‑Evidence.md | `src/app/(dashboard)/chat/` routes, `src/hooks/use-chat.ts`, `src/components/workspace/ChatInput.tsx`, `src/components/workspace/ChatList.tsx`, `src/components/workspace/ChatMessage.tsx` | Implemented |
 | **Projects** | ADR‑007, Architecture‑Evidence.md | `src/services/ProjectService.ts`, `src/repositories/ProjectRepository.ts`, `src/app/api/projects/...` | Implemented |
-| **Personas** | ADR‑003 (usage), Architecture‑Evidence.md | `src/models/Persona.ts`, `src/services/PersonaService.ts`, `src/app/api/personas/...` | Implemented |
-| **Prompt Library** | Architecture‑Evidence.md | `src/models/Prompt.ts`, `src/services/PromptService.ts`, `src/app/api/prompts/...` | Implemented |
+| **Personas** | ADR‑003 (usage), Architecture‑Evidence.md | `prisma/schema.prisma (Persona model)`, `src/services/PersonaService.ts`, `src/app/api/personas/...` | Implemented |
+| **Prompt Library** | Architecture‑Evidence.md | `prisma/schema.prisma (Prompt model)`, `src/services/PromptService.ts`, `src/app/api/prompts/...` | Implemented |
 | **Knowledge** | ADR‑008, Architecture‑Evidence.md | `src/services/KnowledgeService.ts`, `src/lib/knowledge/extract.ts`, `src/lib/knowledge/chunk.ts`, `src/app/api/knowledge/...` | Partial |
 | **Search** | ADR‑009, Architecture‑Evidence.md | `src/services/SearchService.ts`, `src/app/api/search/...` | Partial |
 | **Notifications** | ADR‑011, Architecture‑Evidence.md | `src/services/NotificationService.ts`, `src/app/api/notifications/...`, `src/components/shell/NotificationCenter.tsx` | Implemented |
