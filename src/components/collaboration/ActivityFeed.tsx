@@ -59,17 +59,18 @@ export function ActivityFeed({ projectId, chatId, userId, showFilters = true, ma
 
   const { data: aggData } = useActivityAggregation({ projectId, userId });
 
+  const items = data?.items;
   const filteredItems = useMemo(() => {
-    if (!data?.items) return [];
-    if (!searchQuery) return data.items;
+    if (!items) return [];
+    if (!searchQuery) return items;
     const q = searchQuery.toLowerCase();
-    return data.items.filter(
+    return items.filter(
       (item) =>
         item.title.toLowerCase().includes(q) ||
         item.description?.toLowerCase().includes(q) ||
         item.type.toLowerCase().includes(q)
     );
-  }, [data?.items, searchQuery]);
+  }, [items, searchQuery]);
 
   const totalPages = data ? Math.ceil((data.total ?? 0) / perPage) : 0;
 

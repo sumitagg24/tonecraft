@@ -1053,3 +1053,43 @@ model Integration {
   @@unique([userId, service])
   @@index([userId, status])
 }
+
+// Phase 12 — background queue for slow work (emails, exports, notifications,
+// analytics). Claimed atomically by the /api/cron/queue worker, same pattern
+// as the automation `running` lock.
+enum QueueStatus {
+  pending
+  processing
+  succeeded
+  failed
+}
+
+model QueueItem {
+  id          String      @id @default(cuid())
+  type        String // email | export | notification | analytics | embedding
+  payload     Json
+  status      QueueStatus @default(pending)
+  attempts    Int         @default(0)
+  maxAttempts Int         @default(5)
+  availableAt DateTime    @default(now()) // delayed until here (retry backoff)
+  lockedAt    DateTime?
+  processedAt DateTime?
+  lastError   String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([status, availableAt])
+  @@index([type, status])
+}
+
+// Phase 12 — runtime feature-flag overrides. Lets operators toggle features
+// (deep-research, agents, automation, marketplace…) without deploying.
+// `key` matches FeatureKey in src/config/features.ts.
+model FeatureOverride {
+  key       String    @id
+  enabled   Boolean
+  note      String?
+  updatedBy String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}

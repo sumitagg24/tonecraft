@@ -66,7 +66,7 @@ export const useWorkspaceWebSocket = (workspaceId: string) => {
 
 export const usePresence = (workspaceId: string) => {
   const { on } = useSocket();
-  const { setUserPresence, removeUserPresence } = useWorkspaceStore.getState();
+  const { setUserPresence, removeUserPresence } = useWorkspaceStore();
 
   useEffect(() => {
     const handlePresence = (data: { userId: string; status: string }) => {
@@ -97,12 +97,12 @@ export const usePresence = (workspaceId: string) => {
       offJoined?.();
       offLeft?.();
     };
-  }, [on, workspaceId]);
+  }, [on, workspaceId, setUserPresence, removeUserPresence]);
 };
 
 export const useTypingIndicator = (workspaceId: string, _userId: string) => {
   const { on, emit } = useSocket();
-  const { addTypingUser, removeTypingUser } = useWorkspaceStore.getState();
+  const { addTypingUser, removeTypingUser } = useWorkspaceStore();
 
   useEffect(() => {
     const handleTyping = (data: { userId: string; chatId: string; isTyping: boolean }) => {
@@ -118,7 +118,7 @@ export const useTypingIndicator = (workspaceId: string, _userId: string) => {
     return () => {
       offTyping?.();
     };
-  }, [on, workspaceId]);
+  }, [on, workspaceId, addTypingUser, removeTypingUser]);
 
   const sendTyping = (isTyping: boolean, channelId: string) => {
     emit(isTyping ? "typing-start" : "typing-stop", { chatId: channelId });

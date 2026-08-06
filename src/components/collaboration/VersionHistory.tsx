@@ -43,14 +43,15 @@ export function VersionHistory({ resourceType, resourceId, onRestore, onCompare,
     }
   }, [selectedIds, onCompare]);
 
+  const items = data?.items;
   const handlePruneAuto = useCallback(async () => {
-    if (data?.items) {
-      const autoSnapshots = data.items.filter((s) => s.isAuto);
+    if (items) {
+      const autoSnapshots = items.filter((s) => s.isAuto);
       for (const snap of autoSnapshots.slice(10)) {
         await remove.mutate(snap.id);
       }
     }
-  }, [data?.items, remove]);
+  }, [items, remove]);
 
   if (isLoading) {
     return (

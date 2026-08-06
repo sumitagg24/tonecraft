@@ -9,7 +9,8 @@ const runSchema = z.object({
   chain: z.array(z.string()).max(5).optional(),
 });
 
-const api = withApiHandler({ schema: runSchema });
+// Phase 12.4 — per-endpoint (10/min) + IP ceiling on top of plan-based caps.
+const api = withApiHandler({ schema: runSchema, rateLimit: { key: "agent-run", limit: 10, ipLimit: 120 } });
 
 export const POST = api.POST(async (ctx, body) => {
   const agent = await agentService.get(ctx.params.id, ctx.user.id);

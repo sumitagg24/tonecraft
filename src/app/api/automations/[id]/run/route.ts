@@ -3,7 +3,8 @@ import { automationService } from "@/services/AutomationService";
 import { planService } from "@/services/PlanService";
 import { checkMessageLimit } from "@/lib/ratelimit";
 
-const api = withApiHandler();
+// Phase 12.4 — per-endpoint (10/min) + IP ceiling on top of plan-based caps.
+const api = withApiHandler({ rateLimit: { key: "automation-run", limit: 10, ipLimit: 120 } });
 
 export const POST = api.POST(async (ctx) => {
   const automation = await automationService.get(ctx.params.id, ctx.user.id);

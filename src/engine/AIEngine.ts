@@ -8,6 +8,7 @@ import { buildPrompt } from "@/prompts";
 import { prisma } from "@/lib/prisma";
 import { usageGuard } from "@/services/UsageGuard";
 import { modelRegistry } from "@/services/ModelRegistry";
+import { auditLogService } from "@/services/AuditLogService";
 import { type PlanTier, getPlanConfig } from "@/config/plans";
 import { CODE_PATTERN } from "@/lib/capabilities";
 
@@ -74,6 +75,14 @@ export class AIEngine {
       }
     }
 
+    // Phase 12.2 — operational audit trail for AI requests.
+    if (options.userId) {
+      void auditLogService.record("ai.request_start", "ai", {
+        actorId: options.userId,
+        metadata: { intent: intentConfig.intent, model: options.modelId ?? "auto" },
+      });
+    }
+
     // Route to provider
     const providerResult = await this.providerRouter.route({
       system: built.systemMessage,
@@ -82,6 +91,7 @@ export class AIEngine {
       plan: options.plan,
       intent: intentConfig.intent,
       capabilityContext: this.buildCapabilityContext(options, built),
+      userId: options.userId,
       signal: options.signal,
       tools: options.tools,
     });
@@ -102,6 +112,10 @@ export class AIEngine {
     // Track usage
     if (options.userId) {
       this.trackUsage(options.userId, providerResult).catch(() => {});
+      void auditLogService.record("ai.request_complete", "ai", {
+        actorId: options.userId,
+        metadata: { model: providerResult.model, provider: providerResult.provider, tokens: providerResult.tokens },
+      });
     }
 
     // Format response
@@ -176,6 +190,7 @@ export class AIEngine {
         plan: options.plan,
         intent: intentConfig.intent,
         capabilityContext: this.buildCapabilityContext(options, built),
+        userId: options.userId,
         signal: options.signal,
         tools: options.tools,
       });

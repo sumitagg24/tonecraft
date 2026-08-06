@@ -23,6 +23,7 @@ export const TONES: { id: string; label: string; description: string; color: str
   { id: "minimal", label: "Minimal", description: "Clean and concise", color: color.tone.minimal, emoji: "⚪", example: "Done is better than perfect. Ship it." },
   { id: "corporate", label: "Corporate", description: "Executive business style", color: color.tone.corporate, emoji: "🏢", example: "We are pleased to announce the successful completion of the strategic initiative, aligned with our quarterly objectives." },
   { id: "academic", label: "Academic", description: "Research and evidence-based", color: color.tone.academic, emoji: "🎓", example: "The extant literature suggests that tone modulation significantly influences perceived message credibility." },
+  { id: "slang", label: "Slang", description: "Casual street talk", color: "#f59e0b", emoji: "😎", example: "Yo, just wanted to let you know — I'mma need to bounce, rain check?" },
 ];
 
 export const FREE_TIER_LIMITS = {

@@ -102,7 +102,7 @@ export function ToolPanel({ tool, onClose }: ToolPanelProps) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {["professional", "friendly", "casual", "formal", "funny", "luxury", "corporate", "genz", "creative", "minimal"].map((t) => (
+                {["professional", "friendly", "casual", "formal", "funny", "luxury", "corporate", "genz", "creative", "minimal", "slang"].map((t) => (
                   <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>
                 ))}
               </SelectContent>

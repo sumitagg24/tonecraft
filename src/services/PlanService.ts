@@ -4,6 +4,9 @@ import {
   getPlanConfig,
   type PlanConfig,
 } from "@/config/plans";
+import { cacheGet, cacheSet, cacheDel } from "@/lib/cache";
+
+const PLAN_CACHE_TTL_SECONDS = 300; // 5 minutes
 
 interface CacheEntry {
   tier: PlanTier;
@@ -26,9 +29,14 @@ function tierFromString(s: string): PlanTier {
 
 export class PlanService {
   async getPlan(userId: string): Promise<Readonly<PlanConfig>> {
-    const cached = cache.get(userId);
-    if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
-      return getPlanConfig(cached.tier);
+    // Phase 12.7 — Redis read-through cache (TTL 5 min) layered on the
+    // in-memory cache; invalidated on subscription changes.
+    const cached = await cacheGet<PlanTier>(`plan:${userId}`);
+    if (cached) return getPlanConfig(cached);
+
+    const mem = cache.get(userId);
+    if (mem && Date.now() - mem.timestamp < CACHE_TTL_MS) {
+      return getPlanConfig(mem.tier);
     }
 
     const sub = await prisma.subscription.findUnique({
@@ -42,11 +50,13 @@ export class PlanService {
         : PlanTier.FREE;
 
     cache.set(userId, { tier, timestamp: Date.now() });
+    await cacheSet(`plan:${userId}`, tier, PLAN_CACHE_TTL_SECONDS);
     return getPlanConfig(tier);
   }
 
-  invalidateCache(userId: string): void {
+  async invalidateCache(userId: string): Promise<void> {
     cache.delete(userId);
+    await cacheDel(`plan:${userId}`);
   }
 }
 

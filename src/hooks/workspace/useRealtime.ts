@@ -25,20 +25,70 @@ export function useWorkspaceWebSocket(workspaceId: string) {
   const [connected, setConnected] = useState(false);
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
+  const wsRef = useRef<WebSocket | null>(null);
+  const connectRef = useRef<() => void>(() => {});
+
   const { setUserPresence, removeUserPresence, addTypingUser, removeTypingUser, updateSharedDocument } = useWorkspaceStore();
 
+  const handleMessage = useCallback((message: WSMessage) => {
+    switch (message.type) {
+      case "connected":
+        break;
+      case "presence":
+        if (!message.userId) break;
+        if (message.data?.online) {
+          setUserPresence(message.userId, {
+            online: true,
+            userId: message.userId,
+            name: message.data.name,
+            email: message.data.email,
+            image: message.data.image,
+            role: message.data.role,
+          });
+        } else {
+          removeUserPresence(message.userId);
+        }
+        break;
+      case "typing":
+        if (!message.userId) break;
+        if (message.data?.isTyping) {
+          addTypingUser(message.userId);
+        } else {
+          removeTypingUser(message.userId);
+        }
+        break;
+      case "project-update":
+      case "optimistic-update":
+        if (message.data?.projectId) {
+          updateSharedDocument(message.data.projectId, message.data.content ?? "", message.data.version ?? 0);
+        }
+        break;
+      case "error":
+        console.error("WS error:", message.data?.message);
+        break;
+    }
+  }, [setUserPresence, removeUserPresence, addTypingUser, removeTypingUser, updateSharedDocument]);
+
+  const attemptReconnect = useCallback(() => {
+    if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+    const attempts = reconnectAttempts + 1;
+    setReconnectAttempts(attempts);
+    const delay = Math.min(1000 * Math.pow(2, attempts), 30000);
+    reconnectTimeoutRef.current = setTimeout(connectRef.current, delay);
+  }, [reconnectAttempts]);
+
   const connect = useCallback(() => {
-    if (ws?.readyState === WebSocket.OPEN) return;
+    if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsUrl = `${protocol}//${window.location.host}/api/ws?workspaceId=${workspaceId}`;
     const socket = new WebSocket(wsUrl);
+    wsRef.current = socket;
+    setWs(socket);
 
     socket.onopen = () => {
       setConnected(true);
       setReconnectAttempts(0);
-      setWs(socket);
     };
 
     socket.onmessage = (event) => {
@@ -53,72 +103,30 @@ export function useWorkspaceWebSocket(workspaceId: string) {
     socket.onclose = () => {
       setConnected(false);
       setWs(null);
+      wsRef.current = null;
       attemptReconnect();
     };
 
     socket.onerror = (error) => {
       console.error("WebSocket error:", error);
     };
-  }, [ws, workspaceId]);
-
-  const attemptReconnect = useCallback(() => {
-    if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
-    const attempts = reconnectAttempts + 1;
-    setReconnectAttempts(attempts);
-    const delay = Math.min(1000 * Math.pow(2, attempts), 30000);
-    reconnectTimeoutRef.current = setTimeout(connect, delay);
-  }, [reconnectAttempts, connect]);
-
-  const handleMessage = (message: WSMessage) => {
-    switch (message.type) {
-      case "connected":
-        break;
-      case "presence":
-        if (message.data?.online) {
-          setUserPresence(message.userId!, {
-            online: true,
-            userId: message.userId!,
-            name: message.data.name,
-            email: message.data.email,
-            image: message.data.image,
-            role: message.data.role,
-          });
-        } else {
-          removeUserPresence(message.userId!);
-        }
-        break;
-      case "typing":
-        if (message.data?.isTyping) {
-          addTypingUser(message.userId!);
-        } else {
-          removeTypingUser(message.userId!);
-        }
-        break;
-      case "project-update":
-      case "optimistic-update":
-        if (message.data?.projectId) {
-          updateSharedDocument(message.data.projectId, message.data.content ?? "", message.data.version ?? 0);
-        }
-        break;
-      case "error":
-        console.error("WS error:", message.data?.message);
-        break;
-    }
-  };
+  }, [workspaceId, handleMessage, attemptReconnect]);
 
   useEffect(() => {
+    connectRef.current = connect;
     connect();
     return () => {
       if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
-      ws?.close();
+      wsRef.current?.close();
+      wsRef.current = null;
     };
   }, [connect]);
 
   const send = useCallback((message: WSMessage) => {
-    if (ws?.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify(message));
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify(message));
     }
-  }, [ws]);
+  }, []);
 
   return { ws, connected, send };
 }
@@ -167,16 +175,15 @@ export function useLiveProjectUpdates(workspaceId: string) {
 
 export function useConflictResolution(workspaceId: string) {
   const { send } = useWorkspaceWebSocket(workspaceId);
-  
+
   const resolveConflict = useCallback((projectId: string, localContent: string, serverContent: string, strategy: "local" | "server" | "merge" = "merge") => {
     let resolvedContent: string;
     if (strategy === "local") resolvedContent = localContent;
     else if (strategy === "server") resolvedContent = serverContent;
     else {
-      // Simple merge strategy: append both with separator
       resolvedContent = `${serverContent}\n---\n${localContent}`;
     }
-    
+
     send({ type: "project-update", data: { projectId, content: resolvedContent, version: Date.now() } });
     return resolvedContent;
   }, [send]);

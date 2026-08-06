@@ -29,6 +29,7 @@ export function buildRewritePrompt(input: string, config: RewriteConfig): string
     creative: "Rewrite this with vivid imagery and imaginative language. Use metaphors, rich descriptions, and engaging narrative style. Make it memorable.",
     minimal: "Rewrite this to be extremely concise and clean. Strip every unnecessary word. Maximum impact with minimum words. Think Hemingway.",
     academic: "Rewrite this in formal academic style. Use precise terminology, structured arguments, evidence-based reasoning. Cite concepts and acknowledge complexity.",
+    slang: "Rewrite this using contemporary slang and colloquial language. Keep it authentic and natural — use expressions people actually say in casual conversation. Avoid trying too hard; let the slang flow conversationally.",
   };
 
   const instruction = toneInstructions[config.tone] || toneInstructions.professional;

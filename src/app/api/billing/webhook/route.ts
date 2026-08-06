@@ -24,6 +24,9 @@ export async function POST(req: Request) {
   const normalized = await billingService.handleWebhookEvent(event);
 
   logger.info("Webhook received", { type: normalized.type });
+  void auditLogService.record("billing.webhook_received", "billing", {
+    metadata: { eventType: normalized.type },
+  });
 
   try {
     await syncSubscription(normalized);
@@ -164,13 +167,13 @@ async function syncSubscription(normalized: { type: string; data: Record<string,
       void auditLogService.record("billing.subscribe", "subscription", {
         actorId: userId,
         resourceId: subscriptionId,
-        metadata: { eventType: normalized.type, status: "past_due" },
+        metadata: { eventType: normalized.type, status: "past_due", failed: true },
       });
       break;
     }
   }
 
-  planService.invalidateCache(userId);
+  void planService.invalidateCache(userId);
 }
 
 function planFromPriceId(priceId: string | null): string {

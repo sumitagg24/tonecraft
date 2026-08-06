@@ -80,13 +80,24 @@ export function Navbar() {
                     Open App
                   </Link>
                 </Button>
-                <UserButton
-                  appearance={{
-                    elements: {
-                      avatarBox: "w-8 h-8",
-                    },
-                  }}
-                />
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <UserButton
+                    appearance={{
+                      elements: {
+                        avatarBox:
+                          "w-8 h-8 p-[2px] rounded-full bg-gradient-to-br from-violet-500 via-indigo-500 to-purple-500 shadow-glow",
+                        userButtonAvatarBox: "rounded-full",
+                        userButtonTrigger:
+                          "rounded-full hover:shadow-glow focus:shadow-none focus:outline-none",
+                        userButtonPopoverCard:
+                          "rounded-xl border border-border/60 bg-background/95 backdrop-blur-xl shadow-xl shadow-black/5",
+                        userButtonPopoverActionButton: "text-sm hover:bg-muted/60",
+                        userButtonPopoverActionButtonText: "text-sm font-medium",
+                        userButtonPopoverFooter: "text-micro text-muted-foreground",
+                      },
+                    }}
+                  />
+                </motion.div>
               </motion.div>
             ) : mounted ? (
               <>

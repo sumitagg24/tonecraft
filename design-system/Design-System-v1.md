@@ -1,270 +1,344 @@
-# Design-System-v1.md
+# ToneCraft Design System v1.0 — FROZEN
 
-> **Status:** Frozen — do not modify unless a real problem is discovered during implementation
+> **Status:** Frozen — do not modify unless a real problem is discovered during implementation.
 > **Version:** 1.0.0
 > **Last Updated:** 2026-08-06
-> **Architectural Note:** This is the foundational design system document. All components and pages must conform to this specification.
+> **Artistic Direction:** Editorial Luxury (60%) + Apple (20%) + Arc Browser (10%) + Futuristic Motion (10%)
 
 ---
 
-## Design System Foundation
+## 1. Design DNA
 
-### 1. Design DNA
 > **"Every interaction shapes expression. Every pixel serves voice."**
 
-ToneCraft is not software - it's a language studio where AI enhances human creativity. The design system exists to make the creative process feel natural, expressive, and emotionally resonant.
+ToneCraft is not a tool. It is a language studio where the interface adapts to the emotional intent of the writer. The design system exists to make the creative process feel effortless, expressive, and deeply personal.
 
-### 2. Design Philosophy
-- **Progressive disclosure**: Reveal complexity only when needed
-- **Contextual intelligence**: UI adapts to the user's current creative state
-- **Emotional resonance**: Voice-driven design that reflects the creator's intent
-- **Trust through transparency**: Clear affordances, honest feedback, and coherent architecture
+### Core Principles
 
-### 2.1 Core Principles
-1. **Human-Centric AI**: AI should amplify human creativity, not replace it
-2. **Precision Over Decoration**: Every element has a functional purpose
-3. **Contextual Intelligence**: UI adapts to creative workflow, not forces workflow changes
-4. **Emotional Intelligence**: Design evokes the feeling of effective communication
-5. **Discoverability**: Every capability must be findable within 3 seconds
-6. **Reversibility**: Allow creative experimentation without fear of mistakes
+1. **Human-Centric AI** — AI should amplify human creativity, not replace it
+2. **Precision Over Decoration** — Every element has a functional purpose
+3. **Contextual Intelligence** — UI adapts to creative workflow, not forces workflow changes
+4. **Emotional Resonance** — Design evokes the feeling of effective communication
+5. **Discoverability** — Every capability must be findable within 3 seconds
+6. **Reversibility** — Allow creative experimentation without fear of mistakes
 
-### 2.2 Visual Hierarchy
+### Visual Hierarchy
+
 - **Size**: 6XL (48px) → 4XL (36px) → 2XL (28px) → XL (20px) → BASE (16px) → SM (14px) → XS (12px)
-- **Weight**: Semibold (600) → Bold (700) → Medium (500) → Normal (400) → Light (300)
-- **Color Priority**: Primary > Secondary > Accent > Muted
+- **Weight**: Bold (700) for headings → Semibold (600) for labels → Medium (500) for body → Regular (400) for secondary text
+- **Color Priority**: Primary accent (tone color) → Semantic colors (success/warning/error/info) → Primary text → Muted text → Border
 - **Motion Intensity**: Subtle → Moderate → Prominent based on importance
 
 ---
 
 ## 2. Visual Identity
 
-### 2.1 Color System
+The ToneCraft interface follows an editorial luxury aesthetic — clean, precise, and emotionally resonant. Every visual decision reinforces the relationship between the writer's intent and the AI's response.
 
-#### 2.1.1 Semantic Tokens
-- **Background**: `hsl(var(--background))` - layer separation
-- **Foreground**: `hsl(var(--foreground))` - primary content visibility
-- **Card**: `hsl(var(--card))` - component containers
-- **Popover**: `hsl(var(--popover))` - contextual surfaces
-- **Primary**: `hsl(var(--primary))` - core actions and brand expression
-- **Secondary**: `hsl(var(--secondary))` - secondary actions
-- **Success**: `hsl(var(--success))` - positive outcomes
-- **Warning**: `hsl(var(--warning))` - cautionary states
-- **Danger**: `hsl(var(--destructive))` - irreversible actions
-- **Muted**: `hsl(var(--muted))` - secondary content and backgrounds
-- **Border**: `hsl(var(--border))` - surface separation
-- **Input**: `hsl(var(--input))` - form elements
-- **Ring**: `hsl(var(--ring))` - focus states
-- **Sidebar**: `hsl(var(--sidebar))` - navigation panel
-- **SidebarForeground**: `hsl(var(--sidebar-foreground))` - sidebar text
+- 85% of the interface uses neutral base tones (navy, slate, gray)
+- 10% uses functional semantic colors (success, warning, error, info)
+- 5% uses the active tone accent color — this is what makes the UI feel alive
+- Never use raw hex values outside of `src/styles/colors.ts`
+- Tone accent colors transition smoothly (300ms ease) when the user switches tones
 
-### 2.2 Static Palettes
+---
 
-| Palette | Color | Usage |
-|---------|-------|-------|
-| **Primary** | `#6C64EE` (Violet) | Brand CTA, AI elements |
-| **Amber** | `#FFB800` | Action highlights, warnings |
-| **Lavender** | `#A1A1C9` | Secondary actions |
-| **Tone Palette** | 9 colors (Professional, Friendly, Creative, etc.) | Voice-specific UI elements |
-| **Platform** | Brand-specific colors (WhatsApp, LinkedIn, etc.) | Platform-specific UI elements |
-| **Status** | Success, Warning, Danger, Info | Status indicators |
+## 3. Color System
 
-### 2.3 Semantic Color Usage
-- **85% Neutral**: 80% of interface uses semantic colors or their tints/shades
-- **10% Functional Accent**: Primary/secondary colors for core actions
-- **5% Expressive Accent**: Tone/emotion colors for AI voice visualization
+### Base Palette
 
-### 2.3 Color Application Rules
-- **Component Surfaces**: Use semantic tokens or utility classes (`bg-card`, `text-muted-foreground`)
-- **Raw Hex Values**: Only allowed in `colors.ts` and `tailwind.config.ts`
-- **Tone Colors**: Automatically adjust UI elements when tone is selected
-- **Platform Colors**: Brand-specific colors for major platforms (WhatsApp, LinkedIn, etc.)
+| Token | Value | Usage |
+|-------|-------|-------|
+| `base-bg` | `#0B0F1A` | Deep navy background — the canvas |
+| `base-surface` | `#111827` | Primary surface cards |
+| `base-elevated` | `#1E293B` | Elevated surfaces, popovers |
+| `base-border` | `#1E3A5F` | Subtle borders with blue undertone |
+| `base-text` | `#F1F5F9` | Primary text |
+| `base-muted` | `#94A3B8` | Secondary text, captions |
+| `base-accent` | `#38BDF8` | Sky blue — AI active state |
+
+### Tone-Color Mapping
+
+Each writing tone dynamically shifts the UI accent color, creating an emotional atmosphere that matches the voice.
+
+| Tone | Accent Color | Mood | UI Behavior |
+|------|-------------|------|-------------|
+| Friendly | `#34D399` (emerald) | Warm, approachable | Soft green glow on composer border |
+| Professional | `#60A5FA` (blue) | Authoritative, clean | Blue accent on active elements |
+| Luxury | `#D4AF37` (gold) | Opulent, refined | Gold shimmer on premium surfaces |
+| Sarcastic | `#F97316` (orange) | Bold, unexpected | Orange pulse on tone chip |
+| Poetic | `#EC4899` (pink) | Lyrical, expressive | Pink gradient on message bubbles |
+| Minimal | `#CBD5E1` (slate) | Clean, restrained | Muted accent, maximum whitespace |
+| Corporate | `#818CF8` (indigo) | Structured, formal | Indigo borders and headers |
+| Academic | `#14B8A8` (teal) | Precise, scholarly | Teal highlights on citations |
+| Creative | `#A78BDA` (violet) | Imaginative, bold | Violet ambient glow on canvas |
+
+### Semantic Tokens
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `semantic-bg` | `hsl(var(--background))` | Page background |
+| `semantic-surface` | `hsl(var(--card))` | Card and panel backgrounds |
+| `semantic-text` | `hsl(var(--foreground))` | Primary text |
+| `semantic-muted` | `hsl(var(--muted-foreground))` | Secondary text |
+| `semantic-primary` | `hsl(var(--primary))` | Primary actions |
+| `semantic-border` | `hsl(var(--border))` | Surface borders |
+| `semantic-accent` | Dynamic (tone-dependent) | Current tone accent |
+| `semantic-success` | `#4ADE80` | Success states |
+| `semantic-warning` | `#FBBF24` | Warning states |
+| `semantic-error` | `#F87171` | Error states |
+| `semantic-info` | `#38BDF8` | Informational states |
 
 ---
 
 ## 4. Typography
 
-### 4.1 Type Scale (px)
-| Token | Size | Line Height | Typical Use |
-|-------|------|-------------|-----------|
-| `micro` | 10px | — | Legacy workspace labels |
-| `tiny` | 11px | — | Legacy — migrate to `xs`+ |
-| `xs` | 12px | 1.5 | Meta, captions, disabled text |
-| **`sm`** | **14px** | **1.5** | Body text, list items |
-| **`base`** | **16px** | **1.6** | Default body |
-| **`lg`** | 18px | 1.6 | Lead paragraphs |
-| **`xl`** | 20px | 1.5 | Card titles |
-| **`2xl`** | 24px | 1.4 | Card titles |
-| **`3xl`** | 28px | 1.5 | Section headers |
-| **`4xl`** | 32px | 1.4 | Hero headings |
-| **`5XL`** | 36px | 1.4 | Main headings |
-| **`6XL`** | 48px | 0.9 | Hero headings |
+### Type Scale
 
-### 4.2 Weights
-- `normal` (400), `medium` (500), `semibold` (600), `bold` (700)
+| Token | Size | Line Height | Weight | Usage |
+|-------|------|-------------|--------|-------|
+| `display` | 56px | 1.1 | 700 | Hero headings |
+| `h1` | 40px | 1.15 | 600 | Page titles |
+| `h2` | 32px | 1.2 | 600 | Section headers |
+| `h3` | 24px | 1.25 | 600 | Card titles |
+| `h4` | 20px | 1.3 | 500 | Subsection headers |
+| `h5` | 16px | 1.4 | 500 | Component headers |
+| `body-lg` | 18px | 1.5 | 400 | Lead paragraphs |
+| `body` | 16px | 1.5 | 400 | Default body text |
+| `body-sm` | 14px | 1.5 | 400 | Secondary body |
+| `caption` | 12px | 1.4 | 400 | Captions, metadata |
 
-### 3.3 Typography Rules
-- Minimum legible size: **12px** (`xs`)
-- Headings use `tracking-tight`
-- Hero display uses `leading-[0.95]–1.05`
-- Never mix font families — `Inter` for all UI text
+### Font Families
+
+| Role | Font | Fallback |
+|------|------|----------|
+| UI Text | Inter | system-ui, sans-serif |
+| Mono | JetBrains Mono | monospace |
+
+### Typography Rules
+
+- Headings use `tracking-tight` for editorial quality
+- Body text uses `tracking-normal` for readability
+- Minimum legible size: 12px (`caption`) — legacy 9-11px sizes are deprecated
+- Line height minimum 1.4 for all text sizes
+- Maximum line length: 72 characters for body text
+- Use weight for hierarchy, not font family changes
 
 ---
 
-## 4. Spacing System
+## 5. Spacing
 
-### 4.1 Scale (4px base grid)
-| Token | Value | Usage |
-|-------|-------|-------|
-| `0` | `0px` | No spacing |
-| `1` | `4px` | Minimal spacing |
-| **`2`** | **8px** | Default spacing |
-| **`3`** | `12px` | Card level spacing |
-| **`4`** | `16px` | Component spacing |
-| **`6`** | `24px` | Grid gap |
-| **`8`** | `32px` | Container padding |
-| **`10`** | `40px` | Page padding |
-| **`12`** | `48px` | Screen edge spacing |
-| **`16`** | `64px` | Max content width |
+### Base Grid (4px)
 
-### 4.2 Rhythm Rules
-- All components must respect the 4px base rhythm
-- Horizontal rhythm: `space-x-3`/`space-x-4` (12/16px) for lists and grids
-- Vertical rhythm: `space-y-3`/`space-y-4` (12/16px) for card stacks and sections
+| Token | Value |
+|-------|-------|
+| `space-1` | 4px |
+| `space-2` | 8px |
+| `space-3` | 12px |
+| `space-4` | 16px |
+| `space-5` | 20px |
+| `space-6` | 24px |
+| `space-8` | 32px |
+| `space-10` | 40px |
+| `space-12` | 48px |
+| `space-16` | 64px |
+| `space-20` | 80px |
+| `space-24` | 96px |
+
+### Spacing Rules
+
+- All padding and margin uses multiples of 4px
+- Component internal padding: `space-4` (16px) standard, `space-6` (24px) for cards
+- Section gaps: `space-8` (32px) between sections, `space-12` (48px) between major sections
+- Maximum content width: 1280px centered
+- Sidebar width: 280px fixed (desktop), collapsed to 0 with drawer on mobile
+- Context drawer width: 320px (desktop), full-width sheet on mobile
 - No ad-hoc spacing — extend the scale when needed
 
 ---
 
-## 7. Radius System
+## 6. Radius
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| `xs` | `4px` | Badges, dots, minimal controls |
-| `sm` | `6px` | Small inputs, light emphasis |
-| `md` | `8px` | Buttons, cards, moderate emphasis |
-| `lg` | `12px` | Primary buttons, message bubbles |
-| `xl` | `16px` | Hero surfaces, major cards |
-| `2xl` | `16px` | Message bubbles, secondary emphasis |
-| `3xl` | `24px` | Large hero elements |
-| `4xl` | `32px` | Large hero panels |
-| `full` | `9999px` | Fully rounded pills, avatars, dots |
+| `radius-xs` | 4px | Badges, dots |
+| `radius-sm` | 6px | Inputs, small controls |
+| `radius-md` | 8px | Buttons, list items |
+| `radius-lg` | 12px | Cards, panels |
+| `radius-xl` | 16px | Composer, large cards |
+| `radius-2xl` | 20px | Message bubbles |
+| `radius-3xl` | 24px | Hero panels |
+| `radius-full` | 9999px | Pills, avatars |
 
-### Usage Rules
-- Surfaces share radius based on elevation (lower elevation = smaller radius)
-- Interactive elements use the next radius size up
-- Bubbles use `rounded-bl-sm`/`rounded-br-sm` "speech" treatment
-- Never mix radius sizes within a single surface
+### Radius Rules
 
----
-
-## 7. Elevation System
-
-| Token | Shadow Value | Usage |
-|-------|------------|-------|
-| `sm` | `0 1px 2px 0 rgba(0,0,0,0.05)` | Subtle background elements |
-| `md` | `0 1px 3px 0 rgba(0,0,0,0.10)` + `0 1px 4px 0 rgba(0,0,0,0.06)` | Primary surfaces |
-| `lg` | `0 1px 3px 0 rgba(0,0,0,0.10)` + `0 1px 8px 0 rgba(0,0,0,0.04)` | Premium surfaces |
-| `xl` | `0 2px 4px 0 rgba(0,0,0,0.10)` + `0 4px 5px -2px rgba(0,0,0,0.05)` | Hero surfaces |
-| `card` | `0 1px 3px 0 rgba(0,0,0,0.10)` + `0 1px 4px 0 rgba(0,0,0,0.06)` | Default card elevation |
-| `premium` | `0 10px 15px -3px rgba(0,0,0,0.08)` + `0 4px 5px -4px rgba(0,0,0,0.03)` | Hero cards, primary buttons |
-| `glass` | `<theme-context.title><variants: glass-panel, glass-card>` | Glassmorphism surfaces |
-| `dock` | `-8px 0 10px -5px rgba(0,0,0,0.10)` | Bottom navigation |
-| `innerGlow` | `0 0 0 1px rgba(0,0,0,0.10)` | Pressed states |
-
-### Usage Rules
-- Only one elevation per surface type
-- Glow reserved for premium/CTA elements
-- Glass surfaces must maintain 4.5:1 contrast
+- Surfaces at the same elevation share the same radius
+- Interactive elements use one radius size up from their parent surface
+- Message bubbles use `radius-2xl` with asymmetric rounding (bl end rounded for user, br end for AI)
+- Never combine different radius sizes within a single component
 
 ---
 
-## 7. Iconography
+## 7. Elevation
 
-- **Library**: `lucide-react` (+ `social-icons.tsx` for brand marks)
-- **Size Scaling**:
-  - 16px (`w-4 h-4`) in controls/buttons
-  - 20px (`w-5 h-5`) in tiles/avatars
-  - 24px+ in empty states and feature icons
-- **State Consistency**: Same stroke weight within a surface
-- **Accessibility**: Always provide `aria-label` for icon-only controls
-- **Brand Icons**: Use `social-icons.tsx` for LinkedIn, Twitter, Instagram, etc.
+| Token | Shadow | Usage |
+|-------|--------|-------|
+| `elevation-0` | None | Flat surfaces |
+| `elevation-1` | `0 1px 2px rgba(0,0,0,0.05)` | Subtle depth |
+| `elevation-2` | `0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)` | Cards, panels |
+| `elevation-3` | `0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06)` | Elevated surfaces |
+| `elevation-4` | `0 10px 15px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.05)` | Modals, overlays |
+| `elevation-glow` | `0 0 20px rgba(56,189,248,0.15)` | AI active state only |
+| `elevation-premium` | `0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06), 0 0 0 1px rgba(212,175,55,0.2)` | Premium-tier indicators |
 
----
+### Elevation Rules
 
-## 7. Motion Language
-
-### 8.1 Duration Tokens
-| Token | Seconds | Use |
-|-------|---------|-------|
-| `instant` | `0.1` | Icon hover, tap feedback |
-| `fast` | `0.2` | Buttons, chips, small toggles |
-| `normal` | `0.35` | Sidebar/panel, card entrances |
-| `slow` | `0.5` | Page transitions, modals |
-| `verySlow` | `0.7` | Hero, large reveals |
-
-### 8.2 Easing Tokens
-| Token | Cubic-bezier | Use |
-|-------|--------------|-----|
-| `default` | `0.25,0.1,0.25,1` | Standard UI |
-| `in` | `0.4,0,1,1` | Exits |
-| `out` | `0,0,0.2,1` | Entrances |
-| `inOut` | `0.4,0,0.2,1` | Expand/collapse |
-| `emphasized` | `0.25,0.46,0.45,0.94` | Cards, featured transitions |
-| `emphasizedDecel` | `0.05,0.7,0.1,1` | Material-style entrances |
-| `emphasizedAccel` | `0.3,0,0.8,0.15` | Exits |
-| `linear` | `linear` | Continuous loops |
-| `spring` | - | Organic motion |
-| `backOut` | - | Overshoot recovery |
-
-### 8.4 Preset Variants
-- **Entrances**: `fadeInUp`, `fadeInScale`, `slideUp`, `slideDown`
-- **Buttons**: `hoverScale`, `hoverLift`, `activePress`
-- **Cards**: `cardTransition`, `hoverLift`, `selectHighlight`
-- **Lists**: `MotionStagger.Fast`, `MotionStagger.Normal`, `MotionStagger.Slow`
-- **Loading**: `loading.spin`, `loading.pulse`, `loading.gradient`
-- **Semantic**: `MotionPresets.*` and `MotionStagger.{Fast,Normal,Slow,Grid,Sidebar,Messages,Templates,Cards}`
-
-### 8.5 Rules
-1. Prefer presets over inline values
-2. One loading indicator at a time
-3. Exit animations must pair with entrance animations
-4. Stagger children ≤ 0.08s; containers only in lists
-5. Respect `duration` tokens — no magic numbers
+- Use elevation sparingly — maximum 2 elevation levels per view
+- `elevation-glow` is reserved exclusively for AI streaming/active states
+- `elevation-premium` is reserved for premium-tier indicators
+- Dark mode uses softer shadows with reduced opacity
 
 ---
 
-## 7. AI Interaction Rules
+## 8. Motion
 
-### 17.1 AI State Visual Language
+### Duration Tokens
 
-| State | Visual Behavior | Motion | Audio |
-|-------|-----------------|--------|-------|
-| **Thinking** | Cursor glow, subtle pulse | Gentle pulse, fadeInUp | Soft hum |
-| **Streaming** | Text grows line by line | Fade-in with 30ms stagger | Typing sound |
-| **Reasoning** | Neon triangle glow | Quick color flashes | Clicks/snap sounds |
-| **Using Knowledge** | Floating knowledge icons | Gentle drift | Soft chime |
-| **Using Persona** | Persona avatar glows | Subtle pulse | Gentle chime |
-| **Using Tone** | Tone chip pulses | Smooth color transition | Soft chime |
-| **Streaming** | Text grows naturally | Text appears line by line | Typing sound |
-| **Finished** | Glow pulse + sound | 200ms glow + chime | 400ms |
-| **Cancelled** | Fade out with dimming | Fade out (200ms) | 300ms |
-| **Regenerated** | Old content fades, new appears | Fade out 200ms, fade in 300ms | 500ms |
+| Token | Duration | Usage |
+|-------|----------|-------|
+| `instant` | 100ms | Icon hover, tap feedback |
+| `fast` | 200ms | Buttons, chips, toggles |
+| `normal` | 350ms | Sidebar transitions, card entrances |
+| `slow` | 500ms | Page transitions, modals |
+| `verySlow` | 700ms | Hero reveals, large animations |
 
-### 17.2 Component Interaction Language
+### Easing Tokens
 
-- **Button Press**: Scale to 0.98 + shadow shift
-- **Tone Chip**: Scale-in with accent gradient border
-- **Message Send**: Expand-to-send animation with micro-pause
-- **AI Thinking**: Controlled pulse with text animation
-- **Tool Execution**: Inline-to-full-panel transition with feedback
+| Token | Curve | Usage |
+|-------|-------|-------|
+| `ease-default` | `0.25,0.1,0.25,1` | Standard UI transitions |
+| `ease-out` | `0,0,0.2,1` | Entrances |
+| `ease-in` | `0.4,0,1,1` | Exits |
+| `ease-in-out` | `0.4,0,0.2,1` | Expand/collapse |
+| `ease-emphasized` | `0.25,0.46,0.45,0.94` | Cards, featured elements |
+| `ease-spring` | Custom spring | Organic motion |
+| `ease-linear` | `linear` | Continuous, loading |
 
-### 17.5 Loading States
-- **Indeterminate Spinner**: For short operations (<2s)
-- **Progress Bar**: For operations with estimated time
-- **Skeleton UI**: Placeholder while content loads
-- **AIThinking**: Controlled pulse animation with text animation
-- **Skeleton Loading**: Gray blocks with pulse for content areas
+### AI-Specific Motion
 
-## 20. Component Inventory
+| AI State | Motion |
+|----------|--------|
+| Thinking | Subtle pulse on cursor (2s cycle, opacity 0.4→1.0) |
+| Streaming | Text reveals line-by-line with 30ms stagger |
+| Reasoning | Slow color shift on accent border (2s cycle) |
+| Using Tool | Tool icon spins gently (1s rotation) |
+| Using Knowledge | Cards slide in from right with 50ms stagger |
+| Using Persona | Persona avatar glows (ring expand + fade, 500ms) |
+| Using Tone | Tone chip expands slightly (scale 1.0→1.05, 200ms) |
+| Finished | Brief glow pulse (300ms) then settle |
+| Cancelled | Fade out with scale down (200ms) |
+| Regenerated | Old content fades out (200ms), new content fades in (300ms) |
+| Comparing | Side-by-side with smooth slider transition |
+| Tone Change | Accent color crossfades (400ms ease) |
+
+### Motion Rules
+
+1. Every animation must have a purpose — communicate state, not decorate
+2. Respect `prefers-reduced-motion` — disable all non-essential motion
+3. Maximum one loading indicator per view at any time
+4. Exit animations always pair with entrance animations
+5. Stagger children ≤ 0.05s per item
+6. Hover scale ≤ 1.03 for controls, ≤ 1.01 for cards
+7. Never animate layout-affecting properties (height, width, top, left) — use `transform` and `opacity` only
+
+---
+
+## 9. Icons
+
+### Icon Library
+
+- Primary: `lucide-react` (stroke-based, consistent weight)
+- Brand marks: Custom `social-icons.tsx` for LinkedIn, Twitter, etc.
+- AI-specific: Custom icons for thinking, streaming, reasoning states
+
+### Icon Sizes
+
+| Size | Usage |
+|------|-------|
+| 16px (`w-4 h-4`) | Inline icons in buttons, labels |
+| 20px (`w-5 h-5`) | Navigation icons, list items |
+| 24px (`w-6 h-6`) | Section icons, empty states |
+| 32px (`w-8 h-8`) | Feature icons, hero elements |
+| 48px (`w-12 h-12`) | Empty state illustrations |
+
+### Icon Rules
+
+- Icon-only controls must have `aria-label`
+- Never mix stroke weights within a single surface
+- Icons in navigation are 20px with text labels
+- Active state icons use the tone accent color
+
+---
+
+## 10. AI Interaction
+
+### AI States and Their Visual Behavior
+
+| State | Visual Indicator | Animation |
+|-------|-----------------|-----------|
+| **Idle** | No indicator | None |
+| **Thinking** | Cursor glows with tone accent | Subtle pulse (opacity 0.3→1.0, 2s cycle) |
+| **Streaming** | Animated underline on message bubble | Width expand from 0→100% (per message) |
+| **Reasoning** | Accent border shifts hue slowly | Color cycle through tone palette (3s cycle) |
+| **Using Tool** | Tool icon spins gently | Rotation 0→360° (1s) |
+| **Using Knowledge** | Knowledge cards slide in sequentially | Stagger 100ms per card |
+| **Using Persona** | Persona avatar glows | Ring expand + fade (500ms) |
+| **Using Tone** | Tone chip expands slightly | Scale 1.0→1.05 (200ms) |
+| **Finished** | Brief glow pulse on last message | Scale 1.0→1.02→1.0 (400ms) |
+| **Cancelled** | Message fades with reduced opacity | Opacity 1.0→0.5 (300ms) |
+| **Regenerated** | Old content fades, new content appears | Fade out 200ms, fade in 300ms |
+| **Comparing** | Side-by-side with divider | Divider slides smoothly |
+
+### AI Response Card
+
+- Background: `semantic-surface` with subtle tone accent border-left (4px)
+- Streaming: Border-left color matches current tone accent, opacity 0.6
+- Finished: Border-left at full opacity, subtle `elevation-2` shadow
+- Error: Border-left becomes `semantic-error`, message shows retry button
+
+### AI Thinking Indicator
+
+- Position: Inline at cursor position in composer
+- Shape: 3 dots in a horizontal row
+- Animation: Sequential pulse (dot1→dot2→dot3→dot1)
+- Color: Current tone accent color
+- Size: 6px diameter per dot, 12px gap between dots
+
+---
+
+## 11. Components
+
+### Component Tiers
+
+| Tier | Location | Purpose | Examples |
+|------|----------|---------|----------|
+| **Primitives** | `src/components/ui/*` | Base building blocks from Radix/shadcn | Button, Input, Dialog, Dropdown |
+| **Recipes** | `src/components/ui/recipes/*` | Composed surfaces using design tokens | PremiumCard, PremiumPanel, PremiumBadge |
+| **Feature Components** | `src/components/workspace/*`, `src/components/chat/*`, etc. | Product-specific components | Composer, MessageCard, TonePicker |
+| **Signature Components** | `src/components/signature/*` | Unique ToneCraft components | VoiceOrb, ToneWheel, KnowledgeGalaxy |
+
+### Component Rules
+
+1. All components use primitives and recipes — never hand-roll from scratch
+2. Colors from tokens/utilities only — no raw hex in components
+3. Spacing on the 4px grid
+4. Touch targets ≥ 44px
+5. All interactive elements have `focus-visible` states
+6. Reduced-motion variants for all animations
+7. Components are theme-aware via semantic tokens
+8. No component renders content from another section (ownership boundaries)
+
+### Component Inventory
 
 | Component | Purpose | States |
 |-----------|---------|---------|
@@ -277,237 +351,415 @@ ToneCraft is not software - it's a language studio where AI enhances human creat
 | `ToolGrid` | Capability catalog | Default, search, filters |
 | `LibraryTabs` | Asset organization | Prompts, Tones, Knowledge |
 | `SearchScopes` | Global retrieval | All, Conversations, Messages, Prompts, Tones, Knowledge |
-| `CommandPalette` | Navigation/actions | Open, active, closed |
 | `ToolPanel` | Inline tool execution | Default, full-screen |
 | `ContextDrawer` | Knowledge/panel integration | Default, open, closed |
-| `CommandPalette` | Navigation/actions | Open, active, closed |
 | `SearchOverlay` | Full-text retrieval | All / Conversations / Messages / Prompts / Tones / Knowledge |
 | `NotificationPanel` | Real-time notifications | Unread_count, notifications |
-| `ContextDrawer` | Context & knowledge attachment | Default, open, closed |
+
+### Signature Components
+
+- **VoiceOrb** — Circular indicator showing the active voice/persona with ambient glow matching the tone color
+- **ToneWheel** — Radial selector for choosing writing tones with smooth color transitions
+- **KnowledgeGalaxy** — Visual representation of attached knowledge documents as floating nodes
+- **AIThinkingRibbon** — Animated ribbon below the composer showing AI processing state
+- **PromptDNA** — Visual map showing how a prompt evolved through iterations
+- **PersonaCard** — Rich card showing persona details with voice preview capability
+- **ConversationTree** — Visual representation of conversation branching and context
+- **EmotionSlider** — Slider that maps emotional intensity to visual feedback
+- **GenerationTimeline** — Visual timeline showing the AI generation process step by step
 
 ---
 
-## 21. Page Specifications
+## 12. Layout
 
-### 21.1 Landing Page
-- **Hero**: Full-screen artistic canvas with animated text
-- **Hero CTA**: Primary gradient button with glow effect
-- **Interactive Demo**: Scroll-triggered animations
-- **Social Proof**: Testimonials with user avatars and quotes
-- **CTA Section**: Sequential CTAs (Free → Pro → Enterprise)
+### Global Layout
 
-### 21.2 Dashboard
-- **Top Bar**: Global rail + section header
-- **Metrics Grid**: 3-column layout with `space-y-4` spacing
-- **Widgetry**: Configurable widget slots with `drag-and-drop`
-- **Action Buttons**: Primary CTA with brand gradient + `shadow-glow`
-- **Empty State**: Illustration + "Start a new project" CTA
+```
+┌─────────────────────────────────────────────────────┐
+│ GLOBAL RAIL (5 items, persistent)                   │
+├──────────┬──────────────────────────────────────────┤
+│          │  SECTION HEADER (breadcrumb + actions)   │
+│  RAIL    ├──────────────────────────────────────────┤
+│          │                                          │
+│ Compose  │  SECTION CONTENT                         │
+│ Tools    │                                          │
+│ Library  │                                          │
+│ Search   │                                          │
+│ Account  │                                          │
+│          │                                          │
+│ ⌘K ⌘N   │                                          │
+└──────────┴──────────────────────────────────────────┘
+```
 
-### 21.5 Chat Workspace
-- **Left Pane**: Conversation sidebar (280px) with pinned/favorites groups
-- **Center**: Thread view with composer, tone bar, message list
-- **Right**: Context drawer (drawer pattern, not permanent)
-- **Top Bar**: Conversation title, share/export actions
-- **Mobile**: Bottom tab bar + drawer/sheet panes
+### Workspace Modes
 
-### 21.5 Prompt Library
-- **Tabs**: Prompts / Tones / Knowledge
-- **Grid View**: Saved prompts + "Use" button
-- **List View**: Detailed prompt info with preview
-- **Search**: Scope tabs (All / Conversations / Messages / Prompts / Tones / Knowledge)
-- **Empty State**: "No prompts saved. Start creating!" with "New Prompt" button
+| Mode | Sidebar | Context | Content Width | Use Case |
+|------|---------|---------|---------------|----------|
+| **Standard** | Visible | Drawer available | Full width | Default working mode |
+| **Focus** | Hidden | Hidden | Max-w-3xl centered | Deep writing |
+| **Writer** | Hidden | Hidden | Max-w-2xl centered, minimal chrome | Long-form writing |
 
-### 21.6 Settings
-- **Tabs**: Profile, Appearance, Notifications, Billing, Usage, Danger
-- **Profile**: User avatar, name, email, status
-- **Appearance**: Theme toggle, accent color picker, font size
-- **Notifications**: Channel toggles (chat, email, push), digest settings
-- **Billing**: Plan details, upgrade button, usage meters
-- **Usage**: Message count, token usage, storage limits
+### Layout Rules
 
-### 21.7 Workspace Rules
-- **Panes**: Conversation sidebar (280px), content (flex-grow), context drawer (320px)
-- **Modes**: Standard (default), Focus (hide sidebar/context), Writer (minimal chrome)
-- **Modes are not navigation** — they change layout density only
+- Rail is always visible on desktop (≥1024px)
+- On mobile (<768px), rail collapses to bottom tab bar
+- Conversation sidebar is a drawer on mobile
+- Context panel is always a drawer/overlay, never a permanent pane
+- Maximum content width: 1280px centered
+- Sidebar: 280px desktop, 0 (drawer) mobile
+- Context drawer: 320px desktop, full-width sheet mobile
+- Mobile-first: design for smallest screen first, enhance for larger
+- Touch targets ≥ 44px on all screen sizes
+- Text scales fluidly between breakpoints
+- Images and media use `max-w-full` and appropriate aspect ratios
+- Never hide critical functionality on mobile — adapt the layout
 
-### 21.8 Chat Layout Rules
-- **Thread View**: Fixed layout with three panes
-- **Context Drawer**: Opens from right, 320px width on desktop
-- **Thread List**: Pinned > Favorites > Today/Yesterday/This Week/Older
-- **Message Grouping**: Same sender = grouped, different sender = separate
-- **Quick Actions**: Inline ring with 4 options (Copy, Regenerate, Like, Delete)
+### Mobile Behavior
 
-### 21.9 Workspace Rules
-- **Left Pane**: Conversation list with pinned/favorites grouping
-- **Center Pane**: Thread view + composer
-- **Right Pane**: Context drawer (merged from AIContextPanel + ContextPanel)
-- **Context Actions**: Attach knowledge, apply tone, edit tone
-- **Context Drawer**: Always accessible from Compose section
+- Rail → Bottom tab bar (5 items, icons + labels)
+- Conversation sidebar → Slide-over drawer
+- Context panel → Bottom sheet
+- Composer → Full-width at bottom
+- Command palette → Full-width overlay
+- Search → Full-width overlay
+- Cards → Single column
+- Navigation → Hamburger menu in top bar
 
-### 21.10 Prompt Library
-- **Tabs**: Prompts / Tones / Knowledge
-- **Prompts**: Curated templates + saved prompts
-- **"Use" Action**: Opens Compose preloaded with prompt and tone
-- **Save**: Composer action → Library → Prompts → My saves
-- **Tones**: Built-in + custom personas (Settings → Library → Tones)
+### Chat UX Rules
 
-### 21.11 AI Interaction Rules
-- **Transparent Intent**: Tone bar shows current persona/tone
-- **Correctability**: Regenerate, edit, continue, or discard
-- **Citation**: Show source when relevant (e.g., "Based on knowledge doc")
-- **Control**: Temperature (0-100), Creativity (0-100), Platform defaults
-- **Consistency**: Same voice applied across message types
+#### Message Bubbles
+
+- **User messages**: `semantic-primary` background, `semantic-primary-foreground` text, `radius-2xl` with `rounded-br-sm`
+- **AI messages**: `semantic-surface` background, `semantic-text` color, `radius-2xl` with `rounded-bl-sm`, `elevation-2`
+- **Streaming**: Slightly transparent background (`bg-card/80`), animated underline
+- **Error**: `semantic-error` border-left, retry button inline
+- Messages stack vertically with `space-y-4` (16px) gap
+- Timestamps in `caption` size, `semantic-muted` color
+- Group consecutive messages from same sender with reduced spacing
+- First message in a group has full spacing above
+
+#### Composer
+
+- Minimum height: 44px (`min-h-[44px]`)
+- Maximum height: 240px (`max-h-[240px]`)
+- Border: `border-border/40`, focus ring `ring-2 ring-primary/30`
+- Background: `semantic-surface`
+- Tone bar: Inline above composer, shows current tone with color indicator
+
+#### Inline Actions
+
+- Copy, Regenerate — visible on hover/focus
+- Touch targets ≥ 44px
+- Icons at 20px with `aria-label`
+
+### Command Palette
+
+- Trigger: `⌘K` (desktop), dedicated button (mobile)
+- Width: 640px max on desktop, full-width on mobile
+- Height: 480px max, centered vertically
+- Background: `semantic-surface` with `backdrop-blur-xl`
+- Border: `border-border/40`
+- Shadow: `elevation-4`
+- Sections: Navigation (rail items), Actions (common tasks), Search (recent conversations)
+- Keyboard: Arrow keys to navigate, Enter to select, Escape to close
+- Focus trap when open
+
+### Search Overlay
+
+- Trigger: `⌘⇧S` or `/search` navigation
+- Width: 720px max on desktop
+- Scopes: All, Conversations, Messages, Prompts, Tones, Knowledge
+- Results: Deep-link to exact asset
+- Message results: Scroll conversation to match
+- Background: `semantic-bg` with 80% opacity overlay
+- Border: `border-border/40`
+- Shadow: `elevation-4`
+
+### Dashboard
+
+- **Metric Cards**: Use `elevation-2` with `radius-lg`, `space-6` padding
+- **Grid Layout**: 3-column on desktop (≥1024px), 2-column on tablet, 1-column on mobile
+- **Key Metrics**: Display at the top with large display typography (`display` or `h1`)
+- **Charts**: Use `semantic-surface` background with `elevation-1`
+- **Quick Actions**: Prominent CTA button with brand gradient
+- **Status Indicators**: Use semantic colors (success/warning/error)
+
+### Landing Page
+
+- **Hero**: Full-viewport with artistic canvas background, animated cursor writing, words morphing
+- **Value Proposition**: Clear headline + subheadline in `display` and `body-lg`
+- **Interactive Demo**: Embedded playground showing tone transformation in real-time
+- **Social Proof**: Testimonials with avatar cards using `elevation-2`
+- **Pricing**: Card-based layout with `elevation-3` for featured plan
+- **CTA**: Primary gradient button (`bg-gradient-to-r from-violet-600 to-indigo-600`) with `elevation-glow`
+- **Mobile**: Single column, hero text stacks, CTA prominent above fold
+
+### Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `⌘K` | Command palette |
+| `⌘N` | New chat |
+| `⌘1` | Navigate to Compose |
+| `⌘2` | Navigate to Tools |
+| `⌘3` | Navigate to Library |
+| `⌘4` | Navigate to Search |
+| `⌘B` | Toggle conversation sidebar |
+| `⌘\` | Toggle context drawer |
+| `⌘⇧S` | Open search |
+| `Escape` | Close overlay / drawer / panel |
+| `⌘/` | Show keyboard shortcuts help |
 
 ---
 
-## 28. Dashboard Layout Rules
-- **Top-Left Priority**: Primary metrics (usage, credits, projects)
-- **Right-Aligned**: Secondary metrics (storage, usage history)
-- **Interactivity**: Click-to-drilldown from summary to detail
-- **Spacing**: Minimum 24px between metric clusters
-- **Responsive**: Cards stack vertically on mobile, 3-column on desktop
+## 13. Themes
 
-## 22. Chat Layout Rules
-- **Fixed Rails**: Always visible navigation rail with labeled destinations
-- **Context Panel**: Drawer pattern, not permanent pane
-- **Smart Suggestions**: Context-aware actions in conversation flow
-- **Inline Actions**: Quick actions within message bubbles
-- **Responsive**: Mobile = bottom tab bar + drawer/sheet panes
+### Dark Theme Tokens
 
-## 23. Workspace Rules
-- **Three Pane Layout**: Sidebar + Content + Context Drawer
-- **Modes**: Standard (default), Focus (hide sidebar/context), Writer (minimal chrome)
-- **Tools**: Open inline in center pane, no URL change
-- **Library**: Sub-nav: Prompts / Tones / Knowledge
-- **Search**: Scope tabs: All / Conversations / Messages / Prompts / Tones / Knowledge
+| Token | Light Value | Dark Value |
+|-------|-------------|------------|
+| `base-bg` | `#F8FAFC` | `#0B0F1A` |
+| `base-surface` | `#FFFFFF` | `#111827` |
+| `base-elevated` | `#F1F5F9` | `#1E293B` |
+| `base-border` | `#E2E8F0` | `#1E3A5F` |
+| `base-text` | `#0F172A` | `#F1F5F9` |
+| `base-muted` | `#64748B` | `#94A3B8` |
 
-## 24. Prompt Editor Rules
-- **Tone Bar**: Pre-seeded with persona tone, temperature, emoji usage
-- **Smart Suggestions**: Context-aware actions in composer
-- **Prompt Library**: Reuse saved prompts with one click
-- **Knowledge**: Attach from context drawer or custom tone
-- **Save**: Composer action → Library → Prompts → My saves
+### Dark Theme Rules
 
-## 25. Modal System
-- **Modal**: `dialog.tsx` with focus trap, Escape to close
-- **Error Fallback**: `ErrorFallback` with retry/reload/home/error options
-- **Loading**: `PageSkeleton` for content, `PremiumLoading` for AI tasks
-- **Error Boundary**: `ErrorBoundary` component with fallback UI
+- Background is deep navy (`#0B0F1A`) — not pure black
+- Surfaces are slightly lighter than background (`#111827`)
+- Elevated surfaces use blue-tinted borders (`#1E3A5F`)
+- Shadows are softer in dark mode (reduced opacity)
+- Tone accent colors remain vivid — they pop against dark backgrounds
+- Glass effects use higher opacity in dark mode for readability
 
-## 26. Loading States
-- **Indeterminate Spinner**: For short operations (<2s)
-- **Progress Bar**: For operations with estimated time
-- **Skeleton UI**: Placeholder for content areas
-- **AIThinking**: Controlled pulse animation with text animation
-- **Loading States**: Auto-dismiss after 4s for toast notifications
+### Light Theme Tokens
 
-## 27. Empty States
-- **Inviting Illustration**: 48px illustration
-- **Short Descriptive Text**: 14px, `semantic-foreground/80`
-- **Primary CTA**: "New Chat" or "Upload Knowledge"
-- **Empty State Component**: Reusable with context-specific variants
-- **Consistency**: Reuse `WorkspaceEmptyStates` component with section-specific variants
+| Token | Value |
+|-------|-------|
+| `base-bg` | `#F8FAFC` |
+| `base-surface` | `#FFFFFF` |
+| `base-elevated` | `#F1F5F9` |
+| `base-border` | `#E2E8F0` |
+| `base-text` | `#0F172A` |
+| `base-muted` | `#64748B` |
 
-## 28. Error States
-- **Primary Header**: Clear error indication
-- **Detailed Message**: Actionable resolution hint
-- **Options**: Retry, Dismiss, or Contact Support
-- **Visual**: Icon + color coding for semantic meaning
-- **Loading States**: Indeterminate spinner + progress bar when applicable
+### Light Theme Rules
 
-## 29. Loading States
-- **Indeterminate Spinner**: For short operations (<2s)
-- **Progress Bar**: For operations with estimated time
-- **Skeleton UI**: Placeholder for content loading
-- **AIThinking**: Controlled pulse animation for generative moments
-- **Loading States**: Auto-dismiss after 4s for toast notifications
+- Clean white backgrounds with subtle gray surfaces
+- Borders are visible but not heavy
+- Shadows are more pronounced in light mode for depth
+- Tone accent colors are slightly desaturated for readability
+- Glass effects use lower opacity in light mode
 
-## 29. Anti-Patterns
-- **Modal Overuse**: Replace with inline panels and progressive disclosure
-- **Icon-Only Controls**: Always pair with labels or ARIA annotations
-- **Gradient Soup**: Limit to hero sections and primary brand elements
-- **Auto-Play**: Never auto-start without explicit user trigger
-- **Overlapping States**: Never show multiple states simultaneously
-- **Implicit State**: Visual cue must match actual state
+### Glass Effects (Use Sparingly)
 
-## 30. Premium Effects
-- **Glass Effects**: Used only in premium surfaces (cards, panels)
-- **Premium Cursor**: Exclusive interactive cursor with micro-feedback
-- **Animated Gradients**: Hero section motion pathways only
-- **Micro-Interactions**: Detailed feedback for premium actions
-- **Glass Effects**: `bg-card/60` with `backdrop-blur-xl` for premium panels
+Glass effects are reserved for:
 
-## 31. Dark Theme
-- **Background**: `#1E1E1E` with `foreground: #F9F9F9`
-- **Surface**: `#2D2D2D` with `card: #383838`
-- **Elevation**: `shadow-card` with `@alpha-75` glow
-- **Text**: `muted-foreground` preserved for legibility
-- **Contrast**: Maintain 4.5:1 minimum contrast ratio
+- Command palette background
+- Context drawer backdrop
+- Premium badge surfaces
+- Navigation rail on elevated surfaces
 
-## 32. Light Theme
-- **Background**: `#FFFFFF` with `#FAFAFA` layering
-- **Foreground**: `#111827` primary text
-- **Surface**: `#FFFFFF` with `#F8F8F8` card surfaces
-- **Text**: `#111827` for body, `#4B5563` for secondary
-- **Elevation**: `shadow-card` with `@alpha-50` glow
-- **Contrast**: Maintain 4.5:1 minimum contrast ratio
+#### Glass Rules
 
-## 32. Anti-Patterns
+- Background: `bg-card/40` to `bg-card/60`
+- Backdrop blur: `backdrop-blur-xl`
+- Border: `border-white/10` (light) or `border-white/5` (dark)
+- Never use glass on primary content surfaces — it reduces readability
+- Minimum contrast ratio 4.5:1 for text on glass surfaces
+
+### Gradients
+
+#### Brand Gradient
+
+```
+bg-gradient-to-r from-violet-600 to-indigo-600
+```
+
+Used exclusively for primary CTA buttons and premium indicators.
+
+#### Tone Gradients
+
+Each tone has a subtle gradient used for ambient background effects:
+
+- Friendly: `from-emerald-500 to-teal-500`
+- Professional: `from-blue-500 to-indigo-500`
+- Luxury: `from-amber-500 to-yellow-500`
+- Sarcastic: `from-orange-500 to-red-500`
+- Poetic: `from-pink-500 to-rose-500`
+- Minimal: `from-slate-400 to-gray-500`
+- Corporate: `from-indigo-500 to-violet-500`
+- Academic: `from-teal-500 to-cyan-500`
+- Creative: `from-violet-500 to-purple-500`
+
+#### Gradient Rules
+
+- Gradients are used sparingly — maximum one per view
+- Never use gradients for text (except hero headings)
+- Gradient buttons use the brand gradient exclusively
+- Tone gradients are used as ambient background effects only
+
+### Premium Effects
+
+Premium effects are reserved for premium-tier users. Premium effects must not degrade the experience for free users. Premium indicators must be honest — not misleading. Free users should never feel blocked from core functionality.
+
+- **Premium Surfaces** — `elevation-premium` shadow on premium cards, gold accent border
+- **Premium Indicators** — `PremiumBadge` component with crown icon, gold gradient background, used on premium features, locked content, and upgrade prompts
+
+---
+
+## 14. Accessibility
+
+### Touch Targets
+
+- Minimum 44px for all interactive elements
+- Icon-only buttons: 44px × 44px minimum
+- Links in text: 44px height with adequate padding
+
+### Contrast
+
+- Body text: ≥ 4.5:1 contrast ratio against background
+- Large text (≥18px or ≥14px bold): ≥ 3:1 contrast ratio
+- `semantic-muted` must maintain ≥ 4.5:1 on its surface
+- Never use opacity alone to convey information
+
+### Focus Management
+
+- Visible `focus-visible` ring on all interactive elements
+- Focus ring: `ring-2 ring-primary/30` with 2px offset
+- Focus trap in modals and dialogs
+- Escape key closes all overlays
+
+### Reduced Motion
+
+- All animations respect `prefers-reduced-motion: reduce`
+- Use `useReducedMotion` hook from `src/hooks/use-reduced-motion.ts`
+- When reduced motion is preferred:
+  - Replace all transitions with instant state changes
+  - Remove all stagger animations
+  - Replace loading spinners with static indicators
+  - Remove all entrance/exit animations
+
+### Semantic HTML
+
+- Use real `<button>` elements for actions
+- Use `<nav>` for navigation regions
+- Use `<main>` for primary content
+- Use `aria-label` for icon-only controls
+- Use `aria-live` for dynamic content (AI responses, notifications)
+- Use `role="status"` for loading states
+
+### Anti-Patterns
+
 - **Modals for simple actions** → Use inline panels or progressive disclosure
-- **Overuse of gradients**: Limit to hero sections and primary CTA
-- **Overcrowded UI**: Maximum 3 levels of visual hierarchy
-- **Implicit state**: Always show visual cue for state changes
-- **Ignoring accessibility**: Contrast ≥ 4.5:1, focus states required
-- **Ignoring responsive design**: Drawer pattern for mobile contexts
-- **Inconsistent component states**: All components must have 7 states (default, hover, active, focus, disabled, loading, empty)
+- **Overuse of gradients** → Limit to hero sections and primary brand elements
+- **Overcrowded UI** → Maximum 3 levels of visual hierarchy
+- **Implicit state** → Always show visual cue for state changes
+- **Ignoring accessibility** → Contrast ≥ 4.5:1, focus states required
+- **Ignoring responsive design** → Drawer pattern for mobile contexts
+- **Inconsistent component states** → All components must have consistent state coverage
 
-## 33. Technical Implementation
+---
 
-### 32.1 Token Architecture
-- All tokens exported from `src/styles/tokens.ts`
-- Access via `import { color, spacing, radius } from "@/styles/tokens"`
-- No hardcoded values in components
+## 15. Technical Implementation
 
-### 32.2 CSS Strategy
+### Token Architecture
+
+- All design values come from `src/styles/tokens.ts`
+- Never hardcode values in components
+- If a value doesn't exist in the token system, add it to the token system first
+- Access via `import { color, spacing, radius, elevation, zIndex } from "@/styles/tokens"`
+
+### CSS Strategy
+
 - Tailwind classes remain source of truth for layout
-- Utility-first with design tokens for values
+- Utility-first with design tokens for computed values
 - No semantic class names (e.g., `.primary-button`)
+- All tokens exported from `src/styles/` as typed constants
 
-### 32.3 Component Structure
-- Components live in `/components/` by domain
-- Feature components in `/components/workspace/`, `/components/tools/`
-- Shared primitives in `/components/ui/`
+### Component Structure
+
+- Components live in `src/components/` by domain
+- Feature components in `src/components/workspace/`, `src/components/tools/`
+- Shared primitives in `src/components/ui/`
+- Signature components in `src/components/signature/`
 - All components must pass design token audit
 
+### Accessibility Checklist
+
+- [ ] Touch targets ≥ 44px
+- [ ] Contrast ≥ 4.5:1 for body text
+- [ ] Focus-visible styles present
+- [ ] `aria-label` on icon-only controls
+- [ ] Reduced-motion variants wired
+- [ ] Semantic HTML elements used correctly
+- [ ] No phantom controls (every control does what it says)
+
 ---
 
-## 33. Final Design Principles
+## 16. Validation
 
-1. **Human-Centric AI**: AI should amplify human creativity, not replace it
-2. **Intentional Motion**: Every animation must serve purpose and emotion
-3. **Precision Over Decoration**: Remove visual noise; keep only meaningful elements
-4. **Contextual Intelligence**: UI should adapt to creative workflow, not force workflow changes
-5. **Emotional Resonance**: Design should evoke the feeling of effective communication
-6. **Discoverability**: Every capability must be findable within 3 seconds
-7. **Reversibility**: Allow creative experimentation without fear of mistakes
-8. **Progressive Mastery**: Onboard beginners, empower experts, delight power users
+### Loading States
 
-## 34. Validation & Testing
+#### Skeleton Loading
 
-- **Visual Consistency**: Run design system audit on all pages
-- **Accessibility Testing**: Verify WCAG 2.1 AA compliance
-- **Performance Testing**: Ensure <2s load time for critical paths
-- **User Testing**: Validate emotional response to AI interaction states
-- **Accessibility Testing**: Verify keyboard navigation, screen reader support
+- Use `Skeleton` component from `src/components/ui/skeleton`
+- Shape matches the content being loaded (text lines, card shapes, etc.)
+- Animation: Subtle pulse (opacity 0.4→1.0, 1.5s cycle)
+- Never show skeleton for less than 300ms (avoid flash)
 
-## 33. Validation & Testing
+#### AI Loading
 
-- **Visual Consistency**: Use design system tokens across all components
-- **Performance**: `npx tsc --noEmit --skipLibCheck` must pass
-- **Accessibility**: Run `npm run lint` and accessibility audits
-- **Build Verification**: `npx next build` must complete without errors
+- **Thinking**: 3-dot pulse indicator in composer area
+- **Streaming**: Message bubble appears immediately with animated underline
+- **Generating**: Single loading indicator with "Generating..." label
 
-## 34. Validation Checklist
+#### Page Loading
+
+- `PageSkeleton` component for full-page loading
+- `CardSkeleton` for card grids
+- `ListSkeleton` for list views
+
+### Error States
+
+| Component | Behavior |
+|-----------|----------|
+| **Inline Error** | Red border (`semantic-error`), error text below field in `caption` size |
+| **API Error** | Toast notification with error message and retry action |
+| **Page Error** | `ErrorFallback` component with retry button and error ID |
+| **Stream Error** | Message bubble shows error state with "Retry" and "Regenerate" buttons |
+
+#### Error Rules
+
+- Never show raw error messages to users — use human-readable descriptions
+- Always provide a recovery action (retry, dismiss, or navigate)
+- Error boundaries catch component-level errors gracefully
+- Network errors show offline indicator and queue actions for retry
+
+### Empty States
+
+Every empty state follows this pattern:
+
+1. **Illustration**: Custom icon or illustration at 48px (`w-12 h-12`) in `semantic-muted`
+2. **Title**: `h5` size, `semantic-text`
+3. **Description**: `body-sm`, `semantic-muted`
+4. **Primary Action**: One CTA button, `variant=gradient`
+5. **Secondary Action**: Optional text link
+
+#### Empty State Examples
+
+| Context | Title | Action |
+|---------|-------|--------|
+| No conversations | "Start a conversation" | "New Chat" |
+| No prompts saved | "No saved prompts" | "Browse Library" |
+| No knowledge attached | "No reference documents" | "Upload a document" |
+| No tones customized | "No custom tones" | "Create a tone" |
+| No search results | "No results found" | "Try different keywords" |
+
+### Validation Checklist
+
 - [ ] All tokens used in components
 - [ ] All components use design tokens
 - [ ] All pages use consistent layout principles
@@ -518,14 +770,37 @@ ToneCraft is not software - it's a language studio where AI enhances human creat
 - [ ] Motion respects reduced-motion preferences
 - [ ] Brand personality maintained across all screens
 
-## 35. Final Notes
+---
 
-This design system is **frozen** unless a critical issue is discovered during implementation. All future work must align with this document's principles. The design system is version-controlled and will be updated only through formal process.
+## 17. Final Principles
 
-**Next Steps**: 
+1. **Human-Centric AI** — AI should amplify human creativity, not replace it
+2. **Precision Over Decoration** — Remove visual noise; keep only meaningful elements
+3. **Contextual Intelligence** — UI should adapt to creative workflow, not force workflow changes
+4. **Emotional Resonance** — Design should evoke the feeling of effective communication
+5. **Discoverability** — Every capability must be findable within 3 seconds
+6. **Reversibility** — Allow creative experimentation without fear of mistakes
+7. **Progressive Mastery** — Onboard beginners, empower experts, delight power users
+8. **Intentional Motion** — Every animation must serve purpose and emotion
+
+---
+
+## Change Control
+
+This document is **frozen**. Changes require:
+
+1. Discovery of a real problem during implementation
+2. Proposal with justification
+3. Review against the Design DNA statement
+4. Approval before modification
+
+Do not modify this document for aesthetic preferences, trends, or convenience. The design system exists to serve the product, not the other way around.
+
+**Next Steps:**
+
 1. Create page-specific design specifications
 2. Build component blueprints
 3. Prototype user journeys
-4. Implement via KiloCode/OpenCode with focused tasks
+4. Implement via OpenCode with focused tasks
 
 This design system is now complete and ready for implementation.

@@ -2,6 +2,7 @@ import { ok, fail, notFound, withApiHandler } from "@/lib/withApiHandler";
 import { workspaceService } from "@/services/WorkspaceService";
 import { workspaceUpdateSchema } from "../workspaceSchema";
 import { permissionMiddleware } from "@/middleware/permissionMiddleware";
+import { auditLogService } from "@/services/AuditLogService";
 
 const api = withApiHandler();
 
@@ -39,5 +40,9 @@ export const DELETE = api.DELETE(async (ctx) => {
   
   const okResult = await workspaceService.deleteWorkspace(id, ctx.user.id);
   if (!okResult) return notFound();
+  void auditLogService.record("workspace.delete", "workspace", {
+    actorId: ctx.user.id,
+    resourceId: id,
+  });
   return ok({ ok: true });
 });

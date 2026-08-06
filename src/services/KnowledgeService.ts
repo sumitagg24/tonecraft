@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { extractText, detectMimeType } from "@/lib/knowledge/extract";
 import { chunkText, searchScore } from "@/lib/knowledge/chunk";
+import { queueService } from "@/services/QueueService";
 import { v4 as uuidv4 } from "uuid";
 
 const RETRIEVE_K = 6;
@@ -58,6 +59,12 @@ export class KnowledgeService {
         })),
       });
     }
+
+    // Phase 12.5 — heavy embedding generation runs in the background queue
+    // rather than blocking the upload request.
+    void queueService
+      .enqueue("embedding", { knowledgeFileId: file.id, chunkCount: chunks.length, userId })
+      .catch(() => {});
 
     return {
       id: file.id,

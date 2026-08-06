@@ -4,6 +4,7 @@ import { workspaceMemberRepository } from "@/repositories/WorkspaceMemberReposit
 import { workspaceActivityRepository } from "@/repositories/WorkspaceActivityRepository";
 import { updateInviteSchema } from "../../../workspaceSchema";
 import { permissionMiddleware } from "@/middleware/permissionMiddleware";
+import { auditLogService } from "@/services/AuditLogService";
 
 const api = withApiHandler();
 
@@ -81,6 +82,13 @@ export const POST = api.POST(async (ctx, body) => {
       userId: ctx.user.id,
       type: "members_invite",
       payload: { action: "invite_accepted", email: invite.email, userId: ctx.user.id },
+    });
+
+    void auditLogService.record("workspace.invite_accepted", "workspace_invite", {
+      actorId: ctx.user.id,
+      workspaceId: invite.workspaceId,
+      resourceId: invite.id,
+      metadata: { role: invite.role, email: invite.email },
     });
     
     return ok({ message: "Invitation accepted" });

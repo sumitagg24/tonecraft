@@ -3,6 +3,8 @@ import { useEffect, useRef, useCallback, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuth } from "@clerk/nextjs";
 
+type SocketHandler = (...args: unknown[]) => void;
+
 interface SocketEventMap {
   // Client → server
   "join-project": (data: { projectId: string }) => void;
@@ -46,7 +48,8 @@ export function useSocket(options: UseSocketOptions = {}) {
   const socketRef = useRef<Socket | null>(null);
   const [connected, setConnected] = useState(false);
   const [reconnectCount, setReconnectCount] = useState(0);
-  const eventHandlersRef = useRef<Map<keyof SocketEventMap, Set<Function>>>(new Map());
+  const eventHandlersRef = useRef<Map<keyof SocketEventMap, Set<SocketHandler>>>(new Map());
+  const [socket, setSocket] = useState<Socket | null>(null);
 
   const connect = useCallback(async () => {
     if (socketRef.current?.connected) return;
@@ -84,7 +87,8 @@ export function useSocket(options: UseSocketOptions = {}) {
       setReconnectCount(attemptNumber);
     });
 
-    socketRef.current = socket;
+       socketRef.current = socket;
+    setSocket(socket);
 
     // Replay any handlers registered before the socket finished connecting.
     for (const [event, handlers] of eventHandlersRef.current) {
@@ -116,12 +120,12 @@ export function useSocket(options: UseSocketOptions = {}) {
     if (!eventHandlersRef.current.has(event)) {
       eventHandlersRef.current.set(event, new Set());
     }
-    eventHandlersRef.current.get(event)!.add(handler);
+    eventHandlersRef.current.get(event)?.add(handler as unknown as SocketHandler);
     const listener = handler as (...args: unknown[]) => void;
     socketRef.current?.on(event as string, listener);
 
     return () => {
-      eventHandlersRef.current.get(event)?.delete(handler);
+      eventHandlersRef.current.get(event)?.delete(handler as unknown as SocketHandler);
       socketRef.current?.off(event as string, listener);
     };
   }, []);
@@ -130,7 +134,7 @@ export function useSocket(options: UseSocketOptions = {}) {
     event: K,
     handler: SocketEventMap[K]
   ) => {
-    eventHandlersRef.current.get(event)?.delete(handler);
+    eventHandlersRef.current.get(event)?.delete(handler as unknown as SocketHandler);
     const listener = handler as (...args: unknown[]) => void;
     socketRef.current?.off(event as string, listener);
   }, []);
@@ -144,5 +148,5 @@ export function useSocket(options: UseSocketOptions = {}) {
     };
   }, [autoConnect, connect, disconnect]);
 
-  return { socket: socketRef.current, connected, reconnectCount, emit, on, off, connect, disconnect };
+  return { socket, connected, reconnectCount, emit, on, off, connect, disconnect };
 }

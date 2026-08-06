@@ -29,12 +29,13 @@ const suggestions: Suggestion[] = [
   { id: "s10", label: "Expand", icon: Maximize2, prompt: "Expand on this:", tone: "professional" },
   { id: "s11", label: "Formal Reply", icon: Reply, prompt: "Write a formal reply to:", tone: "formal" },
   { id: "s12", label: "Casual", icon: MessageCircle, prompt: "Make this casual:", tone: "casual" },
+  { id: "s13", label: "Slang", icon: MessageCircle, prompt: "Rewrite this with slang:", tone: "slang" },
 ];
 
 const toneColors: Record<string, string> = {
   professional: "#3b82f6", friendly: "#10b981", genz: "#a855f7",
   funny: "#f97316", luxury: "#d4a853", formal: "#6366f1",
-  casual: "#10b981", millennial: "#f43f5e",
+  casual: "#10b981", millennial: "#f43f5e", slang: "#f59e0b",
 };
 
 interface SmartSuggestionsProps {

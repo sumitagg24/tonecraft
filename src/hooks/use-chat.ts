@@ -6,6 +6,27 @@ import { toast } from "sonner";
 
 let activeController: AbortController | null = null;
 
+// Error codes that indicate the user has hit a free-tier limit and needs to upgrade.
+const FREE_TIER_LIMIT_ERRORS = new Set([
+  "RATE_LIMITED",
+  "INSUFFICIENT_CREDITS",
+  "CREDIT_LIMIT_EXCEEDED",
+]);
+
+interface LimitErrorShape {
+  code?: string;
+  details?: { limit?: number; window?: string };
+  message?: string;
+}
+
+function isLimitError(err: unknown): LimitErrorShape | null {
+  if (!err || typeof err !== "object") return null;
+  const e = err as { error?: { code?: string }; message?: string };
+  if (e.error?.code && FREE_TIER_LIMIT_ERRORS.has(e.error.code)) return e.error;
+  if (typeof e.message === "string" && e.message.includes("Insufficient credits")) return { code: "INSUFFICIENT_CREDITS", message: e.message };
+  return null;
+}
+
 export function useChat() {
   const sendMessage = useCallback(
     async (content: string, chatId: string, opts?: { knowledgeFileIds?: string[] }) => {
@@ -95,8 +116,29 @@ export function useChat() {
           }
           clearStreamingContent();
         } else {
-          console.error("Chat error:", error);
-          toast.error(error instanceof Error ? error.message : "Failed to send message");
+          const err = error as Error;
+          const limitErr = isLimitError(err);
+          if (limitErr) {
+            const isCredit = limitErr.code === "INSUFFICIENT_CREDITS";
+            toast.error(
+              isCredit ? "Credits exhausted" : "Rate limit reached",
+              {
+                description: isCredit
+                  ? "You've hit your free tier limit. Upgrade for unlimited."
+                  : `Rate limit: ${limitErr.details?.limit ?? "?"} per ${limitErr.details?.window ?? "hour"}.`,
+                action: {
+                  label: "Upgrade",
+                  onClick: () => {
+                    window.location.href = "/billing";
+                  },
+                },
+                duration: 8000,
+              }
+            );
+          } else {
+            console.error("Chat error:", error);
+            toast.error(err?.message || "Failed to send message");
+          }
         }
       } finally {
         if (activeController === controller) activeController = null;

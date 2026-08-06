@@ -7,7 +7,7 @@ export type Tone =
   | "professional" | "friendly" | "casual" | "formal" | "luxury"
   | "corporate" | "ceo" | "genz" | "millennial" | "dating"
   | "funny" | "sarcastic" | "polite" | "romantic" | "creative"
-  | "minimal" | "academic";
+  | "minimal" | "academic" | "slang";
 
 export type Platform =
   | "whatsapp" | "instagram" | "slack" | "discord" | "linkedin"
@@ -106,6 +106,8 @@ export interface RouteOptions {
   plan?: PlanTier;
   intent?: Intent;
   capabilityContext?: CapabilityContext;
+  /** User id for per-provider rate limits (Phase 12.4). */
+  userId?: string;
   /** External abort signal (e.g. HTTP request abort) — chains into the provider call. */
   signal?: AbortSignal;
   /** Registered AI tools to make available to the model (A7). */

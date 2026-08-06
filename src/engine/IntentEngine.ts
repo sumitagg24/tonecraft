@@ -12,6 +12,7 @@ const INTENT_MAP: Record<string, IntentMapping> = {
   // Rewrite family
   "professional-rewrite": { intent: "rewrite", defaultTone: "professional", description: "Professional rewrite" },
   "casual-rewrite": { intent: "rewrite", defaultTone: "casual", description: "Casual rewrite" },
+  "slang-rewrite": { intent: "rewrite", defaultTone: "slang", description: "Slang rewrite" },
   "friendly-rewrite": { intent: "rewrite", defaultTone: "friendly", description: "Friendly rewrite" },
   "formal-rewrite": { intent: "rewrite", defaultTone: "formal", description: "Formal rewrite" },
   "luxury-rewrite": { intent: "rewrite", defaultTone: "luxury", description: "Luxury rewrite" },

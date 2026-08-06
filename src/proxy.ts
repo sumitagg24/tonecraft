@@ -12,6 +12,9 @@ const PUBLIC_PATHS: ReadonlyArray<string> = [
   "/privacy",
   "/terms",
   "/blog",
+  // Public status pages (12.3)
+  "/status",
+  "/health",
     "/api/webhook",
   "/api/auth",
   "/api/health",

@@ -3,6 +3,7 @@ import { logger } from "@/lib/logger";
 import { getSocketInstance } from "@/lib/socket";
 import { NotificationType, NotificationChannel } from "@prisma/client";
 import type { NotificationPreference } from "@prisma/client";
+import { queueService } from "@/services/QueueService";
 
 export interface NotificationPayload {
   userId: string;
@@ -126,7 +127,7 @@ export class NotificationService {
     return results.length > 0;
   }
 
-  private async sendEmail(userId: string, type: NotificationType, title: string, _body?: string | null, _link?: string | null): Promise<void> {
+  private async sendEmail(userId: string, type: NotificationType, title: string, body?: string | null, link?: string | null): Promise<void> {
     try {
       const user = await prisma.user.findUnique({
         where: { id: userId },
@@ -134,9 +135,19 @@ export class NotificationService {
       });
       if (!user?.email) return;
 
-      logger.info("[NotificationService] Email notification queued", { userId, type, title });
+      // Phase 12.5 — actual delivery runs in the background queue (retried with
+      // backoff by the worker) so the request path never blocks on SMTP.
+      await queueService.enqueue("email", {
+        to: user.email,
+        userName: user.name ?? null,
+        notificationType: type,
+        title,
+        body: body ?? null,
+        link: link ?? null,
+      });
+      logger.info("[NotificationService] Email enqueued", { userId, type, title });
     } catch (err) {
-      logger.error("[NotificationService] Email delivery failed", { userId, type }, err instanceof Error ? err : undefined);
+      logger.error("[NotificationService] Email enqueue failed", { userId, type }, err instanceof Error ? err : undefined);
     }
   }
 

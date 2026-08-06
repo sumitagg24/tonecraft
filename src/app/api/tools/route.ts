@@ -17,7 +17,9 @@ const toolSchema = z.object({
   model: z.string().optional(),
 });
 
-const api = withApiHandler({ schema: toolSchema });
+// Phase 12.4 — per-endpoint (10/min) + IP ceiling (120/min) on top of the
+// existing plan-based message caps.
+const api = withApiHandler({ schema: toolSchema, rateLimit: { key: "tools", limit: 10, ipLimit: 120 } });
 
 export const POST = api.POST(async (ctx, body) => {
   const { toolId, input, model, ...context } = body as typeof toolSchema._output;

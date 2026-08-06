@@ -29,7 +29,31 @@ export type AuditAction =
   | "billing.payment_method_update"
   | "api.key_create"
   | "api.key_revoke"
-  | "api.request";
+  | "api.request"
+  // Phase 12.2 — expanded operational audit coverage
+  | "ai.request_start"
+  | "ai.request_complete"
+  | "ai.request_fail"
+  | "billing.checkout_started"
+  | "billing.webhook_received"
+  | "workspace.create"
+  | "workspace.delete"
+  | "workspace.update"
+  | "workspace.invite_sent"
+  | "workspace.invite_accepted"
+  | "automation.run"
+  | "automation.run_fail"
+  | "document.create"
+  | "document.update"
+  | "document.delete"
+  | "task.create"
+  | "task.update"
+  | "task.delete"
+  | "agent.create"
+  | "agent.run"
+  | "agent.delete"
+  | "integration.connect"
+  | "integration.disconnect";
 
 export interface AuditContext {
   actorId?: string | null;

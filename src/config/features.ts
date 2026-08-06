@@ -13,7 +13,11 @@ export type FeatureKey =
   | "agents"
   | "voice"
   | "image-gen"
-  | "reasoning";
+  | "reasoning"
+  // Phase 12.8 — runtime-toggled platform features
+  | "deep-research"
+  | "automation"
+  | "marketplace";
 
 export interface FeatureFlag {
   key: FeatureKey;
@@ -101,6 +105,24 @@ const FEATURE_FLAGS: readonly FeatureFlag[] = [
     label: "Advanced reasoning",
     description: "Chain-of-thought and multi-step reasoning",
     enabledPlans: [PlanTier.PRO, PlanTier.ENTERPRISE],
+  },
+  {
+    key: "deep-research",
+    label: "Deep research",
+    description: "Multi-step research mode with web-grounded synthesis",
+    enabledPlans: [PlanTier.PRO, PlanTier.ENTERPRISE],
+  },
+  {
+    key: "automation",
+    label: "Automations",
+    description: "Recurring AI tasks and scheduled workflows",
+    enabledPlans: [PlanTier.FREE, PlanTier.PRO, PlanTier.ENTERPRISE],
+  },
+  {
+    key: "marketplace",
+    label: "Marketplace",
+    description: "Community prompt/agent/persona marketplace",
+    enabledPlans: [PlanTier.ENTERPRISE],
   },
 ];
 

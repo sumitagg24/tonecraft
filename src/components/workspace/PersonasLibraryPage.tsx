@@ -32,7 +32,7 @@ export interface PersonaLibraryItem extends PersonaFormData {
   createdAt: string;
 }
 
-const TONES = ["professional", "friendly", "casual", "formal", "marketing", "academic", "luxury", "funny", "polite", "minimal"];
+const TONES = ["professional", "friendly", "casual", "formal", "marketing", "academic", "luxury", "funny", "polite", "minimal", "slang"];
 const EMOJI_USAGE = ["none", "subtle", "moderate", "heavy"];
 const WRITING_STYLES = ["standard", "casual", "formal", "persuasive", "luxury"];
 const PRESET_COLORS = ["#6366F1", "#10B981", "#F59E0B", "#8B5CF6", "#0EA5E9", "#B45309", "#EF4444", "#EC4899"];

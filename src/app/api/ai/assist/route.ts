@@ -22,7 +22,8 @@ const assistSchema = z.object({
   extra: z.string().max(2000).optional(),
 });
 
-const api = withApiHandler({ schema: assistSchema });
+// Phase 12.4 — per-endpoint (20/min) + IP ceiling on top of plan-based caps.
+const api = withApiHandler({ schema: assistSchema, rateLimit: { key: "ai-assist", limit: 20, ipLimit: 120 } });
 
 const ROLES: Record<string, string> = {
   rewrite: "You are a world-class editor. Rewrite the text to be clearer, sharper, and more engaging while preserving meaning and the author's voice.",

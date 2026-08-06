@@ -60,6 +60,7 @@ export const color = {
     minimal: "#e4e4e7",
     corporate: "#6366f1",
     academic: "#14b8a6",
+    slang: "#f59e0b",
   },
 
   // ─── Extended tone aliases (used by tools / suggestions) ──────────────
@@ -73,6 +74,7 @@ export const color = {
     dating: "#f43f5e",
     millennial: "#06b6d4",
     luxury: "#d4a853",
+    slang: "#f59e0b",
   },
 
   // ─── Platform brand colors ────────────────────────────────────────────

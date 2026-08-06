@@ -2,10 +2,13 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Sparkles, RefreshCw, ArrowRight, ArrowDown } from "lucide-react";
+import { Sparkles, RefreshCw, ArrowRight, ArrowDown, Lock } from "lucide-react";
 import Link from "next/link";
 import { sectionReveal, sectionItem, sectionChip } from "@/styles/motion";
 import { cn } from "@/lib/utils";
+
+const DEMO_LIMIT = 3;
+const DEMO_STORAGE_KEY = "tonecraft:landing:demosUsed";
 
 const DEMO_TONES = [
   { id: "professional", label: "Professional" },
@@ -13,6 +16,7 @@ const DEMO_TONES = [
   { id: "funny", label: "Funny" },
   { id: "creative", label: "Creative" },
   { id: "minimal", label: "Minimal" },
+  { id: "slang", label: "Slang" },
 ] as const;
 
 type DemoTone = (typeof DEMO_TONES)[number]["id"];
@@ -41,6 +45,8 @@ function rewrite(input: string, tone: DemoTone): string {
       return `${capitalize(t)}\n\nPicture this unfolding exactly the way I mean it.`;
     case "minimal":
       return `${capitalize(t).replace(/[?!.]+$/g, "").replace(/[,\s]+/g, " ").trim()}.`;
+    case "slang":
+      return `${capitalize(t)}\n\nfr fr, no cap — raincheck?`;
   }
 }
 
@@ -50,14 +56,29 @@ export function InteractiveDemo() {
   const [tone, setTone] = useState<DemoTone>("professional");
   const [output, setOutput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generationsUsed, setGenerationsUsed] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
   }, []);
 
+  useEffect(() => {
+    const stored = Number(localStorage.getItem(DEMO_STORAGE_KEY) || "0");
+    setGenerationsUsed(stored);
+  }, []);
+
+  const isLimitReached = generationsUsed >= DEMO_LIMIT;
+
+  const incrementGenerations = useCallback(() => {
+    const next = generationsUsed + 1;
+    setGenerationsUsed(next);
+    localStorage.setItem(DEMO_STORAGE_KEY, String(next));
+  }, [generationsUsed]);
+
   const handleGenerate = useCallback(() => {
-    if (isGenerating) return;
+    if (isGenerating || isLimitReached || !input.trim()) return;
+    incrementGenerations();
     const result = rewrite(input, tone);
     setOutput("");
     setIsGenerating(true);
@@ -162,7 +183,13 @@ export function InteractiveDemo() {
             </div>
 
             <div className="flex items-center justify-between mt-4">
-              <span className="text-xs text-muted-foreground/60">Press ⌘/Ctrl + Enter</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground/60">Press ⌘/Ctrl + Enter</span>
+                <span className="text-xs text-muted-foreground/40">·</span>
+                <span className="text-xs text-muted-foreground/60">
+                  {generationsUsed}/{DEMO_LIMIT} demos
+                </span>
+              </div>
               <div className="flex gap-2">
                 {output && (
                   <Button variant="ghost" size="sm" onClick={handleReset} className="text-xs">
@@ -170,24 +197,38 @@ export function InteractiveDemo() {
                     Reset
                   </Button>
                 )}
-                <Button
-                  size="sm"
-                  onClick={handleGenerate}
-                  disabled={isGenerating || !input.trim()}
-                  className="gap-2 min-w-[120px]"
-                >
-                  {isGenerating ? (
-                    <motion.span
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                    >
+                {isLimitReached ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-2 min-w-[120px]"
+                    asChild
+                  >
+                    <Link href="/chat">
+                      <Lock className="w-3.5 h-3.5" />
+                      Limit reached
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    onClick={handleGenerate}
+                    disabled={isGenerating || !input.trim()}
+                    className="gap-2 min-w-[120px]"
+                  >
+                    {isGenerating ? (
+                      <motion.span
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                      </motion.span>
+                    ) : (
                       <Sparkles className="w-3.5 h-3.5" />
-                    </motion.span>
-                  ) : (
-                    <Sparkles className="w-3.5 h-3.5" />
-                  )}
-                  {isGenerating ? "Generating…" : "Generate"}
-                </Button>
+                    )}
+                    {isGenerating ? "Generating…" : "Generate"}
+                  </Button>
+                )}
               </div>
             </div>
           </div>

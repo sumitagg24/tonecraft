@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { logger } from "./logger";
 import { z, ZodError } from "zod";
+import { checkEndpointLimit, checkIpLimit } from "./ratelimit";
 
 /**
  * Standardized API handler used by every JSON API route.
@@ -45,6 +46,22 @@ export interface WithApiHandlerOptions<S extends z.ZodTypeAny = z.ZodTypeAny> {
   schema?: S;
   /** Require a Clerk session. Defaults to true. */
   auth?: boolean;
+  /**
+   * Phase 12.4 — per-endpoint rate limit (requests/minute per user) plus an
+   * IP ceiling when `ipLimit` is set. Applied before the handler runs.
+   */
+  rateLimit?: {
+    limit: number;
+    ipLimit?: number;
+    key: string;
+  };
+}
+
+/** Best-effort client IP (x-forwarded-for from the proxy). */
+function getClientIp(req: NextRequest): string {
+  const fwd = req.headers.get("x-forwarded-for");
+  if (fwd) return fwd.split(",")[0].trim();
+  return req.headers.get("x-real-ip") ?? "unknown";
 }
 
 /** Success helper — returns `{ success: true, data }`. */
@@ -92,7 +109,7 @@ function buildHandler(
   options: WithApiHandlerOptions,
   method: string
 ): RouteHandler {
-  const { schema, auth: requireAuth = true } = options;
+  const { schema, auth: requireAuth = true, rateLimit } = options;
 
   return async (req, ctx) => {
     const startTime = Date.now();
@@ -107,6 +124,30 @@ function buildHandler(
         return NextResponse.json(
           { success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized" } },
           { status: 401 }
+        );
+      }
+    }
+
+    // 1b. Phase 12.4 — optional per-endpoint rate limiting (per user + per IP).
+    if (rateLimit && session?.user?.id) {
+      const userLimit = await checkEndpointLimit(rateLimit.key, session.user.id, rateLimit.limit);
+      const ipLimited = rateLimit.ipLimit
+        ? !(await checkIpLimit(getClientIp(req), rateLimit.ipLimit)).allowed
+        : false;
+      if (!userLimit.allowed || ipLimited) {
+        logger.warn(`[API] Rate limited ${requestId} ${method} ${req.nextUrl.pathname}`, {
+          userId: session.user.id,
+          key: rateLimit.key,
+        });
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: "RATE_LIMITED",
+              message: `Rate limit exceeded — try again in a minute (${rateLimit.limit}/min)`,
+            },
+          },
+          { status: 429 }
         );
       }
     }

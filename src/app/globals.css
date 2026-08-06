@@ -4,6 +4,8 @@
 
 @layer base {
   :root {
+    --font-sans: Inter, system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", monospace;
     --background: 0 0% 100%;
     --foreground: 240 10% 3.9%;
     --card: 0 0% 100%;

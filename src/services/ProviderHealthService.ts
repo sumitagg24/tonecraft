@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { Redis } from "@upstash/redis";
 import type { ProviderName } from "@/config/models";
 
 export type ProviderStatus = "healthy" | "degraded" | "offline";
@@ -110,6 +111,8 @@ class ProviderHealthService {
   async checkAll(force = false): Promise<HealthReport> {
     const checks = [
       this.checkDatabase(force),
+      this.checkRedis(force),
+      this.checkStorage(force),
       this.checkHttpProvider(HTTP_PROVIDERS[0], force),
       this.checkHttpProvider(HTTP_PROVIDERS[1], force),
       this.checkHttpProvider(HTTP_PROVIDERS[2], force),
@@ -170,6 +173,96 @@ class ProviderHealthService {
       return this.setCache({
         name,
         status,
+        lastChecked: new Date(),
+        latencyMs: latency,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  /** Phase 12.3 — Redis (Upstash) reachability via a ping round-trip. */
+  async checkRedis(force = false): Promise<HealthDetail> {
+    const name = "redis";
+    const detail = this.getCached(name);
+    if (detail && this.isCacheFresh(name, force)) return detail;
+
+    const url = process.env.UPSTASH_REDIS_REST_URL;
+    const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+    if (!url || !token) {
+      return this.setCache({
+        name,
+        status: "degraded",
+        lastChecked: new Date(),
+        error: "UPSTASH_REDIS_REST_URL/TOKEN not configured",
+      });
+    }
+
+    const start = Date.now();
+    try {
+      const redis = new Redis({ url, token });
+      const pong = await Promise.race([
+        redis.ping(),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("timeout")), HEALTH_CHECK_TIMEOUT_MS)
+        ),
+      ]);
+      const latency = Date.now() - start;
+      if (pong !== "PONG" && pong !== "pong") {
+        return this.setCache({ name, status: "degraded", lastChecked: new Date(), latencyMs: latency, error: "Unexpected ping response" });
+      }
+      return this.setCache({ name, status: "healthy", lastChecked: new Date(), latencyMs: latency });
+    } catch (error) {
+      const latency = Date.now() - start;
+      return this.setCache({
+        name,
+        status: classifyError(error),
+        lastChecked: new Date(),
+        latencyMs: latency,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  /** Phase 12.3 — Cloudflare R2 (S3-compatible storage) reachability. */
+  async checkStorage(force = false): Promise<HealthDetail> {
+    const name = "storage";
+    const detail = this.getCached(name);
+    if (detail && this.isCacheFresh(name, force)) return detail;
+
+    const accountId = process.env.R2_ACCOUNT_ID;
+    const accessKey = process.env.R2_ACCESS_KEY_ID;
+    const secretKey = process.env.R2_SECRET_ACCESS_KEY;
+    const bucket = process.env.R2_BUCKET_NAME;
+    if (!accountId || !accessKey || !secretKey || !bucket) {
+      return this.setCache({
+        name,
+        status: "degraded",
+        lastChecked: new Date(),
+        error: "R2_* env vars not configured",
+      });
+    }
+
+    const start = Date.now();
+    try {
+      // Minimal S3 ListBuckets probe — no SDK required, works with any R2 bucket.
+      const url = `https://${accountId}.r2.cloudflarestorage.com/${bucket}?list-type=2&max-keys=1`;
+      const response = await fetchWithTimeout(url, {}, HEALTH_CHECK_TIMEOUT_MS);
+      const latency = Date.now() - start;
+      if (response.ok) {
+        return this.setCache({ name, status: "healthy", lastChecked: new Date(), latencyMs: latency });
+      }
+      return this.setCache({
+        name,
+        status: "degraded",
+        lastChecked: new Date(),
+        latencyMs: latency,
+        error: `HTTP ${response.status}`,
+      });
+    } catch (error) {
+      const latency = Date.now() - start;
+      return this.setCache({
+        name,
+        status: classifyError(error),
         lastChecked: new Date(),
         latencyMs: latency,
         error: error instanceof Error ? error.message : String(error),

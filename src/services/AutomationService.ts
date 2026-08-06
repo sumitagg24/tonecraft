@@ -3,6 +3,7 @@ import { runAi } from "./ai-assist";
 import { notificationService } from "@/services/NotificationService";
 import { planService } from "@/services/PlanService";
 import { checkMessageLimit } from "@/lib/ratelimit";
+import { auditLogService } from "@/services/AuditLogService";
 import { logger } from "@/lib/logger";
 
 const AUTOMATION_ROLE =
@@ -104,6 +105,11 @@ export class AutomationService {
       try {
         const { nextRunAt } = await this.executeAutomation(automation);
         results.push({ id: automation.id, name: automation.name, status: "completed", nextRunAt });
+        void auditLogService.record("automation.run", "automation", {
+          actorId: automation.userId,
+          resourceId: automation.id,
+          metadata: { name: automation.name },
+        });
       } catch (error) {
         // Reschedule to the next occurrence so we don't retry every tick.
         // lastRunAt is intentionally NOT updated — the run failed.
@@ -114,6 +120,11 @@ export class AutomationService {
         });
         const message = error instanceof Error ? error.message : "Automation failed";
         logger.error(`[AutomationWorker] ${automation.name} failed`, error);
+        void auditLogService.record("automation.run_fail", "automation", {
+          actorId: automation.userId,
+          resourceId: automation.id,
+          metadata: { name: automation.name, error: message.slice(0, 200) },
+        });
         await notificationService.create({
           userId: automation.userId,
           type: "system",

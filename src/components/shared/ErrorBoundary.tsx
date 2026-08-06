@@ -2,6 +2,7 @@
 
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { ErrorFallback } from "./ErrorFallback";
+import { reportError } from "@/lib/error-reporting";
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -25,7 +26,13 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    this.props.onError?.(error, errorInfo);
+    // Phase 12.1 — client crashes flow to the error monitor (Sentry) unless the
+    // consumer supplied its own handler.
+    if (this.props.onError) {
+      this.props.onError(error, errorInfo);
+    } else {
+      reportError(error, { componentStack: errorInfo.componentStack });
+    }
   }
 
   handleRetry = () => {

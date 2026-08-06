@@ -32,28 +32,28 @@ function broadcast(workspaceId: string, message: WSMessage, excludeUserId?: stri
 function handleMessage(conn: WSConnection, message: WSMessage) {
   switch (message.type) {
     case "presence":
-      broadcast(conn.workspaceId!, {
+      broadcast(conn.workspaceId, {
         type: "presence",
         userId: conn.userId,
         data: message.data,
       });
       break;
     case "typing":
-      broadcast(conn.workspaceId!, {
+      broadcast(conn.workspaceId, {
         type: "typing",
         userId: conn.userId,
         data: message.data,
       });
       break;
     case "project-update":
-      broadcast(conn.workspaceId!, {
+      broadcast(conn.workspaceId, {
         type: "project-update",
         userId: conn.userId,
         data: message.data,
       });
       break;
     case "optimistic-update":
-      broadcast(conn.workspaceId!, {
+      broadcast(conn.workspaceId, {
         type: "optimistic-update",
         userId: conn.userId,
         data: message.data,
@@ -97,7 +97,8 @@ export const GET = async (req: NextRequest) => {
         connections.set(workspaceId, new Set());
       }
       const conn: WSConnection = { ws, userId, workspaceId };
-      connections.get(workspaceId)!.add(conn);
+      const room = connections.get(workspaceId);
+      if (room) room.add(conn);
 
       ws.send(JSON.stringify({ type: "connected", userId }));
 

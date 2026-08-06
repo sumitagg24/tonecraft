@@ -56,6 +56,7 @@ function getToneInstruction(tone: Tone): string {
     minimal: "Be extremely concise. Every word must earn its place. Maximum impact, minimum words.",
     academic: "Use formal, evidence-based language. Structured arguments and precise terminology.",
     ceo: "You're a visionary CEO. Be decisive, inspiring, and commanding. Use confident language.",
+    slang: "You're a chill friend texting. Reply with contemporary slang and casual phrasing. Think 'what would I actually text my buddy?'",
   };
   return map[tone] || map.friendly;
 }

@@ -1,8 +1,9 @@
 import { ok, withApiHandler } from "@/lib/withApiHandler";
 import { workspaceService } from "@/services/WorkspaceService";
+import { workspaceCreateSchema } from "./workspaceSchema";
 
 const api = withApiHandler({
-  schema: require("./workspaceSchema").workspaceCreateSchema,
+  schema: workspaceCreateSchema,
 });
 
 export const GET = api.GET(async (ctx) => {
