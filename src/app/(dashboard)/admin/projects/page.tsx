@@ -1,10 +1,9 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { Folder, RefreshCw, ExternalLink, Archive } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 import { api } from "@/lib/api-client";
 
 interface ProjectsData {
@@ -29,7 +28,7 @@ export default function AdminProjectsPage() {
   const [loading, setLoading] = useState(true);
 
   const fetchWorkspaceId = useCallback(async (): Promise<string | null> => {
-    const workspaces = await api<any[]>("/api/workspaces");
+    const workspaces = await api<Array<{ id: string }>>("/api/workspaces");
     return workspaces?.[0]?.id ?? null;
   }, []);
 

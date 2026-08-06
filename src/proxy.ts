@@ -15,6 +15,8 @@ const PUBLIC_PATHS: ReadonlyArray<string> = [
     "/api/webhook",
   "/api/auth",
   "/api/health",
+  // Background worker entrypoint — guarded by the CRON_SECRET header, not a user session.
+  "/api/cron",
   // Paddle webhook — public by design; the Paddle signature check is the auth.
   // (Audit 12 P0.2: it was previously behind Clerk auth, so subscriptions never activated.)
   "/api/billing/webhook",

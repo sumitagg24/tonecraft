@@ -1,11 +1,11 @@
 import { prisma } from "@/lib/prisma";
 
 class PermissionMiddleware {
-  async requireWorkspaceRole(workspaceId: string, role: "member" | "manager" | "admin") {
+  async requireWorkspaceRole(_workspaceId: string, _role: "member" | "manager" | "admin") {
     // Implementation will be in API route handlers
   }
 
-  async requireProjectRole(projectId: string, role: "member" | "manager" | "admin") {
+  async requireProjectRole(_projectId: string, _role: "member" | "manager" | "admin") {
     // Implementation will be in API route handlers
   }
 

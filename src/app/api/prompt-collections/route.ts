@@ -1,15 +1,9 @@
-import { ok, fail, notFound, withApiHandler } from "@/lib/withApiHandler";
+import { ok, fail, withApiHandler } from "@/lib/withApiHandler";
 import { promptService } from "@/services/PromptService";
 import { z } from "zod";
 
 const collectionCreateSchema = z.object({
   name: z.string().min(1).max(80),
-  description: z.string().max(500).optional(),
-  isPublic: z.boolean().optional(),
-});
-
-const collectionUpdateSchema = z.object({
-  name: z.string().min(1).max(80).optional(),
   description: z.string().max(500).optional(),
   isPublic: z.boolean().optional(),
 });

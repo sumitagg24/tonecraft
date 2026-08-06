@@ -124,8 +124,9 @@ export const useWorkspaceStore = create<WorkspaceStoreState>()(
       }),
     removeUserPresence: (userId) =>
       set((state) => {
-        const { [userId]: _, ...rest } = state.presence;
-        return { presence: rest };
+        const next = { ...state.presence };
+        delete next[userId];
+        return { presence: next };
       }),
     updateSharedDocument: (docId, content, version) =>
       set((state) => ({

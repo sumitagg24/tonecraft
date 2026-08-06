@@ -35,7 +35,7 @@ interface WorkspaceInvite {
   sentBy: { id: string; name: string; email: string } | null;
 }
 
-interface Activity {
+export interface Activity {
   id: string;
   workspaceId: string;
   userId: string;
@@ -56,8 +56,8 @@ export function useWorkspaces() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error?.message || "Failed to fetch");
       setWorkspaces(data.data);
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to fetch");
     } finally {
       setLoading(false);
     }
@@ -92,8 +92,8 @@ export function useWorkspace(workspaceId: string) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error?.message || "Failed to fetch");
       setWorkspace(data.data);
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to fetch");
     } finally {
       setLoading(false);
     }
@@ -135,8 +135,8 @@ export function useWorkspaceMembers(workspaceId: string) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error?.message || "Failed to fetch");
       setMembers(data.data);
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to fetch");
     } finally {
       setLoading(false);
     }
@@ -191,8 +191,8 @@ export function useWorkspaceInvites(workspaceId: string) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error?.message || "Failed to fetch");
       setInvites(data.data);
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to fetch");
     } finally {
       setLoading(false);
     }
@@ -252,8 +252,8 @@ export function useWorkspaceActivities(workspaceId: string) {
       else setActivities(prev => [...prev, ...data.data]);
       setHasMore(data.data.length === 50);
       setPage(pageNum);
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to fetch");
     } finally {
       setLoading(false);
     }

@@ -108,8 +108,8 @@ function getUserMessage(code: AIErrorCode): string {
 
 export function classifyAIError(error: unknown, provider?: string, model?: string): AIErrorContext {
   const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const status = (error as any)?.status;
+  const status =
+    typeof error === "object" && error !== null ? (error as { status?: number }).status : undefined;
 
   let errorCode: AIErrorCode;
 

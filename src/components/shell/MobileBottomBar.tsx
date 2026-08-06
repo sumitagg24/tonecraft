@@ -1,7 +1,7 @@
 "use client";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { NAV_ITEMS, isNavItemActive } from "./nav-items";
+import { MOBILE_NAV_ITEMS, isNavItemActive } from "./nav-items";
 
 export function MobileBottomBar() {
   const pathname = usePathname();
@@ -13,7 +13,7 @@ export function MobileBottomBar() {
       className="md:hidden fixed bottom-0 inset-x-0 z-40 h-14 border-t border-border/30 bg-sidebar/80 backdrop-blur-2xl pb-[env(safe-area-inset-bottom)]"
     >
       <div className="flex h-full items-stretch">
-        {NAV_ITEMS.map((item) => {
+        {MOBILE_NAV_ITEMS.map((item) => {
           const active = isNavItemActive(item, pathname);
           return (
             <button

@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, ActivityType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 const activitySelect = {
@@ -21,7 +21,7 @@ export class WorkspaceActivityRepository {
     return prisma.activityFeed.create({
       data: {
         ...data,
-        type: data.type as any,
+        type: data.type as ActivityType,
         payload: data.payload as Prisma.InputJsonValue,
       },
       select: activitySelect,
@@ -50,7 +50,7 @@ export class WorkspaceActivityRepository {
 
   async findByType(workspaceId: string, type: string, page = 1, perPage = 50) {
     return prisma.activityFeed.findMany({
-      where: { workspaceId, type: type as any },
+      where: { workspaceId, type: type as ActivityType },
       orderBy: [{ createdAt: "desc" }],
       skip: (page - 1) * perPage,
       take: perPage,
@@ -63,7 +63,7 @@ export class WorkspaceActivityRepository {
   }
 
   async getActivityStats(workspaceId: string, since?: Date) {
-    const where: any = { workspaceId };
+    const where: Prisma.ActivityFeedWhereInput = { workspaceId };
     if (since) where.createdAt = { gte: since };
 
     const byType = await prisma.activityFeed.groupBy({

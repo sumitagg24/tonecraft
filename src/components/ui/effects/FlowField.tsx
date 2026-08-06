@@ -76,6 +76,35 @@ const THEMES: Record<ColorTheme, ThemeConfig> = {
   },
 };
 
+function DefaultContent() {
+  return (
+    <div className="relative z-10 flex flex-col items-center justify-center gap-6 px-6 text-center">
+      <motion.h1
+        className="max-w-3xl font-bold text-5xl text-white leading-[1.08] tracking-tight sm:text-6xl md:text-7xl"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.9, delay: 0.38, ease: [0.22, 0.61, 0.36, 1] }}
+      >
+        Chaos finds its
+        <br />
+        <span className="bg-gradient-to-r from-emerald-300 via-teal-200 to-violet-300 bg-clip-text text-transparent">
+          own beauty
+        </span>
+      </motion.h1>
+
+      <motion.p
+        className="max-w-md text-base text-white/50 leading-relaxed"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.9, delay: 0.56, ease: "easeOut" }}
+      >
+        Thousands of particles drift through an organic noise field, painting
+        luminous trails that shift and spiral endlessly.
+      </motion.p>
+    </div>
+  );
+}
+
 function fieldAngle(x: number, y: number, t: number): number {
   const s = 0.0025;
   return (
@@ -229,7 +258,7 @@ export default function FlowField({
         }}
       />
 
-      {children}
+      {children ?? <DefaultContent />}
     </div>
   );
 }

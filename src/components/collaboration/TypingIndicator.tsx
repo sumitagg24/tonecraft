@@ -1,5 +1,4 @@
 "use client";
-import React from "react";
 import { useCollaboration } from "@/components/collaboration/CollaborationProvider";
 
 interface TypingIndicatorProps {

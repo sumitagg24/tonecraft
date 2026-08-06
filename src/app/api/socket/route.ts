@@ -1,4 +1,3 @@
-import { NextRequest } from "next/server";
 import { Server as SocketIOServer } from "socket.io";
 import { createServer } from "http";
 import { Prisma } from "@prisma/client";
@@ -6,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 let io: SocketIOServer | null = null;
 
-export const GET = async (req: NextRequest) => {
+export const GET = async () => {
   if (!io) {
     const httpServer = createServer();
     io = new SocketIOServer(httpServer, {

@@ -36,7 +36,7 @@ export default function AdminKnowledgePage() {
   const [loading, setLoading] = useState(true);
 
   const fetchWorkspaceId = useCallback(async (): Promise<string | null> => {
-    const workspaces = await api<any[]>("/api/workspaces");
+    const workspaces = await api<Array<{ id: string }>>("/api/workspaces");
     return workspaces?.[0]?.id ?? null;
   }, []);
 

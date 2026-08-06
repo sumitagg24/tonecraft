@@ -2,19 +2,27 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Trash2, Edit2, Folder, FolderPlus, Settings, Calendar, MessageSquare } from "lucide-react";
 import { useWorkspace } from "@/hooks/workspace/useWorkspace";
-import { ProjectSettings } from "./ProjectSettings";
 
 interface WorkspaceProjectsProps {
   workspaceId: string;
-  currentUserId: string;
 }
 
-export function WorkspaceProjects({ workspaceId, currentUserId }: WorkspaceProjectsProps) {
+interface ProjectItem {
+  id: string;
+  name: string;
+  emoji?: string | null;
+  color: string;
+  description?: string | null;
+  createdAt: string;
+  _count?: { chats?: number };
+}
+
+export function WorkspaceProjects({ workspaceId }: WorkspaceProjectsProps) {
   const { workspace } = useWorkspace(workspaceId);
-  const [projects, setProjects] = useState<any[]>([]);
+  const [projects, setProjects] = useState<ProjectItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -29,8 +37,8 @@ export function WorkspaceProjects({ workspaceId, currentUserId }: WorkspaceProje
         const data = await res.json();
         if (!res.ok) throw new Error(data.error?.message || "Failed to fetch projects");
         setProjects(data.data);
-      } catch (e: any) {
-        setError(e.message);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Failed to fetch projects");
       } finally {
         setLoading(false);
       }
@@ -55,7 +63,7 @@ export function WorkspaceProjects({ workspaceId, currentUserId }: WorkspaceProje
       const res = await fetch(`/api/workspaces/${workspaceId}/projects`);
       const data = await res.json();
       setProjects(data.data);
-    } catch (e: any) {
+    } catch (e) {
       console.error("Failed to create project", e);
     }
   };
@@ -66,8 +74,8 @@ export function WorkspaceProjects({ workspaceId, currentUserId }: WorkspaceProje
       await fetch(`/api/workspaces/${workspaceId}/projects/${projectId}`, {
         method: "DELETE",
       });
-      setProjects(prev => projects.filter(p => p.id !== projectId));
-    } catch (e: any) {
+      setProjects(projects.filter(p => p.id !== projectId));
+    } catch (e) {
       console.error("Failed to delete project", e);
     }
   };
@@ -168,14 +176,12 @@ export function WorkspaceProjects({ workspaceId, currentUserId }: WorkspaceProje
       <ProjectSettingsModal
         open={showSettings}
         onOpenChange={setShowSettings}
-        workspaceId={workspaceId}
         workspace={workspace}
       />
 
       <AddProjectModal
         open={showAddProject}
         onOpenChange={setShowAddProject}
-        workspaceId={workspaceId}
         onCreateProject={handleCreateProject}
         projectName={projectName}
         setProjectName={setProjectName}
@@ -196,13 +202,18 @@ function getBadgeColor(color: string): string {
 }
 
 // Helper component for modals
-function ProjectSettingsModal({ open, onOpenChange, workspaceId, workspace }: {
+function ProjectSettingsModal({ open, onOpenChange, workspace }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  workspaceId: string;
-  workspace: any;
+  workspace: {
+    name?: string;
+    description?: string | null;
+    color?: string;
+    visibility?: string;
+  } | null | undefined;
 }) {
   // Simplified version for now - in production would use the actual ProjectSettings component
+  const ws = workspace ?? {};
   return (
     <div className={open ? "fixed inset-0 z-50 flex items-center justify-center bg-black/50" : "hidden"}>
       <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
@@ -213,14 +224,14 @@ function ProjectSettingsModal({ open, onOpenChange, workspaceId, workspace }: {
             <input
               type="text"
               className="w-full p-2 border rounded-md"
-              defaultValue={workspace.name}
+              defaultValue={ws.name}
             />
           </div>
           <div>
             <label className="block text-sm font-medium mb-2">Description</label>
             <textarea
               className="w-full p-2 border rounded-md"
-              defaultValue={workspace.description || ""}
+              defaultValue={ws.description || ""}
               rows={3}
             />
           </div>
@@ -229,12 +240,12 @@ function ProjectSettingsModal({ open, onOpenChange, workspaceId, workspace }: {
             <input
               type="color"
               className="w-full p-2"
-              defaultValue={workspace.color}
+              defaultValue={ws.color}
             />
           </div>
           <div>
             <label className="block text-sm font-medium mb-2">Visibility</label>
-            <select className="w-full p-2 border rounded-md" defaultValue={workspace.visibility}>
+            <select className="w-full p-2 border rounded-md" defaultValue={ws.visibility}>
               <option value="private">Private</option>
               <option value="shared">Shared</option>
               <option value="public">Public</option>
@@ -254,10 +265,9 @@ function ProjectSettingsModal({ open, onOpenChange, workspaceId, workspace }: {
   );
 }
 
-function AddProjectModal({ open, onOpenChange, workspaceId, onCreateProject, projectName, setProjectName }: {
+function AddProjectModal({ open, onOpenChange, onCreateProject, projectName, setProjectName }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  workspaceId: string;
   onCreateProject: () => Promise<void>;
   projectName: string;
   setProjectName: (name: string) => void;

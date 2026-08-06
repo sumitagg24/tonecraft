@@ -58,6 +58,14 @@ model User {
   operations        DocumentOperation[]
   auditLogs         AuditLog[]              @relation("AuditActor")
   pushSubscriptions PushSubscription[]
+  documents         Document[]
+  notes             Note[]
+  tasks             Task[]
+  calendarEvents    CalendarEvent[]
+  agents            Agent[]
+  agentRuns         AgentRun[]
+  automations       Automation[]
+  integrations      Integration[]
 
   // NOTE: no redundant @@index on clerkId/email — @unique already builds them.
 }
@@ -883,4 +891,165 @@ model DocumentOperation {
 
   @@index([resourceType, resourceId, version])
   @@index([resourceType, resourceId, createdAt])
+}
+
+// ============================================================
+// Phase 10 — Productivity Suite
+// ============================================================
+
+model Document {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String   @default("Untitled")
+  content   String   @default("")
+  emoji     String?
+  status    String   @default("draft") // draft | published | archived
+  pinned    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, updatedAt])
+  @@index([userId, status])
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String   @default("Untitled")
+  content   String   @default("")
+  color     String   @default("default")
+  pinned    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, updatedAt])
+}
+
+enum TaskStatus {
+  todo
+  in_progress
+  done
+}
+
+enum TaskPriority {
+  low
+  medium
+  high
+}
+
+model Task {
+  id          String       @id @default(cuid())
+  userId      String
+  title       String
+  description String?
+  status      TaskStatus   @default(todo)
+  priority    TaskPriority @default(medium)
+  dueDate     DateTime?
+  position    Int          @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status, position])
+  @@index([userId, dueDate])
+}
+
+model CalendarEvent {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  description String?
+  startAt     DateTime
+  endAt       DateTime?
+  allDay      Boolean  @default(false)
+  color       String   @default("#6366F1")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, startAt])
+}
+
+model Agent {
+  id          String     @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  role        String     @default("You are a helpful AI assistant.")
+  icon        String     @default("🤖")
+  color       String     @default("#6366F1")
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  runs        AgentRun[]
+
+  @@index([userId, isActive])
+}
+
+model AgentRun {
+  id         String  @id @default(cuid())
+  agentId    String
+  userId     String
+  input      String
+  output     String?
+  status     String  @default("queued") // queued | running | completed | failed
+  steps      Json? // chained agent step results
+  error      String?
+  durationMs Int?
+  createdAt  DateTime @default(now())
+  agent      Agent   @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([agentId, createdAt])
+  @@index([userId, createdAt])
+}
+
+model Automation {
+  id          String    @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  trigger     String    @default("daily") // daily | weekly | custom
+  cron        String?
+  prompt      String
+  enabled     Boolean   @default(true)
+  // Claimed by the background worker while executing (prevents double runs).
+  running     Boolean   @default(false)
+  lastRunAt   DateTime?
+  nextRunAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, enabled])
+  @@index([enabled, nextRunAt, running])
+}
+
+enum IntegrationService {
+  google_drive
+  notion
+  github
+  slack
+  discord
+  gmail
+  calendar
+}
+
+model Integration {
+  id          String              @id @default(cuid())
+  userId      String
+  service     IntegrationService
+  status      String              @default("not_connected") // not_connected | connecting | connected | error
+  config      Json?
+  error       String?
+  connectedAt DateTime?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, service])
+  @@index([userId, status])
 }

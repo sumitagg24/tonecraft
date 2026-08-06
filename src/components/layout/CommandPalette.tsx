@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Search, MessageSquare, Settings, Wand2, Star, Pin, ArrowRight,
+  Search, MessageSquare, Star, Pin, ArrowRight,
   FileText, Sparkles, Zap, Hash, Plus,
   RefreshCw, Briefcase, MessageCircle, Smile, Heart, Gem, Laugh,
   CheckSquare, Globe, Mail, Camera, Terminal, Headphones,
@@ -16,6 +16,7 @@ import { useWorkspaceStore } from "@/stores/workspace-store";
 import { getAllCapabilities } from "@/stores/capability-registry";
 import { fadeIn, fadeInScale, comboboxTransition } from "@/styles/motion";
 import { useChat } from "@/hooks/use-chat";
+import { NAV_ITEMS } from "@/components/shell/nav-items";
 
 type ResultCategory = "chat" | "capability" | "page" | "action" | "mode";
 
@@ -42,9 +43,17 @@ export function CommandPalette() {
 
   const allResults: Result[] = [
     { id: "new-chat", label: "New Chat", description: "Start a fresh conversation", icon: Plus, action: async () => { const chat = await createChat(); router.push(`/chat/${chat.id}`); setOpen(false); }, category: "action" },
-    { id: "tools", label: "AI Tools", description: "Explore all writing capabilities", icon: Wand2, href: "/tools", category: "page" },
-    { id: "settings", label: "Settings", description: "Manage preferences and account", icon: Settings, href: "/settings", category: "page" },
-    { id: "search-page", label: "Search", description: "Search across chats and messages", icon: Search, href: "/search", category: "page" },
+
+    // Every destination in the app — generated from NAV_ITEMS so new pages
+    // are reachable from ⌘K automatically.
+    ...NAV_ITEMS.map((item) => ({
+      id: `page-${item.id}`,
+      label: item.label,
+      description: pageDescription(item.id),
+      icon: item.icon,
+      href: item.href,
+      category: "page" as const,
+    })),
 
     { id: "mode-chat", label: "Chat Mode", description: "Full workspace layout", icon: MessageSquare, action: () => { setMode("chat"); setOpen(false); }, category: "mode" },
     { id: "mode-focus", label: "Focus Mode", description: "Minimal distraction layout", icon: EyeIcon, action: () => { setMode("focus"); setOpen(false); }, category: "mode" },
@@ -105,6 +114,7 @@ export function CommandPalette() {
   }, [router, setOpen]);
 
   const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape") { e.preventDefault(); setOpen(false); return; }
     if (e.key === "ArrowDown") { e.preventDefault(); setSelectedIndex(i => Math.min(i + 1, results.length - 1)); }
     if (e.key === "ArrowUp") { e.preventDefault(); setSelectedIndex(i => Math.max(i - 1, 0)); }
     if (e.key === "Enter" && results[selectedIndex]) { selectItem(results[selectedIndex]); }
@@ -112,10 +122,10 @@ export function CommandPalette() {
 
   const groupedResults = useCallback(() => {
     const groups: { category: ResultCategory; label: string; items: Result[] }[] = [];
-    const categoryOrder: ResultCategory[] = ["action", "mode", "chat", "capability", "page"];
+    const categoryOrder: ResultCategory[] = ["action", "page", "mode", "chat", "capability"];
     const categoryLabels: Record<ResultCategory, string> = {
-      action: "Actions", mode: "Workspace Modes", chat: "Recent Chats",
-      capability: "Capabilities", page: "Pages",
+      action: "Actions", page: "Pages", mode: "Workspace Modes", chat: "Recent Chats",
+      capability: "Capabilities",
     };
     for (const cat of categoryOrder) {
       const items = results.filter(r => r.category === cat);
@@ -153,7 +163,7 @@ export function CommandPalette() {
                   value={query}
                   onChange={e => setQuery(e.target.value)}
                   onKeyDown={onKeyDown}
-                  placeholder="Search chats, capabilities, modes..."
+                  placeholder="Search pages, chats, capabilities..."
                   className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/40"
                   aria-label="Command palette search"
                 />
@@ -228,6 +238,27 @@ export function CommandPalette() {
       )}
     </AnimatePresence>
   );
+}
+
+function pageDescription(id: string): string {
+  const descriptions: Record<string, string> = {
+    compose: "Write and chat with AI",
+    tools: "Explore all writing capabilities",
+    library: "Prompts, tones, and saved assets",
+    search: "Search across chats and messages",
+    docs: "Markdown documents with AI editing",
+    notes: "Quick notes and ideas",
+    tasks: "Kanban board and task lists",
+    calendar: "Schedule and AI meeting notes",
+    agents: "Specialized AI agents and chains",
+    automations: "Recurring AI workflows",
+    integrations: "Connect Slack, GitHub, and more",
+    notifications: "Alerts and activity",
+    analytics: "Usage and insights",
+    admin: "Workspace administration",
+    account: "Profile, billing, and preferences",
+  };
+  return descriptions[id] ?? "Navigate";
 }
 
 function EyeIcon({ className }: { className?: string }) {

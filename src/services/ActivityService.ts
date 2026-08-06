@@ -1,6 +1,5 @@
 import { activityRepository } from "@/repositories/ActivityRepository";
 import { workspaceActivityRepository } from "@/repositories/WorkspaceActivityRepository";
-import type { Activity } from "@prisma/client";
 
 export interface ActivitySummary {
   id: string;
@@ -96,8 +95,8 @@ export class ActivityService {
     const recent = await workspaceActivityRepository.findByWorkspace(workspaceId, 1, 10);
     return {
       totalActivities: stats.total,
-      activitiesByType: stats.byType.map((bt: any) => ({ type: bt.type, count: bt._count.id })),
-      recentActivity: recent.map((a: any) => ({
+      activitiesByType: stats.byType.map((bt) => ({ type: bt.type, count: bt._count.id })),
+      recentActivity: recent.map((a) => ({
         type: a.type,
         user: a.user?.name || "Unknown",
         timestamp: a.createdAt,

@@ -1,11 +1,9 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { BarChart3, RefreshCw, TrendingUp, Clock, Activity } from "lucide-react";
+import { BarChart3, TrendingUp, Clock, Activity } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 import { api } from "@/lib/api-client";
 
 interface AiUsageData {
@@ -44,7 +42,7 @@ export default function AdminUsagePage() {
   const [period, setPeriod] = useState("30d");
 
   const fetchWorkspaceId = useCallback(async (): Promise<string | null> => {
-    const workspaces = await api<any[]>("/api/workspaces");
+    const workspaces = await api<Array<{ id: string }>>("/api/workspaces");
     return workspaces?.[0]?.id ?? null;
   }, []);
 

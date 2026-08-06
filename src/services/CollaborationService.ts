@@ -2,7 +2,6 @@ import { presenceRepository } from "@/repositories/PresenceRepository";
 import { typingIndicatorRepository } from "@/repositories/TypingIndicatorRepository";
 import { collaborationSessionRepository } from "@/repositories/CollaborationSessionRepository";
 import { documentOperationRepository } from "@/repositories/DocumentOperationRepository";
-import { versionHistoryService } from "@/services/VersionHistoryService";
 
 export interface UserPresence {
   userId: string;

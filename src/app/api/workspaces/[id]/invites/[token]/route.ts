@@ -3,8 +3,6 @@ import { workspaceInviteRepository } from "@/repositories/WorkspaceInviteReposit
 import { workspaceMemberRepository } from "@/repositories/WorkspaceMemberRepository";
 import { workspaceActivityRepository } from "@/repositories/WorkspaceActivityRepository";
 import { updateInviteSchema } from "../../../workspaceSchema";
-import { sendInvitationEmail } from "@/lib/email";
-import { prisma } from "@/lib/prisma";
 import { permissionMiddleware } from "@/middleware/permissionMiddleware";
 
 const api = withApiHandler();

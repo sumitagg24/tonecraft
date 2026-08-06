@@ -1,6 +1,5 @@
-import { ok, fail, notFound, withApiHandler } from "@/lib/withApiHandler";
+import { ok, withApiHandler } from "@/lib/withApiHandler";
 import { workspaceService } from "@/services/WorkspaceService";
-import { prisma } from "@/lib/prisma";
 
 const api = withApiHandler({
   schema: require("./workspaceSchema").workspaceCreateSchema,

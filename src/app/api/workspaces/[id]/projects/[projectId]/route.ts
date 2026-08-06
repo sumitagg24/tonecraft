@@ -1,5 +1,4 @@
 import { ok, fail, notFound, withApiHandler } from "@/lib/withApiHandler";
-import { workspaceRepository } from "@/repositories/WorkspaceRepository";
 import { workspaceActivityRepository } from "@/repositories/WorkspaceActivityRepository";
 import { permissionMiddleware } from "@/middleware/permissionMiddleware";
 import { prisma } from "@/lib/prisma";

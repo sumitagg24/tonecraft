@@ -1,11 +1,10 @@
 "use client";
-import React, { useState, useCallback, useMemo } from "react";
+import { useState, useCallback } from "react";
 import { useDeleteVersion, useRestoreVersion, useVersionHistory } from "@/hooks/use-version-history";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, RotateCcw, GitCompare, Trash2, Download, Clock } from "lucide-react";
-import type { VersionSnapshot } from "@/services/VersionHistoryService";
+import { Loader2, RotateCcw, GitCompare, Trash2, Download } from "lucide-react";
 
 interface VersionHistoryProps {
   resourceType: string;

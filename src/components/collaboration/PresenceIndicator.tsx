@@ -1,5 +1,4 @@
 "use client";
-import React from "react";
 import { useCollaboration } from "@/components/collaboration/CollaborationProvider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";

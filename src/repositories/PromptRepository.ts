@@ -107,7 +107,7 @@ export class PromptRepository {
   }
 
   async listCollections(userId: string, includePublic?: boolean) {
-    const where: any = { userId };
+    const where: Prisma.PromptCollectionWhereInput = { userId };
     if (includePublic) {
       where.OR = [
         { userId },
@@ -374,7 +374,7 @@ export class PromptRepository {
     collectionId?: string;
     userId: string;
     action: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   }) {
     return await prisma.promptHistory.create({
       data: {
@@ -393,7 +393,7 @@ export class PromptRepository {
     isFavorite?: boolean;
     tags?: string[];
   }) {
-    const where: any = {
+    const where: Prisma.PromptWhereInput = {
       OR: [
         { userId },
         { shares: { some: { sharedWithId: userId } } },
@@ -401,34 +401,38 @@ export class PromptRepository {
       ]
     };
 
+    const and: Prisma.PromptWhereInput[] = [];
+
     if (query) {
-      where.AND = [
-        {
-          OR: [
-            { title: { contains: query, mode: 'insensitive' } },
-            { description: { contains: query, mode: 'insensitive' } },
-            { content: { contains: query, mode: 'insensitive' } }
-          ]
-        }
-      ];
+      and.push({
+        OR: [
+          { title: { contains: query, mode: 'insensitive' } },
+          { description: { contains: query, mode: 'insensitive' } },
+          { content: { contains: query, mode: 'insensitive' } }
+        ]
+      });
     }
 
     if (filters?.category) {
-      where.AND = [...(where.AND || []), { category: { equals: filters.category } }];
+      and.push({ category: filters.category });
     }
 
     if (filters?.isFavorite !== undefined) {
-      where.AND = [...(where.AND || []), { isFavorite: { equals: filters.isFavorite } }];
+      and.push({ isFavorite: filters.isFavorite });
     }
 
     if (filters?.tags?.length) {
-      where.AND = [...(where.AND || []), {
+      and.push({
         tags: {
           some: {
             name: { in: filters.tags }
           }
         }
-      }];
+      });
+    }
+
+    if (and.length > 0) {
+      where.AND = and;
     }
 
     return await prisma.prompt.findMany({

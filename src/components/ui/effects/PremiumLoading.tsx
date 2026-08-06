@@ -155,17 +155,3 @@ export function StreamingCursor({ className }: { className?: string }) {
   );
 }
 
-export function AnimatedLogo({ className }: { className?: string }) {
-  return (
-    <motion.div
-      animate={{ scale: [1, 1.03, 1], opacity: [0.8, 1, 0.8] }}
-      transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-      className={cn("flex items-center gap-2", className)}
-    >
-      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-glow">
-        <Sparkles className="w-4 h-4 text-white" />
-      </div>
-      <span className="font-bold text-lg tracking-tight gradient-text">ToneCraft</span>
-    </motion.div>
-  );
-}

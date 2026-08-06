@@ -1,11 +1,13 @@
 import { NextRequest } from "next/server";
 import { WebSocketServer, WebSocket } from "ws";
+import type { IncomingMessage } from "http";
+import type { Duplex } from "stream";
 
 interface WSMessage {
   type: string;
   workspaceId?: string;
   userId?: string;
-  data?: any;
+  data?: unknown;
 }
 
 interface WSConnection {
@@ -79,16 +81,15 @@ export const GET = async (req: NextRequest) => {
     return new Response("Expected websocket upgrade", { status: 400 });
   }
 
-  const socket = (req as any).socket;
-  const head = (req as any).head;
+  const { socket, head } = req as unknown as { socket?: Duplex; head?: Buffer };
 
   if (!socket || !head) {
     return new Response("WebSocket upgrade not supported", { status: 500 });
   }
 
   return new Promise<Response>((resolve) => {
-    wss.handleUpgrade(req as any, socket, head, (ws) => {
-      wss.emit("connection", ws, req as any);
+    wss.handleUpgrade(req as unknown as IncomingMessage, socket, head, (ws) => {
+      wss.emit("connection", ws, req as unknown as IncomingMessage);
     });
 
     wss.on("connection", (ws) => {

@@ -4,6 +4,7 @@ import { useCommandPalette } from "@/hooks/use-command-palette";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { useNavigationStore } from "@/stores/navigation-store";
 import { useChat } from "@/hooks/use-chat";
+import { NAV_ITEMS } from "./nav-items";
 import { NavigationRail, MobileRailDrawer } from "./NavigationRail";
 import { TopBar } from "./TopBar";
 import { MobileBottomBar } from "./MobileBottomBar";
@@ -29,10 +30,12 @@ export function AppShell({ children }: AppShellProps) {
   useKeyboardShortcuts([
     { key: "k", meta: true, handler: () => toggle() },
     { key: "n", meta: true, handler: () => handleNewChat() },
-    { key: "1", meta: true, handler: () => router.push("/chat") },
-    { key: "2", meta: true, handler: () => router.push("/tools") },
-    { key: "3", meta: true, handler: () => router.push("/library") },
-    { key: "4", meta: true, handler: () => router.push("/search") },
+    // ⌘1–⌘8 — one shortcut per numbered destination (kept in sync with NAV_ITEMS).
+    ...NAV_ITEMS.filter((item) => item.shortcut).map((item) => ({
+      key: item.shortcut,
+      meta: true,
+      handler: () => router.push(item.href),
+    })),
     { key: "f", meta: true, shift: true, handler: () => router.push("/search") },
     { key: "Escape", handler: () => setMobileNavOpen(false) },
   ]);

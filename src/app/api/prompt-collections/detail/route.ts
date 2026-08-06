@@ -1,4 +1,4 @@
-import { ok, fail, notFound, withApiHandler } from "@/lib/withApiHandler";
+import { ok, notFound, withApiHandler } from "@/lib/withApiHandler";
 import { promptService } from "@/services/PromptService";
 
 const api = withApiHandler({});
@@ -12,7 +12,7 @@ export const GET = api.GET(async (ctx) => {
 });
 
 // PATCH /api/prompt-collections/[collectionId]
-export const PATCH = api.PATCH(async (ctx, body) => {
+export const PATCH = api.PATCH(async (ctx) => {
   const collectionId = ctx.params.id;
   const parsed = await ctx.request.json();
   const updated = await promptService.updateCollection(collectionId, ctx.user.id, parsed);

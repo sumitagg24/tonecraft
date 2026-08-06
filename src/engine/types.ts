@@ -42,6 +42,15 @@ export interface ProviderResult {
   finishReason?: string;
 }
 
+/**
+ * Union of events emitted by the streaming API (`AIEngine.stream` /
+ * `WorkflowEngine.executeStream`).
+ */
+export type EngineStreamEvent =
+  | { type: "token"; content: string; step?: string }
+  | { type: "done"; result: EngineResult }
+  | { type: "error"; message: string };
+
 export interface EngineResult {
   content: string;
   provider: string;
@@ -77,6 +86,9 @@ export interface Workflow {
 
 import type { PlanTier } from "@/config/plans";
 import type { ProviderName } from "@/config/models";
+import type { ModelMessage } from "ai";
+
+export type { ModelMessage } from "ai";
 
 export type CapabilityTier = "writing" | "long-context" | "coding" | "creative" | "vision";
 
@@ -89,7 +101,7 @@ export interface CapabilityContext {
 
 export interface RouteOptions {
   system: string;
-  messages: { role: "user" | "assistant" | "system"; content: string }[];
+  messages: ModelMessage[];
   modelId?: string;
   plan?: PlanTier;
   intent?: Intent;

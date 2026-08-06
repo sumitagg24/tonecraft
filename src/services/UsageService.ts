@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 export class UsageService {
   async trackUsage(userId: string, type: string, amount: number, extra?: {
@@ -30,10 +31,14 @@ export class UsageService {
   }
 
   async getWorkspaceUsage(workspaceId: string, filter?: { type?: string; from?: Date; to?: Date }) {
-    const where: any = { workspaceId };
+    const where: Prisma.UsageRecordWhereInput = { workspaceId };
     if (filter?.type) where.provider = filter.type;
-    if (filter?.from) where.createdAt = { gte: filter.from };
-    if (filter?.to) where.createdAt = { ...(where.createdAt ?? {}), lte: filter.to };
+    if (filter?.from || filter?.to) {
+      where.createdAt = {
+        ...(filter?.from ? { gte: filter.from } : {}),
+        ...(filter?.to ? { lte: filter.to } : {}),
+      };
+    }
 
     return prisma.usageRecord.findMany({
       where,
@@ -42,10 +47,14 @@ export class UsageService {
   }
 
   async getUserUsage(userId: string, filter?: { type?: string; from?: Date; to?: Date }) {
-    const where: any = { userId };
+    const where: Prisma.UsageRecordWhereInput = { userId };
     if (filter?.type) where.provider = filter.type;
-    if (filter?.from) where.createdAt = { gte: filter.from };
-    if (filter?.to) where.createdAt = { ...(where.createdAt ?? {}), lte: filter.to };
+    if (filter?.from || filter?.to) {
+      where.createdAt = {
+        ...(filter?.from ? { gte: filter.from } : {}),
+        ...(filter?.to ? { lte: filter.to } : {}),
+      };
+    }
 
     return prisma.usageRecord.findMany({
       where,
@@ -71,6 +80,29 @@ export class UsageService {
       [groupBy === "type" ? "type" : groupBy]: key,
       amount: value,
     }));
+  }
+
+  /**
+   * Daily counter reset — idempotent: only resets rows whose window has rolled
+   * over, so repeated cron ticks are safe. Called by the daily background job.
+   */
+  async resetDailyIfDue(now = new Date()) {
+    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const res = await prisma.usage.updateMany({
+      where: { lastDailyReset: { lt: dayStart } },
+      data: { dailyMessages: 0, dailyTokens: 0, lastDailyReset: dayStart },
+    });
+    return { reset: res.count };
+  }
+
+  /** Monthly counter reset — idempotent, same pattern as resetDailyIfDue. */
+  async resetMonthlyIfDue(now = new Date()) {
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const res = await prisma.usage.updateMany({
+      where: { lastMonthlyReset: { lt: monthStart } },
+      data: { monthlyMessages: 0, monthlyTokens: 0, lastMonthlyReset: monthStart },
+    });
+    return { reset: res.count };
   }
 
   async getStats(userId: string) {

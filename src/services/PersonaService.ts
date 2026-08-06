@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { promptService } from '@/services/PromptService';
 import { promptRepository } from '@/repositories/PromptRepository';
 
@@ -156,9 +157,10 @@ export class PersonaMarketplaceService {
 
   // Get marketplace items for workspace scope
   async listMarketplaceItems(workspaceId?: string, userId?: string) {
-    const where: any = {};
+    const where: Prisma.PersonaWhereInput = {};
     if (workspaceId) {
-      where.workspaceId = workspaceId;
+      // Personas have no direct workspaceId column; filter through their project.
+      where.project = { workspaceId };
     } else if (userId) {
       where.userId = userId;
     }

@@ -1,10 +1,9 @@
-import { ok, notFound, withApiHandler } from "@/lib/withApiHandler";
+import { ok, withApiHandler } from "@/lib/withApiHandler";
 import { promptService } from "@/services/PromptService";
 
 const api = withApiHandler({});
 
 export const GET = api.GET(async (ctx) => {
-  const { promptService: ps } = require("@/services/PromptService");
   const prompts = await promptService.listPrompts(ctx.user.id);
   const favorites = prompts.filter(p => p.isFavorite);
   return ok(favorites);

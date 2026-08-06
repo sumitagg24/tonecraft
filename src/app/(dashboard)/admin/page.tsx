@@ -40,7 +40,7 @@ export default function AdminOverviewPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const workspaces = await api<any[]>(`/api/workspaces`);
+      const workspaces = await api<Array<{ id: string }>>(`/api/workspaces`);
       const workspace = workspaces?.[0];
 
       if (!workspace) {
@@ -49,7 +49,7 @@ export default function AdminOverviewPage() {
 
       const d = await api<OverviewData>(`/api/admin/metrics/overview?workspaceId=${workspace.id}&period=${period}`);
       setData(d);
-    } catch (e) {
+    } catch {
       toast.error("Failed to load workspace overview");
     } finally {
       setLoading(false);

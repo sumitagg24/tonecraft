@@ -54,7 +54,7 @@ export function InviteDialog({ workspaceId, currentUserRole }: InviteDialogProps
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"member" | "manager" | "admin">("member");
   const [expiresIn, setExpiresIn] = useState<number | null>(null);
-  const { createInvite, invites } = useWorkspaceInvites(workspaceId);
+  const { createInvite } = useWorkspaceInvites(workspaceId);
 
   const canInvite = currentUserRole === "admin" || currentUserRole === "manager";
 
@@ -103,7 +103,7 @@ export function InviteDialog({ workspaceId, currentUserRole }: InviteDialogProps
           </div>
           <div className="space-y-2">
             <Label htmlFor="role">Role</Label>
-            <Select value={role} onValueChange={(v) => setRole(v as any)}>
+            <Select value={role} onValueChange={(v) => setRole(v as "member" | "manager" | "admin")}>
               <SelectTrigger>
                 <SelectValue placeholder="Select role" />
               </SelectTrigger>

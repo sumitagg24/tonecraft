@@ -1,7 +1,6 @@
 "use client";
 import React, { createContext, useContext, useCallback, useState, useEffect } from "react";
 import { useSocket } from "@/hooks/use-socket";
-import { collaborationService } from "@/services/CollaborationService";
 import { useUser } from "@clerk/nextjs";
 
 interface CollaborationContextType {

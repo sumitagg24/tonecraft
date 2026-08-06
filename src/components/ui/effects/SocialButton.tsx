@@ -1,6 +1,6 @@
 "use client";
 
-import { Link2, Share2, Send, Globe, ClipboardCopy } from "lucide-react";
+import { Link2, Share2, Send, Globe } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";

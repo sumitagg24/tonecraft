@@ -1,4 +1,4 @@
-import { ok, notFound, withApiHandler } from "@/lib/withApiHandler";
+import { ok, withApiHandler } from "@/lib/withApiHandler";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { personaSchema } from "@/lib/validators";

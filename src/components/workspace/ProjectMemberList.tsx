@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useWorkspaceStore } from "@/stores/workspace-store";
 import { useSocket } from "@/hooks/use-socket";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -26,13 +25,11 @@ interface ProjectMemberListProps {
   currentRole: "member" | "manager" | "admin";
 }
 
-export function ProjectMemberList({ projectId, currentUserId, currentRole }: ProjectMemberListProps) {
-  const { on } = useSocket();
+export function ProjectMemberList({ projectId, currentUserId }: ProjectMemberListProps) {
+  useSocket();
   const [members, setMembers] = useState<ProjectMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  const { sidebarOpen, toggleSidebar } = useWorkspaceStore();
 
   useEffect(() => {
     const fetchMembers = async () => {
@@ -42,8 +39,8 @@ export function ProjectMemberList({ projectId, currentUserId, currentRole }: Pro
         const data = await res.json();
         if (!res.ok) throw new Error(data.error?.message || "Failed to fetch");
         setMembers(data.data);
-      } catch (e: any) {
-        setError(e.message);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Failed to fetch members");
       } finally {
         setLoading(false);
       }
@@ -51,21 +48,6 @@ export function ProjectMemberList({ projectId, currentUserId, currentRole }: Pro
     
     fetchMembers();
   }, [projectId]);
-
-  const handleAddMember = async (userId: string) => {
-    try {
-      const res = await fetch(`/api/projects/${projectId}/members`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId }),
-      });
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error?.message || "Failed to add member");
-      setMembers(prev => [...prev, result.data]);
-    } catch (e: any) {
-      console.error(e);
-    }
-  };
 
   const handleRemoveMember = async (userId: string) => {
     try {
@@ -75,7 +57,7 @@ export function ProjectMemberList({ projectId, currentUserId, currentRole }: Pro
       const result = await res.json();
       if (!res.ok) throw new Error(result.error?.message || "Failed to remove member");
       setMembers(prev => prev.filter(m => m.userId !== userId));
-    } catch (e: any) {
+    } catch (e) {
       console.error(e);
     }
   };

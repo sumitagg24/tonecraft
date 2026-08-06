@@ -1,4 +1,4 @@
-import { ok, fail, notFound, withApiHandler } from "@/lib/withApiHandler";
+import { ok, notFound, withApiHandler } from "@/lib/withApiHandler";
 import { promptService } from "@/services/PromptService";
 
 const api = withApiHandler({});
@@ -22,7 +22,6 @@ export const GET_SHARED_WITH_ME = api.GET(async (ctx) => {
 
 // DELETE /api/prompt-shares/[shareId]
 export const DELETE = api.DELETE(async (ctx) => {
-  const { id } = ctx.params;
   const success = await promptService.revokeShare(ctx.params.id, ctx.user.id);
   if (!success) return notFound();
   return ok({ success: true });

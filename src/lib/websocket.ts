@@ -6,7 +6,7 @@ interface WebSocketMessage {
   type: "presence" | "typing" | "document-update" | "chat-message";
   userId: string;
   workspaceId: string;
-  data: any;
+  data: Record<string, unknown>;
 }
 
 export const useWorkspaceWebSocket = (workspaceId: string) => {
@@ -21,6 +21,7 @@ export const useWorkspaceWebSocket = (workspaceId: string) => {
 
     socket.onopen = () => {
       setConnected(true);
+      setWs(socket);
       // Join workspace room
       const userId = localStorage.getItem("userId");
       if (userId) {
@@ -41,6 +42,7 @@ export const useWorkspaceWebSocket = (workspaceId: string) => {
 
     socket.onclose = () => {
       setConnected(false);
+      setWs(null);
     };
 
     socket.onerror = (error) => {
@@ -98,7 +100,7 @@ export const usePresence = (workspaceId: string) => {
   }, [on, workspaceId]);
 };
 
-export const useTypingIndicator = (workspaceId: string, userId: string) => {
+export const useTypingIndicator = (workspaceId: string, _userId: string) => {
   const { on, emit } = useSocket();
   const { addTypingUser, removeTypingUser } = useWorkspaceStore.getState();
 

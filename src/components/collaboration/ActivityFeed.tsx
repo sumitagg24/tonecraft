@@ -1,13 +1,12 @@
 "use client";
-import React, { useState, useCallback, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useActivity, useActivityAggregation } from "@/hooks/use-activity";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ChevronLeft, ChevronRight, Filter, Search } from "lucide-react";
-import type { ActivitySummary } from "@/services/ActivityService";
+import { Loader2, ChevronLeft, ChevronRight, Search } from "lucide-react";
 
 const ACTIVITY_TYPE_LABELS: Record<string, string> = {
   project_create: "Project Created",
@@ -45,7 +44,7 @@ interface ActivityFeedProps {
 
 export function ActivityFeed({ projectId, chatId, userId, showFilters = true, maxHeight = "400px" }: ActivityFeedProps) {
   const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(20);
+  const [perPage] = useState(20);
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 

@@ -1,27 +1,30 @@
 "use client";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { useUser } from "@clerk/nextjs";
-import { useClerk } from "@clerk/nextjs";
+import { useUser, useClerk } from "@clerk/nextjs";
 import { useNavigationStore } from "@/stores/navigation-store";
 import { useCommandPalette } from "@/hooks/use-command-palette";
 import { useChat } from "@/hooks/use-chat";
 import { NAV_ITEMS } from "./nav-items";
 import {
-  PanelLeft, Command, Plus, Moon, Sun, LogOut, CreditCard, User,
+  PanelLeft, Command, Plus, Moon, Sun,
 } from "lucide-react";
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
-  DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuLabel,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { NotificationCenter } from "./NotificationCenter";
+import ProfileDropdown from "./ProfileDropdown";
+import { useUserProfile } from "@/hooks/use-user-profile";
 
 function getTitle(pathname: string): { title: string; crumb?: string } {
   if (pathname === "/chat" || pathname.startsWith("/chat/")) return { title: "Compose" };
   if (pathname === "/tools") return { title: "Tools" };
   if (pathname === "/library") return { title: "Library" };
   if (pathname === "/search") return { title: "Search" };
+  if (pathname === "/docs" || pathname.startsWith("/docs")) return { title: "Docs" };
+  if (pathname === "/notes" || pathname.startsWith("/notes")) return { title: "Notes" };
+  if (pathname === "/tasks" || pathname.startsWith("/tasks")) return { title: "Tasks" };
+  if (pathname === "/calendar" || pathname.startsWith("/calendar")) return { title: "Calendar" };
+  if (pathname === "/agents" || pathname.startsWith("/agents")) return { title: "Agents" };
+  if (pathname === "/automations" || pathname.startsWith("/automations")) return { title: "Automations" };
+  if (pathname === "/integrations" || pathname.startsWith("/integrations")) return { title: "Integrations" };
   if (pathname === "/notifications" || pathname.startsWith("/notifications")) return { title: "Notifications" };
   if (pathname === "/analytics" || pathname.startsWith("/analytics")) return { title: "Analytics" };
   if (pathname === "/admin" || pathname.startsWith("/admin/")) return { title: "Workspace Admin" };
@@ -36,6 +39,7 @@ export function TopBar() {
   const { theme, setTheme } = useTheme();
   const { user } = useUser();
   const { signOut } = useClerk();
+  const { subscription, model, loading: profileLoading } = useUserProfile();
   const { toggleRailCollapsed, setMobileNavOpen } = useNavigationStore();
   const { toggle } = useCommandPalette();
   const { createChat } = useChat();
@@ -46,10 +50,6 @@ export function TopBar() {
     (item.id === "account" && (pathname === "/billing" || pathname.startsWith("/billing")))
   );
   const label = activeItem?.label ?? title;
-
-  const initials = user
-    ? [user.firstName, user.lastName].filter(Boolean).map((n) => n?.[0]).join("").toUpperCase() || "?"
-    : "?";
 
   const handleNewChat = async () => {
     const chat = await createChat();
@@ -102,40 +102,26 @@ export function TopBar() {
           <kbd className="hidden sm:inline-flex text-micro font-mono text-muted-foreground/50">⌘K</kbd>
         </button>
 
-        <NotificationCenter />
+          <NotificationCenter />
 
-        <button
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground/60 hover:text-foreground hover:bg-muted/30 transition-all"
-          aria-label="Toggle theme"
-        >
-          {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-        </button>
+         <button
+           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+           className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground/60 hover:text-foreground hover:bg-muted/30 transition-all"
+           aria-label="Toggle theme"
+         >
+           {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+         </button>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger className="ml-1 outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full">
-            <Avatar className="h-8 w-8 border border-border/40">
-              {user?.hasImage ? <AvatarImage src={user.imageUrl} alt={user?.firstName || "User"} /> : null}
-              <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-            </Avatar>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52">
-            <DropdownMenuLabel className="text-xs text-muted-foreground">
-              {user?.fullName || user?.primaryEmailAddress?.emailAddress || "Signed in"}
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push("/settings")}>
-              <User className="w-4 h-4" /> Profile
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push("/billing")}>
-              <CreditCard className="w-4 h-4" /> Billing
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => signOut({ redirectUrl: "/" })}>
-              <LogOut className="w-4 h-4" /> Sign out
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <ProfileDropdown
+          data={{
+            name: user?.fullName || user?.firstName || "",
+            email: user?.primaryEmailAddress?.emailAddress || "",
+            avatar: user?.imageUrl || "",
+            subscription: profileLoading ? undefined : subscription,
+            model,
+          }}
+          onSignOut={() => signOut({ redirectUrl: "/" })}
+        />
       </div>
     </header>
   );

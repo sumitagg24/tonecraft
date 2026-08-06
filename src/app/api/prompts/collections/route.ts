@@ -21,7 +21,7 @@ export const PATCH = api.PATCH(async (ctx) => {
   const body = await ctx.request.json();
   const parsed = collectionUpdateSchema.safeParse(body);
   if (!parsed.success) {
-    return fail("VALIDATION_ERROR", parsed.error.issues.map((i: any) => i.message).join("; "), 400);
+    return fail("VALIDATION_ERROR", parsed.error.issues.map((i) => i.message).join("; "), 400);
   }
   const updated = await promptService.updateCollection(id, ctx.user.id, parsed.data);
   if (!updated) return notFound();

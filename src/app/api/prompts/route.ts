@@ -1,4 +1,4 @@
-import { ok, fail, withApiHandler } from "@/lib/withApiHandler";
+import { ok, withApiHandler } from "@/lib/withApiHandler";
 import { promptService } from "@/services/PromptService";
 import { promptSchema } from "@/lib/validators";
 import { auditLogService } from "@/services/AuditLogService";

@@ -1,4 +1,4 @@
-import { streamText } from "ai";
+import { streamText, type FlexibleSchema, type ToolSet } from "ai";
 import { createGroq } from "@ai-sdk/groq";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
@@ -44,8 +44,7 @@ export class ProviderRouter {
         const result = await streamText({
           model,
           system: options.system,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          messages: options.messages as any,
+          messages: options.messages,
           temperature: config.temperature,
           abortSignal: idle.signal,
           ...(options.tools?.length ? { tools: toSDKTools(options.tools) } : {}),
@@ -96,8 +95,7 @@ export class ProviderRouter {
         const result = await streamText({
           model,
           system: options.system,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          messages: options.messages as any,
+          messages: options.messages,
           temperature: config.temperature,
           abortSignal: idle.signal,
           ...(options.tools?.length ? { tools: toSDKTools(options.tools) } : {}),
@@ -242,13 +240,15 @@ function createIdleAbort(external: AbortSignal | undefined, idleMs: number): { s
 }
 
 /** Maps the typed protocol (engine/tools.ts) to the AI SDK's ToolSet. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function toSDKTools(tools: import("./tools").AITool[]): any {
-  const sdk: Record<string, unknown> = {};
+function toSDKTools(tools: import("./tools").AITool[]): ToolSet {
+  const sdk: ToolSet = {};
   for (const tool of tools) {
     sdk[tool.name] = {
       description: tool.description,
-      parameters: tool.inputSchema,
+      // The app's ToolInputSchema is JSON Schema; the SDK accepts raw JSON
+      // schemas in `inputSchema`, so only the loose structural type needs
+      // narrowing at this boundary (no runtime conversion).
+      inputSchema: tool.inputSchema as unknown as FlexibleSchema,
       execute: async (input: Record<string, unknown>) => tool.handler(input),
     };
   }

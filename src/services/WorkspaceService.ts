@@ -1,7 +1,6 @@
 import { workspaceRepository } from "@/repositories/WorkspaceRepository";
 import { projectRepository } from "@/repositories/ProjectRepository";
 import { workspaceMemberRepository } from "@/repositories/WorkspaceMemberRepository";
-import { workspaceInviteRepository } from "@/repositories/WorkspaceInviteRepository";
 import { workspaceActivityRepository } from "@/repositories/WorkspaceActivityRepository";
 
 export interface WorkspaceSummary {

@@ -1,4 +1,4 @@
-import type { EngineOptions, EngineResult, Workflow, WorkflowStep } from "./types";
+import type { EngineOptions, EngineResult, EngineStreamEvent, Workflow, WorkflowStep } from "./types";
 import { AIEngine } from "./AIEngine";
 
 export class WorkflowEngine {
@@ -15,9 +15,7 @@ export class WorkflowEngine {
     return this.aiEngine.generate(options);
   }
 
-  async *executeStream(options: EngineOptions): AsyncGenerator<
-    { type: "token"; content: string; step?: string } | { type: "done"; result: EngineResult } | { type: "error"; message: string }
-  > {
+  async *executeStream(options: EngineOptions): AsyncGenerator<EngineStreamEvent> {
     if (options.workflow) {
       yield* this.executeMultiStepStream(options.workflow, options);
     } else {
@@ -51,9 +49,7 @@ export class WorkflowEngine {
   private async *executeMultiStepStream(
     workflow: Workflow,
     baseOptions: EngineOptions
-  ): AsyncGenerator<
-    { type: "token"; content: string; step?: string } | { type: "done"; result: EngineResult } | { type: "error"; message: string }
-  > {
+  ): AsyncGenerator<EngineStreamEvent> {
     const stepResults = new Map<string, string>();
     let finalResult: EngineResult | null = null;
 

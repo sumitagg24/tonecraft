@@ -1,12 +1,11 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { FileText, RefreshCw, Filter, Search } from "lucide-react";
+import { FileText, RefreshCw, Search } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 import { api } from "@/lib/api-client";
 
 interface AuditEntry {
@@ -28,11 +27,11 @@ export default function AdminAuditPage() {
   const [data, setData] = useState<AuditResponse>({ items: [], total: 0 });
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [page, setPage] = useState(1);
+  const [page] = useState(1);
   const perPage = 50;
 
   const fetchWorkspaceId = useCallback(async (): Promise<string | null> => {
-    const workspaces = await api<any[]>("/api/workspaces");
+    const workspaces = await api<Array<{ id: string }>>("/api/workspaces");
     return workspaces?.[0]?.id ?? null;
   }, []);
 

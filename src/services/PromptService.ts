@@ -99,7 +99,7 @@ export class PromptService {
     return collection;
   }
 
-  async getCollection(id: string, userId?: string) {
+  async getCollection(id: string, _userId?: string) {
     return promptRepository.getCollection(id);
   }
 
@@ -113,7 +113,7 @@ export class PromptService {
       userId,
       collectionId: id,
       action: 'update',
-      metadata: data
+      metadata: data as unknown as Record<string, unknown>
     });
     return collection;
   }

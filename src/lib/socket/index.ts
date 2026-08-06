@@ -1,5 +1,4 @@
 import { io, Socket } from "socket.io-client";
-import { useEffect } from "react";
 
 let socket: Socket | null = null;
 
@@ -27,7 +26,7 @@ export const disconnectSocket = () => {
 export const useSocket = () => {
   const socket = getSocket();
 
-  const on = (event: string, callback: (...args: any[]) => void) => {
+  const on = (event: string, callback: (...args: unknown[]) => void) => {
     if (!socket) return;
     socket.on(event, callback);
     return () => {
@@ -35,14 +34,14 @@ export const useSocket = () => {
     };
   };
 
-  const off = (event: string, callback?: (...args: any[]) => void) => {
+  const off = (event: string, callback?: (...args: unknown[]) => void) => {
     if (socket) {
       if (callback) socket.off(event, callback);
       else socket.removeAllListeners(event);
     }
   };
 
-  const emit = (event: string, ...args: any[]) => {
+  const emit = (event: string, ...args: unknown[]) => {
     if (socket) socket.emit(event, ...args);
   };
 

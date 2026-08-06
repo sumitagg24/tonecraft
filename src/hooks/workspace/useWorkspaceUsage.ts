@@ -23,8 +23,8 @@ export function useWorkspaceUsage(workspaceId: string) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error?.message || "Failed to fetch usage");
       setUsage(data.data);
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to fetch usage");
     } finally {
       setLoading(false);
     }
@@ -45,7 +45,7 @@ export function useWorkspaceUsage(workspaceId: string) {
       if (!res.ok) throw new Error(result.error?.message || "Failed to track usage");
       setUsage(prev => [result.data, ...prev]);
       return result.data;
-    } catch (e: any) {
+    } catch (e) {
       console.error("Failed to track usage:", e);
       throw e;
     }

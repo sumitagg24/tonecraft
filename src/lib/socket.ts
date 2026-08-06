@@ -3,12 +3,6 @@ import { Server as HTTPServer } from "http";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
-interface SocketUser {
-  id: string;
-  name: string | null;
-  image: string | null;
-}
-
 interface SocketData {
   userId: string;
   name: string | null;

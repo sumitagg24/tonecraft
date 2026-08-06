@@ -86,7 +86,7 @@ export const GET = api.GET(async (ctx) => {
   ]);
 
   const totalRequests = overview._count.id ?? 0;
-  const errorCount = errorDetails.length;
+  const errorCount = successAgg._count.id ?? 0;
 
   return ok({
     period,

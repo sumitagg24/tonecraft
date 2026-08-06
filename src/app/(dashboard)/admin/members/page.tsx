@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { Users, RefreshCw, Shield, Crown, User, Check, X } from "lucide-react";
+import { RefreshCw, Shield, Crown, User } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,7 +40,7 @@ export default function AdminMembersPage() {
   const [updating, setUpdating] = useState<string | null>(null);
 
   const fetchWorkspaceId = useCallback(async (): Promise<string | null> => {
-    const workspaces = await api<any[]>("/api/workspaces");
+    const workspaces = await api<Array<{ id: string }>>("/api/workspaces");
     return workspaces?.[0]?.id ?? null;
   }, []);
 

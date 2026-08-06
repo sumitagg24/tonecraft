@@ -126,7 +126,7 @@ export class NotificationService {
     return results.length > 0;
   }
 
-  private async sendEmail(userId: string, type: NotificationType, title: string, body?: string | null, link?: string | null): Promise<void> {
+  private async sendEmail(userId: string, type: NotificationType, title: string, _body?: string | null, _link?: string | null): Promise<void> {
     try {
       const user = await prisma.user.findUnique({
         where: { id: userId },
@@ -140,7 +140,7 @@ export class NotificationService {
     }
   }
 
-  private async sendPush(userId: string, type: NotificationType, title: string, body: string | null, link: string | null, metadata?: Record<string, unknown> | null): Promise<void> {
+  private async sendPush(userId: string, type: NotificationType, title: string, _body: string | null, _link: string | null, _metadata?: Record<string, unknown> | null): Promise<void> {
     try {
       const subs = await prisma.pushSubscription.findMany({
         where: { userId },
@@ -192,12 +192,6 @@ export class NotificationService {
   }
 
   async createMention(mentionerId: string, mentionedUserId: string, resource: string, resourceId: string, content: string, link?: string | null): Promise<void> {
-    const mentioner = await prisma.user.findUnique({
-      where: { id: mentionerId },
-      select: { name: true },
-    });
-    const name = mentioner?.name ?? "Someone";
-
     void this.create({
       userId: mentionedUserId,
       type: "mention",
@@ -299,6 +293,43 @@ export class NotificationService {
       create: { userId, endpoint, keys },
       update: { userId, keys, lastUsed: new Date() },
     });
+  }
+
+  /**
+   * Background job: send the daily digest to every user with the preference
+   * enabled. Idempotent per calendar day — a digest is only created once per
+   * user per day, so repeated cron ticks can't duplicate it.
+   *
+   * The window is deterministic (start of today, not a rolling 24h clock), so
+   * a late cron fire never re-includes notifications that were already
+   * digested in an earlier tick.
+   */
+  async sendDailyDigests(now = new Date()): Promise<{ scanned: number; sent: number }> {
+    const prefs = await prisma.notificationPreference.findMany({
+      where: { dailyDigest: true },
+      select: { userId: true },
+    });
+    const userIds = prefs.map((p) => p.userId);
+    if (userIds.length === 0) return { scanned: 0, sent: 0 };
+
+    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    // Batch the idempotency check: users who already have a digest today.
+    const already = await prisma.notification.findMany({
+      where: { userId: { in: userIds }, type: "digest", createdAt: { gte: dayStart } },
+      select: { userId: true },
+      distinct: ["userId"],
+    });
+    const alreadySent = new Set(already.map((n) => n.userId));
+    const pending = userIds.filter((id) => !alreadySent.has(id));
+
+    let sent = 0;
+    for (const userId of pending) {
+      await this.digest(userId, dayStart);
+      sent += 1;
+    }
+
+    return { scanned: userIds.length, sent };
   }
 
   async digest(userId: string, since: Date): Promise<void> {

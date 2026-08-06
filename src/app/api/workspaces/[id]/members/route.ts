@@ -1,5 +1,4 @@
-import { ok, fail, notFound, withApiHandler } from "@/lib/withApiHandler";
-import { workspaceRepository } from "@/repositories/WorkspaceRepository";
+import { ok, fail, withApiHandler } from "@/lib/withApiHandler";
 import { workspaceMemberRepository } from "@/repositories/WorkspaceMemberRepository";
 import { workspaceActivityRepository } from "@/repositories/WorkspaceActivityRepository";
 import { memberUpdateSchema } from "../../workspaceSchema";

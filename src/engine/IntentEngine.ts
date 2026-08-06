@@ -1,10 +1,10 @@
-import type { Intent, IntentConfig, Tone, Platform } from "./types";
+import type { Intent, IntentConfig, Tone, Platform, WritingStyle } from "./types";
 
 interface IntentMapping {
   intent: Intent;
   defaultTone: Tone;
   defaultPlatform?: Platform;
-  defaultStyle?: string;
+  defaultStyle?: WritingStyle;
   description: string;
 }
 
@@ -89,8 +89,7 @@ export class IntentEngine {
       language: overrides?.language,
       audience: overrides?.audience,
       formality: overrides?.formality,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      style: overrides?.style || mapping.defaultStyle as any,
+      style: overrides?.style ?? mapping.defaultStyle,
     };
   }
 

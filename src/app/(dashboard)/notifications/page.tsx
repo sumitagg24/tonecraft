@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Bell, CheckCheck, Trash2, Filter, ChevronDown,
   Clock, Zap, Download, CreditCard, AtSign, Users, BookOpen,
-  MessageCircle, Gift,
+  MessageCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";

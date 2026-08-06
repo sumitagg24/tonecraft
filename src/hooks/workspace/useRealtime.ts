@@ -5,7 +5,19 @@ import { useWorkspaceStore } from "@/stores/workspace-store";
 interface WSMessage {
   type: string;
   userId?: string;
-  data?: any;
+  data?: {
+    online?: boolean;
+    name?: string;
+    email?: string;
+    image?: string | null;
+    role?: "member" | "manager" | "admin";
+    projectId?: string;
+    content?: string;
+    version?: number;
+    isTyping?: boolean;
+    message?: string;
+    channelId?: string;
+  };
 }
 
 export function useWorkspaceWebSocket(workspaceId: string) {
@@ -83,10 +95,10 @@ export function useWorkspaceWebSocket(workspaceId: string) {
         }
         break;
       case "project-update":
-        updateSharedDocument(message.data.projectId, message.data.content, message.data.version);
-        break;
       case "optimistic-update":
-        updateSharedDocument(message.data.projectId, message.data.content, message.data.version);
+        if (message.data?.projectId) {
+          updateSharedDocument(message.data.projectId, message.data.content ?? "", message.data.version ?? 0);
+        }
         break;
       case "error":
         console.error("WS error:", message.data?.message);
@@ -111,9 +123,8 @@ export function useWorkspaceWebSocket(workspaceId: string) {
   return { ws, connected, send };
 }
 
-export function usePresence(workspaceId: string, userId: string) {
+export function usePresence(workspaceId: string, _userId: string) {
   const { send } = useWorkspaceWebSocket(workspaceId);
-  const { setUserPresence } = useWorkspaceStore();
 
   useEffect(() => {
     const handleBeforeUnload = () => {
@@ -123,16 +134,15 @@ export function usePresence(workspaceId: string, userId: string) {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [send]);
 
-  const updatePresence = useCallback((data: any) => {
+  const updatePresence = useCallback((data: Record<string, unknown>) => {
     send({ type: "presence", data: { ...data, online: true } });
   }, [send]);
 
   return { updatePresence };
 }
 
-export function useTypingIndicator(workspaceId: string, userId: string) {
+export function useTypingIndicator(workspaceId: string, _userId: string) {
   const { send } = useWorkspaceWebSocket(workspaceId);
-  const { addTypingUser, removeTypingUser } = useWorkspaceStore();
 
   const setTyping = useCallback((isTyping: boolean, channelId: string) => {
     send({ type: "typing", data: { isTyping, channelId } });
@@ -143,7 +153,6 @@ export function useTypingIndicator(workspaceId: string, userId: string) {
 
 export function useLiveProjectUpdates(workspaceId: string) {
   const { send } = useWorkspaceWebSocket(workspaceId);
-  const { updateSharedDocument } = useWorkspaceStore();
 
   const sendUpdate = useCallback((projectId: string, content: string, version: number) => {
     send({ type: "project-update", data: { projectId, content, version } });

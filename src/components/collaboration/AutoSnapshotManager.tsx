@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useCreateSnapshot } from "@/hooks/use-version-history";
 import { useOptimisticUpdates } from "@/components/collaboration/OptimisticUpdateProvider";
 

@@ -13,7 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Settings, Palette, Trash2, Save } from "lucide-react";
+import { Settings, Trash2, Save } from "lucide-react";
 
 interface ProjectSettingsProps {
   projectId: string;
@@ -21,8 +21,8 @@ interface ProjectSettingsProps {
   currentUserId: string;
 }
 
-export function ProjectSettings({ projectId, workspaceId, currentUserId }: ProjectSettingsProps) {
-  const { workspace } = useWorkspace(workspaceId);
+export function ProjectSettings({ workspaceId }: ProjectSettingsProps) {
+  useWorkspace(workspaceId);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -82,7 +82,7 @@ export function ProjectSettings({ projectId, workspaceId, currentUserId }: Proje
 }
 
 export function WorkspaceSettings({ workspaceId }: { workspaceId: string }) {
-  const { workspace, updateWorkspace, deleteWorkspace } = useWorkspace(workspaceId);
+  const { workspace, deleteWorkspace } = useWorkspace(workspaceId);
   const [open, setOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 

@@ -1,4 +1,4 @@
-import { ok, fail, withApiHandler } from "@/lib/withApiHandler";
+import { ok, withApiHandler } from "@/lib/withApiHandler";
 import { promptService } from "@/services/PromptService";
 
 const api = withApiHandler({});

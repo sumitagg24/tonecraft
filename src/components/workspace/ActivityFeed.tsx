@@ -1,5 +1,5 @@
 "use client";
-import { useWorkspaceActivities } from "@/hooks/workspace/useWorkspace";
+import { useWorkspaceActivities, type Activity as WorkspaceActivity } from "@/hooks/workspace/useWorkspace";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { timeAgo } from "@/lib/utils";
@@ -59,7 +59,7 @@ export function ActivityFeedComponent({ workspaceId }: ActivityFeedProps) {
   );
 }
 
-function formatActivityMessage(activity: any): string {
+function formatActivityMessage(activity: WorkspaceActivity): string {
   const payload = activity.payload || {};
   switch (activity.type) {
     case "members_invite":

@@ -1,4 +1,4 @@
-import type { ConversationMessage, IntentConfig, Tone } from "./types";
+import type { ConversationMessage, IntentConfig, ModelMessage, Tone } from "./types";
 
 export interface ContextSource {
   history?: ConversationMessage[];
@@ -28,7 +28,7 @@ export interface ContextSource {
 
 export interface BuiltContext {
   systemMessage: string;
-  messages: { role: "user" | "assistant" | "system"; content: string }[];
+  messages: ModelMessage[];
   config: IntentConfig;
 }
 
@@ -88,7 +88,7 @@ export class ContextBuilder {
     const systemMessage = systemParts.join("\n\n");
 
     // Build message history
-    const messages: { role: "user" | "assistant" | "system"; content: string }[] = [];
+    const messages: ModelMessage[] = [];
 
     if (source.history) {
       const recent = source.history.slice(-20);

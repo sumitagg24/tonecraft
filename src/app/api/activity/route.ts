@@ -26,7 +26,7 @@ const recordSchema = z.object({
 const getApi = withApiHandler({ schema: listSchema });
 const postApi = withApiHandler({ schema: recordSchema });
 
-export const GET = getApi.GET(async (ctx, body) => {
+export const GET = getApi.GET(async (ctx) => {
   const url = new URL(ctx.request.url);
   const fromDate = url.searchParams.get("fromDate");
   const toDate = url.searchParams.get("toDate");

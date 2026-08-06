@@ -1,26 +1,5 @@
 import { ok, withApiHandler } from "@/lib/withApiHandler";
 import { versionHistoryService } from "@/services/VersionHistoryService";
-import { z } from "zod";
-
-const createSchema = z.object({
-  resourceType: z.string(),
-  resourceId: z.string(),
-  userId: z.string(),
-  title: z.string().optional(),
-content: z.record(z.string(), z.unknown()),
-    diff: z.record(z.string(), z.unknown()).optional(),
-  changeType: z.string(),
-  changeSummary: z.string().optional(),
-  isAuto: z.boolean().optional(),
-  parentId: z.string().optional(),
-});
-
-const listSchema = z.object({
-  resourceType: z.string(),
-  resourceId: z.string(),
-  page: z.coerce.number().min(1).optional(),
-  perPage: z.coerce.number().min(1).max(100).optional(),
-});
 
 const api = withApiHandler();
 

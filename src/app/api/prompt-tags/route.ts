@@ -1,15 +1,11 @@
-import { ok, fail, notFound, withApiHandler } from "@/lib/withApiHandler";
+import { ok, withApiHandler } from "@/lib/withApiHandler";
 import { promptService } from "@/services/PromptService";
 import { z } from "zod";
-
-const tagSchema = z.object({
-  name: z.string().min(1).max(50)
-});
 
 const api = withApiHandler({ schema: z.any() });
 
 // GET /api/prompt-tags - List all tags
-export const GET = api.GET(async (ctx) => {
+export const GET = api.GET(async () => {
   const tags = await promptService.getPopularTags(10);
   return ok(tags);
 });
@@ -23,7 +19,6 @@ export const POST = api.POST(async (ctx, body) => {
 
 // GET /api/prompt-tags/[tag] - Get prompts with specific tag
 export const GET_BY_TAG = api.GET(async (ctx) => {
-  const tag = ctx.params.tag;
   const prompts = await promptService.getTags(ctx.params.id);
   return ok(prompts);
 });

@@ -2,7 +2,7 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bell, CheckCheck, Zap, Users, BookOpen, Download, CreditCard, AtSign, Trash2, MessageCircle, Gift } from "lucide-react";
+import { Bell, CheckCheck, Zap, Users, BookOpen, Download, CreditCard, AtSign, Trash2, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { duration, ease } from "@/styles/motion";
 import { useNotifications } from "@/hooks/use-notifications";

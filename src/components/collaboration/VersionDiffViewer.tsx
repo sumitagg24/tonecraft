@@ -1,8 +1,8 @@
 "use client";
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, ArrowRight, Split } from "lucide-react";
+import { ArrowRight, Split } from "lucide-react";
 import type { VersionSnapshot } from "@/services/VersionHistoryService";
 
 interface VersionDiffViewerProps {

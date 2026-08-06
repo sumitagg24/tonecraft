@@ -1,4 +1,4 @@
-import type { EngineOptions, EngineResult, CapabilityContext } from "./types";
+import type { EngineOptions, EngineResult, EngineStreamEvent, CapabilityContext } from "./types";
 import { ProviderRouter, providerRouter } from "./ProviderRouter";
 import { ResponseFormatter, responseFormatter } from "./ResponseFormatter";
 import { ContextBuilder, contextBuilder, type BuiltContext } from "./ContextBuilder";
@@ -112,9 +112,7 @@ export class AIEngine {
     });
   }
 
-  async *stream(options: EngineOptions): AsyncGenerator<
-    { type: "token"; content: string } | { type: "done"; result: EngineResult } | { type: "error"; message: string }
-  > {
+  async *stream(options: EngineOptions): AsyncGenerator<EngineStreamEvent> {
     // Handle workflows with streaming
     if (options.workflow) {
       yield* this.workflowEngine.executeStream(options);

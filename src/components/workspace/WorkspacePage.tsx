@@ -7,9 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Search, Settings, Share2, Archive, Pencil } from "lucide-react";
+import { Settings, Share2 } from "lucide-react";
 import { useWorkspace } from "@/hooks/workspace/useWorkspace";
-import { useWorkspaceStore } from "@/stores/workspace-store";
 
 interface WorkspacePageProps {
   workspaceId: string;
@@ -17,24 +16,13 @@ interface WorkspacePageProps {
 }
 
 export function WorkspacePageComponent({ workspaceId, currentUserId }: WorkspacePageProps) {
-  const { workspace, updateWorkspace, deleteWorkspace } = useWorkspace(workspaceId);
+  const { workspace, updateWorkspace } = useWorkspace(workspaceId);
   const [isEditing, setIsEditing] = useState(false);
-  const [showActivity, setShowActivity] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   
   if (!workspace) {
     return <div className="p-6">Loading workspace...</div>;
   }
-
-  const handleDelete = async () => {
-    if (window.confirm("Are you sure you want to delete this workspace? This cannot be undone.")) {
-      try {
-        await deleteWorkspace();
-      } catch (e) {
-        console.error(e);
-      }
-    }
-  };
 
   return (
     <div className="flex flex-col h-full">

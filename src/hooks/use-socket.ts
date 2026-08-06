@@ -89,7 +89,7 @@ export function useSocket(options: UseSocketOptions = {}) {
     // Replay any handlers registered before the socket finished connecting.
     for (const [event, handlers] of eventHandlersRef.current) {
       for (const handler of handlers) {
-        socket.on(event as string, handler as (...args: any[]) => void);
+        socket.on(event as string, handler as (...args: unknown[]) => void);
       }
     }
   }, [getToken, reconnectAttempts, reconnectDelay, maxReconnectDelay, options]);
@@ -117,7 +117,7 @@ export function useSocket(options: UseSocketOptions = {}) {
       eventHandlersRef.current.set(event, new Set());
     }
     eventHandlersRef.current.get(event)!.add(handler);
-    const listener = handler as (...args: any[]) => void;
+    const listener = handler as (...args: unknown[]) => void;
     socketRef.current?.on(event as string, listener);
 
     return () => {
@@ -131,7 +131,7 @@ export function useSocket(options: UseSocketOptions = {}) {
     handler: SocketEventMap[K]
   ) => {
     eventHandlersRef.current.get(event)?.delete(handler);
-    const listener = handler as (...args: any[]) => void;
+    const listener = handler as (...args: unknown[]) => void;
     socketRef.current?.off(event as string, listener);
   }, []);
 

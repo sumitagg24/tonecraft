@@ -46,11 +46,6 @@ export async function POST(req: NextRequest) {
     const name = [firstName, lastName].filter(Boolean).join(" ") || null;
 
     // Upsert: lazy sync may have created user with empty email
-    const existing = await prisma.user.findUnique({
-      where: { clerkId: id },
-      select: { id: true, email: true, name: true },
-    });
-
     const user = await prisma.user.upsert({
       where: { clerkId: id },
       create: {
