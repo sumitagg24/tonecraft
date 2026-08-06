@@ -104,7 +104,7 @@ export function InteractiveDemo() {
         setOutput(result.slice(0, i));
       }
     }, 16);
-  }, [input, tone, isGenerating, prefersReduced]);
+  }, [input, tone, isGenerating, prefersReduced, isLimitReached, incrementGenerations]);
 
   const handleReset = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
