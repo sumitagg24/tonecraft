@@ -47,6 +47,11 @@ export const promptUpdateSchema = z.object({
   projectId: z.string().nullable().optional(),
 });
 
+export const promptRatingSchema = z.object({
+  rating: z.number().int().min(1).max(5),
+  review: z.string().max(500).optional(),
+});
+
 export const promptImportSchema = z.object({
   prompts: z.array(z.object({
     title: z.string().min(1).max(120),
@@ -60,6 +65,21 @@ export const promptImportSchema = z.object({
 export const promptRenderSchema = z.object({
   content: z.string().min(1).max(10000),
   variables: z.record(z.string(), z.string().max(2000)).optional(),
+});
+
+export const collectionSchema = z.object({
+  name: z.string().min(1).max(120),
+  description: z.string().max(500).optional(),
+  promptIds: z.array(z.string()).optional(),
+  isPublic: z.boolean().optional(),
+  projectId: z.string().optional(),
+});
+
+export const collectionUpdateSchema = z.object({
+  name: z.string().min(1).max(120).optional(),
+  description: z.string().max(500).optional(),
+  isPublic: z.boolean().optional(),
+  archived: z.boolean().optional(),
 });
 
 export const personaSchema = z.object({
@@ -93,3 +113,20 @@ export const personaUpdateSchema = z.object({
   platformDefaults: z.record(z.string(), z.string()).optional(),
   projectId: z.string().nullable().optional(),
 });
+
+export const personaImportExportSchema = z.object({
+  importData: z.object({
+    name: z.string().min(1).max(50),
+    description: z.string().max(200).optional(),
+    systemPrompt: z.string().min(1).max(5000),
+    icon: z.string().refine((v) => !v || EMOJI_RE.test(v), "Icon must be a single emoji or empty").optional(),
+    color: z.string().refine((v) => !v || HEX_COLOR.test(v), "Color must be a valid hex color").optional(),
+    isDefault: z.boolean().optional(),
+    isFavorite: z.boolean().optional(),
+    projectId: z.string().nullable().optional(),
+  }).optional(),
+  exportIds: z.array(z.string()).optional(),
+}).refine(
+  (data) => data.importData || data.exportIds,
+  "Either importData or exportIds must be provided"
+);

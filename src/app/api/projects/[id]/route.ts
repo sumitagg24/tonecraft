@@ -1,6 +1,7 @@
 import { ok, fail, notFound, withApiHandler } from "@/lib/withApiHandler";
 import { projectService } from "@/services/ProjectService";
 import { projectUpdateSchema } from "@/lib/validators";
+import { auditLogService } from "@/services/AuditLogService";
 
 const api = withApiHandler();
 
@@ -20,6 +21,13 @@ export const PATCH = api.PATCH(async (ctx, body) => {
   }
   const okResult = await projectService.updateProject(id, ctx.user.id, parsed.data);
   if (!okResult) return notFound();
+
+  void auditLogService.record("project.update", "project", {
+    actorId: ctx.user.id,
+    resourceId: id,
+    metadata: { changes: parsed.data },
+  });
+
   return ok({ ok: true });
 });
 
@@ -27,5 +35,11 @@ export const DELETE = api.DELETE(async (ctx) => {
   const { id } = ctx.params;
   const okResult = await projectService.deleteProject(id, ctx.user.id);
   if (!okResult) return notFound();
+
+  void auditLogService.record("project.delete", "project", {
+    actorId: ctx.user.id,
+    resourceId: id,
+  });
+
   return ok({ ok: true });
 });

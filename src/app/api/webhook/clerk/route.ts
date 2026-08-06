@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Webhook } from "svix";
 import { headers } from "next/headers";
+import { auditLogService } from "@/services/AuditLogService";
 
 const webhookSecret = process.env.CLERK_WEBHOOK_SECRET;
 
@@ -45,7 +46,12 @@ export async function POST(req: NextRequest) {
     const name = [firstName, lastName].filter(Boolean).join(" ") || null;
 
     // Upsert: lazy sync may have created user with empty email
-    await prisma.user.upsert({
+    const existing = await prisma.user.findUnique({
+      where: { clerkId: id },
+      select: { id: true, email: true, name: true },
+    });
+
+    const user = await prisma.user.upsert({
       where: { clerkId: id },
       create: {
         clerkId: id,
@@ -59,10 +65,29 @@ export async function POST(req: NextRequest) {
         ...(imageUrl ? { image: imageUrl } : {}),
       },
     });
+
+    if (evt.type === "user.created") {
+      void auditLogService.record("auth.sign_up", "user", {
+        actorId: user.id,
+        resourceId: user.id,
+        metadata: { email, source: "clerk.webhook" },
+      });
+    }
   }
 
   if (evt.type === "user.deleted") {
     const id = evt.data.id as string;
+    const user = await prisma.user.findUnique({
+      where: { clerkId: id },
+      select: { id: true },
+    });
+    if (user) {
+      void auditLogService.record("auth.sign_out", "user", {
+        actorId: user.id,
+        resourceId: user.id,
+        metadata: { reason: "account_deleted" },
+      });
+    }
     await prisma.user.deleteMany({ where: { clerkId: id } });
   }
 

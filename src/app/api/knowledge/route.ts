@@ -1,6 +1,7 @@
 import { ok, fail, withApiHandler } from "@/lib/withApiHandler";
 import { knowledgeService } from "@/services/KnowledgeService";
 import { notificationService } from "@/services/NotificationService";
+import { auditLogService } from "@/services/AuditLogService";
 import { capabilities } from "@/lib/capabilities";
 import { prisma } from "@/lib/prisma";
 import { validateFile, KNOWLEDGE_ALLOWED_EXTENSIONS } from "@/lib/file-validation";
@@ -63,12 +64,18 @@ export const POST = api.POST(async (ctx) => {
       storageUsed: { increment: file.size },
     },
   });
-  void notificationService.create(
-    ctx.user.id,
-    "knowledge_indexed",
-    "Document indexed",
-    `"${created.name}" is ready to ground your responses.`,
-    "/library"
-  );
+  void notificationService.create({
+    userId: ctx.user.id,
+    type: "knowledge_indexed",
+    title: "Document indexed",
+    body: `"${created.name}" is ready to ground your responses.`,
+    link: "/library",
+  });
+
+  void auditLogService.record("knowledge.upload", "knowledge_file", {
+    actorId: ctx.user.id,
+    resourceId: created.id,
+    metadata: { fileName: created.name, fileSize: created.fileSize },
+  });
   return ok(created, 201);
 });

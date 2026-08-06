@@ -2,15 +2,18 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { api } from "@/lib/api-client";
+import { NotificationType } from "@prisma/client";
 
 interface NotificationItem {
   id: string;
-  type: string;
+  type: NotificationType;
+  channel: string;
   title: string;
   body: string | null;
   link: string | null;
   readAt: string | null;
   createdAt: string;
+  metadata: Record<string, unknown> | null;
 }
 
 interface NotificationsData {
@@ -93,11 +96,26 @@ export function useNotifications() {
       eventSourceRef.current = es;
 
       es.addEventListener("message", (event) => {
-        retryDelay = 1000; // healthy stream — reset backoff
+        retryDelay = 1000;
         try {
           const data = JSON.parse(event.data);
-          if (data.type === "unread_count") {
-            setUnread(data.count);
+          switch (data.type) {
+            case "unread_count":
+              setUnread(data.count);
+              break;
+            case "notifications":
+              setNotifications((prev) => {
+                const incoming = data.notifications as NotificationItem[];
+                const merged = [...incoming, ...prev];
+                const unique = merged.filter(
+                  (v, i, a) => a.findIndex((n) => n.id === v.id) === i
+                );
+                return unique.slice(0, 50);
+              });
+              setUnread((u) => u + data.notifications.filter((n: NotificationItem) => !n.readAt).length);
+              break;
+            case "connected":
+              break;
           }
         } catch {
           // ignore parse errors from SSE
@@ -107,8 +125,6 @@ export function useNotifications() {
       es.onerror = () => {
         es?.close();
         eventSourceRef.current = null;
-        // Reconnect with exponential backoff (EventSource does not auto-reconnect
-        // once we close it). Cap the delay at 30s.
         retryTimer = setTimeout(connect, retryDelay);
         retryDelay = Math.min(retryDelay * 2, 30000);
       };
@@ -116,7 +132,6 @@ export function useNotifications() {
 
     connect();
 
-    // Pause the stream while the tab is hidden, resume when visible
     const handleVisibility = () => {
       if (document.hidden) {
         es?.close();

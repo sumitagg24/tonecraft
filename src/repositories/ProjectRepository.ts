@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 const projectSelect = {
   id: true,
   userId: true,
+  workspaceId: true,
   name: true,
   emoji: true,
   color: true,
@@ -109,7 +110,7 @@ export class ProjectRepository {
     });
   }
 
-  async createChat(data: { projectId: string; userId: string; title?: string }) {
+   async createChat(data: { projectId: string; userId: string; title?: string }) {
     return prisma.chat.create({
       data: {
         userId: data.userId,
@@ -117,6 +118,18 @@ export class ProjectRepository {
         projectId: data.projectId,
       },
     });
+  }
+
+  async updateMany(where: { workspaceId?: string; userId?: string }, data: Partial<{
+    name: string;
+    emoji: string;
+    color: string;
+    description: string;
+    parentId: string | null;
+    archived: boolean;
+    workspaceId: string | null;
+  }>) {
+    return prisma.project.updateMany({ where, data: { ...data, updatedAt: new Date() } });
   }
 }
 

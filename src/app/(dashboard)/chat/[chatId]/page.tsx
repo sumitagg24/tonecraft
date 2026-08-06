@@ -8,6 +8,7 @@ import { useChat } from "@/hooks/use-chat";
 import { PremiumMessageCard } from "@/components/workspace/PremiumMessageCard";
 import { PremiumComposer } from "@/components/workspace/PremiumComposer";
 import { ExportMenu } from "@/components/workspace/ExportMenu";
+import SocialButton from "@/components/ui/effects/SocialButton";
 import { AIThinking, GradientPulse } from "@/components/workspace/AIThinking";
 import { InlineActionRing } from "@/components/workspace/InlineActionRing";
 import { NoConversationEmptyState } from "@/components/workspace/WorkspaceEmptyStates";
@@ -134,7 +135,26 @@ export default function ChatPage() {
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-sm font-semibold truncate">{currentChat.title || "Chat"}</span>
         </div>
-        <ExportMenu chatId={chatId} align="right" />
+        <div className="flex items-center gap-2">
+          <ExportMenu chatId={chatId} align="right" />
+          <SocialButton
+            label="Share"
+            onShare={(_, item) => {
+              if (item.label === "Copy link") {
+                navigator.clipboard.writeText(`${window.location.origin}/chat/${chatId}`);
+                toast.success("Link copied to clipboard");
+              } else {
+                const urls: Record<string, string> = {
+                  Twitter: `https://twitter.com/intent/tweet?url=${encodeURIComponent(`${window.location.origin}/chat/${chatId}`)}&text=Check out this chat`,
+                  Instagram: "https://www.instagram.com/",
+                  LinkedIn: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`${window.location.origin}/chat/${chatId}`)}`,
+                };
+                const url = urls[item.label.replace("Share on ", "")];
+                if (url) window.open(url, "_blank", "noopener,noreferrer");
+              }
+            }}
+          />
+        </div>
       </div>
 
       {/* Messages Area */}

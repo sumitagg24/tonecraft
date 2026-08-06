@@ -2,6 +2,7 @@ import { ok, fail, notFound, withApiHandler } from "@/lib/withApiHandler";
 import { chatRepository } from "@/repositories/ChatRepository";
 import { serializeChat, MIME_BY_FORMAT } from "@/lib/export/serialize";
 import { notificationService } from "@/services/NotificationService";
+import { auditLogService } from "@/services/AuditLogService";
 
 const api = withApiHandler();
 
@@ -21,13 +22,19 @@ export const POST = api.POST(async (ctx, body) => {
   const content = serializeChat(fmt, chat, messages);
   const filename = `${chat.title || "chat"}-${new Date().toISOString().slice(0, 10)}.${fmt}`;
 
-  void notificationService.create(
-    ctx.user.id,
-    "export_completed",
-    "Export ready",
-    `"${chat.title || "Chat"}" exported as .${fmt}`,
-    `/chat/${chatId}`
-  );
+  void notificationService.create({
+    userId: ctx.user.id,
+    type: "export_completed",
+    title: "Export ready",
+    body: `"${chat.title || "Chat"}" exported as .${fmt}`,
+    link: `/chat/${chatId}`,
+  });
+
+  void auditLogService.record("export.create", "export", {
+    actorId: ctx.user.id,
+    resourceId: chatId,
+    metadata: { format: fmt, messageCount: messages.length },
+  });
 
   return ok({ content, filename, mime: MIME_BY_FORMAT[fmt] });
 });

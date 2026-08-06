@@ -25,3 +25,20 @@ export function formatFileSize(bytes: number): string {
 export function truncate(str: string, max: number): string {
   return str.length > max ? str.slice(0, max) + "..." : str;
 }
+
+export function timeAgo(date: Date | string, addSuffix = true): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  const seconds = Math.floor((Date.now() - d.getTime()) / 1000);
+  const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+  if (seconds < 60) return addSuffix ? rtf.format(-Math.max(seconds, 1), "second") : `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return addSuffix ? rtf.format(-minutes, "minute") : `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return addSuffix ? rtf.format(-hours, "hour") : `${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return addSuffix ? rtf.format(-days, "day") : `${days}d`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return addSuffix ? rtf.format(-months, "month") : `${months}mo`;
+  const years = Math.floor(months / 12);
+  return addSuffix ? rtf.format(-years, "year") : `${years}y`;
+}

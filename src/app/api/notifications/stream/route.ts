@@ -19,23 +19,48 @@ export async function GET(req: NextRequest) {
 
       sendEvent(JSON.stringify({ type: "connected" }));
 
+      let lastCount = 0;
+      let lastPoll = 0;
+
       const pollInterval = setInterval(async () => {
         try {
+          const now = Date.now();
+          const since = new Date(now - 30_000);
+
           const unread = await prisma.notification.count({
             where: { userId, readAt: null },
           });
-          sendEvent(
-            JSON.stringify({
-              type: "unread_count",
-              count: unread,
-            })
-          );
+
+          if (unread !== lastCount) {
+            lastCount = unread;
+            sendEvent(JSON.stringify({ type: "unread_count", count: unread }));
+          }
+
+          if (now - lastPoll > 5_000) {
+            lastPoll = now;
+            const recent = await prisma.notification.findMany({
+              where: { userId, createdAt: { gte: since } },
+              orderBy: { createdAt: "desc" },
+              take: 5,
+              select: {
+                id: true,
+                type: true,
+                title: true,
+                body: true,
+                link: true,
+                readAt: true,
+                createdAt: true,
+              },
+            });
+
+            if (recent.length > 0) {
+              sendEvent(JSON.stringify({ type: "notifications", notifications: recent }));
+            }
+          }
         } catch {
-          sendEvent(
-            JSON.stringify({ type: "error", message: "poll failed" })
-          );
+          sendEvent(JSON.stringify({ type: "error", message: "poll failed" }));
         }
-      }, 15_000);
+      }, 10_000);
 
       req.signal.addEventListener("abort", () => {
         clearInterval(pollInterval);

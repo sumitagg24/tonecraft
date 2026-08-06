@@ -1,37 +1,70 @@
-import { ok, withApiHandler } from "@/lib/withApiHandler";
+import { ok, fail, notFound, withApiHandler } from "@/lib/withApiHandler";
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
-import { personaSchema } from "@/lib/validators";
+import { promptService } from "@/services/PromptService";
+import { personaSchema, personaUpdateSchema } from "@/lib/validators";
 
-const api = withApiHandler({ schema: personaSchema });
+const api = withApiHandler({});
 
 export const GET = api.GET(async (ctx) => {
-  const projectId = ctx.request.nextUrl.searchParams.get("projectId") || undefined;
   const personas = await prisma.persona.findMany({
-    where: projectId ? { userId: ctx.user.id, projectId } : { userId: ctx.user.id },
+    where: { userId: ctx.user.id },
     orderBy: [{ isFavorite: "desc" }, { createdAt: "desc" }],
   });
-  const user = await prisma.user.findUnique({
-    where: { id: ctx.user.id },
-    select: { defaultPersonaId: true },
+  return ok(personas);
+});
+
+export const GET_BY_ID = api.GET(async (ctx) => {
+  const { id } = ctx.params;
+  const persona = await prisma.persona.findUnique({
+    where: { id },
+    include: { user: true, project: true }
   });
-  return ok({ personas, defaultPersonaId: user?.defaultPersonaId ?? null });
+  
+  if (!persona) return notFound();
+  return ok(persona);
 });
 
 export const POST = api.POST(async (ctx, body) => {
-  const { isDefault, ...data } = body as typeof personaSchema._output;
-  const persona = await prisma.persona.create({
-    data: {
-      userId: ctx.user.id,
-      ...data,
-      platformDefaults: data.platformDefaults as Prisma.InputJsonValue | undefined,
-    },
-  });
-  if (isDefault) {
-    await prisma.user.update({
-      where: { id: ctx.user.id },
-      data: { defaultPersonaId: persona.id },
-    });
+  const parsed = personaSchema.safeParse(body);
+  if (!parsed.success) {
+    return fail("VALIDATION_ERROR", parsed.error.issues.map(i => i.message).join("; "), 400);
   }
-  return ok(persona, 201);
+  
+  const prompt = await promptService.createPrompt(ctx.user.id, {
+    title: parsed.data.name,
+    description: parsed.data.description,
+    content: parsed.data.systemPrompt,
+    category: 'persona',
+    variables: [],
+    projectId: parsed.data.projectId ?? undefined,
+  });
+  
+  return ok(prompt, 201);
+});
+
+export const PATCH = api.PATCH(async (ctx, body) => {
+  const { id } = ctx.params;
+  const parsed = personaUpdateSchema.safeParse(body);
+  if (!parsed.success) {
+    return fail("VALIDATION_ERROR", parsed.error.issues.map(i => i.message).join("; "), 400);
+  }
+  
+  await prisma.persona.update({
+    where: { id, userId: ctx.user.id },
+    data: parsed.data
+  });
+  
+  return ok({ success: true });
+});
+
+export const DELETE = api.DELETE(async (ctx) => {
+  const { id } = ctx.params;
+  const exists = await prisma.persona.findUnique({ where: { id } });
+  
+  if (!exists || exists.userId !== ctx.user.id) {
+    return fail("NOT_FOUND", "Persona not found or access denied", 403);
+  }
+  
+  await prisma.persona.delete({ where: { id } });
+  return ok({ success: true });
 });

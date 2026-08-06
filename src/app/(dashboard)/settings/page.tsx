@@ -289,36 +289,65 @@ export default function SettingsPage() {
             </Card>
           </TabsContent>
 
-          {/* Notifications Tab */}
-          <TabsContent value="notifications" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Notification Preferences</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {[
-                  { key: "inAppEnabled", label: "In-app notifications", description: "Bell icon notifications for events like index ready and exports" },
-                  { key: "generationComplete", label: "Generation finished", description: "When an AI response finishes streaming" },
-                  { key: "knowledgeReady", label: "Knowledge indexed", description: "When an uploaded document finishes indexing" },
-                  { key: "exportReady", label: "Export completed", description: "When a chat export is ready" },
-                  { key: "creditsLow", label: "Credits low", description: "When you're close to your plan limit" },
-                  { key: "invite", label: "Team invites", description: "When you're invited to a project or workspace" },
-                  { key: "comment", label: "Comments & mentions", description: "When someone comments or mentions you" },
-                ].map(({ key, label, description }) => (
-                  <div key={key} className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-sm">{label}</p>
-                      <p className="text-xs text-muted-foreground">{description}</p>
-                    </div>
-                    <Switch
-                      checked={notifPrefs[key] ?? true}
-                      onCheckedChange={(checked) => togglePref(key, checked)}
-                    />
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </TabsContent>
+           {/* Notifications Tab */}
+           <TabsContent value="notifications" className="mt-6">
+             <Card>
+               <CardHeader>
+                 <CardTitle>Notification Preferences</CardTitle>
+               </CardHeader>
+               <CardContent className="space-y-4">
+                 {/* Channel toggles */}
+                 <div className="space-y-3 pb-3 border-b border-border/20">
+                   <h4 className="text-xs font-semibold text-muted-foreground">Delivery Channels</h4>
+                   {[
+                     { key: "inAppEnabled", label: "In-app notifications", description: "Bell icon notifications in the app" },
+                     { key: "emailEnabled", label: "Email notifications", description: "Send notifications to your email" },
+                     { key: "pushEnabled", label: "Push notifications", description: "Browser push notifications" },
+                     { key: "realtimeEnabled", label: "Realtime notifications", description: "Live updates via socket connection" },
+                   ].map(({ key, label, description }) => (
+                     <div key={key} className="flex items-center justify-between">
+                       <div>
+                         <p className="font-medium text-sm">{label}</p>
+                         <p className="text-xs text-muted-foreground">{description}</p>
+                       </div>
+                       <Switch
+                         checked={notifPrefs[key] ?? (key === "inAppEnabled" || key === "emailEnabled" || key === "realtimeEnabled")}
+                         onCheckedChange={(checked) => togglePref(key, checked)}
+                       />
+                     </div>
+                   ))}
+                 </div>
+
+                 {/* Category toggles */}
+                 <div className="space-y-3">
+                   <h4 className="text-xs font-semibold text-muted-foreground">Categories</h4>
+                   {[
+                     { key: "generationComplete", label: "Generation finished", description: "When an AI response finishes streaming" },
+                     { key: "knowledgeReady", label: "Knowledge indexed", description: "When an uploaded document finishes indexing" },
+                     { key: "exportReady", label: "Export completed", description: "When a chat export is ready" },
+                     { key: "creditsLow", label: "Credits low", description: "When you're close to your plan limit" },
+                     { key: "invite", label: "Team invites", description: "When you're invited to a project or workspace" },
+                     { key: "comment", label: "Comments", description: "When someone comments on your messages" },
+                     { key: "mention", label: "Mentions", description: "When someone mentions you" },
+                     { key: "subscription", label: "Subscription", description: "Billing and subscription updates" },
+                     { key: "system", label: "System announcements", description: "Important platform-wide announcements" },
+                     { key: "dailyDigest", label: "Daily digest", description: "A daily summary of activity" },
+                   ].map(({ key, label, description }) => (
+                     <div key={key} className="flex items-center justify-between">
+                       <div>
+                         <p className="font-medium text-sm">{label}</p>
+                         <p className="text-xs text-muted-foreground">{description}</p>
+                       </div>
+                       <Switch
+                         checked={notifPrefs[key] ?? true}
+                         onCheckedChange={(checked) => togglePref(key, checked)}
+                       />
+                     </div>
+                   ))}
+                 </div>
+               </CardContent>
+             </Card>
+           </TabsContent>
         </Tabs>
 
         {/* Danger Zone */}

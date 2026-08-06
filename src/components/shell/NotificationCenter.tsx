@@ -2,7 +2,7 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bell, CheckCheck, Zap, Users, BookOpen, Download, CreditCard, AtSign, Trash2 } from "lucide-react";
+import { Bell, CheckCheck, Zap, Users, BookOpen, Download, CreditCard, AtSign, Trash2, MessageCircle, Gift } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { duration, ease } from "@/styles/motion";
 import { useNotifications } from "@/hooks/use-notifications";
@@ -10,6 +10,7 @@ import { useNotifications } from "@/hooks/use-notifications";
 interface NotificationItem {
   id: string;
   type: string;
+  channel: string;
   title: string;
   body: string | null;
   link: string | null;
@@ -25,7 +26,10 @@ const TYPE_ICONS: Record<string, React.ElementType> = {
   export_completed: Download,
   export_failed: Download,
   mention: AtSign,
+  comment: MessageCircle,
   subscription: CreditCard,
+  digest: Bell,
+  system: Bell,
 };
 
 export function NotificationCenter() {

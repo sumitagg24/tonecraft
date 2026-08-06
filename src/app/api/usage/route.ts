@@ -1,6 +1,7 @@
 import { ok, withApiHandler } from "@/lib/withApiHandler";
 import { prisma } from "@/lib/prisma";
 import { capabilities } from "@/lib/capabilities";
+import { auditLogService } from "@/services/AuditLogService";
 
 const api = withApiHandler();
 
@@ -9,6 +10,11 @@ export const GET = api.GET(async (ctx) => {
     where: { userId: ctx.user.id },
   });
   const plan = await capabilities.require({ userId: ctx.user.id });
+
+  void auditLogService.record("api.request", "usage", {
+    actorId: ctx.user.id,
+    metadata: { endpoint: "usage", method: "GET" },
+  });
 
   return ok({
     usage: usage || {

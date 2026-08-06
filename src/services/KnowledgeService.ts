@@ -1,10 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { extractText, detectMimeType } from "@/lib/knowledge/extract";
 import { chunkText, searchScore } from "@/lib/knowledge/chunk";
+import { v4 as uuidv4 } from "uuid";
 
-const MAX_FILE_SIZE = 25 * 1024 * 1024;
-const MAX_CHUNKS = 2000;
-const MAX_FILES = 50;
 const RETRIEVE_K = 6;
 
 export interface RetrievedChunk {
@@ -16,101 +14,140 @@ export interface RetrievedChunk {
   score: number;
 }
 
+export interface KnowledgeFileSummary {
+  id: string;
+  name: string;
+  fileName: string;
+  fileSize: number;
+  status: string;
+  error: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export class KnowledgeService {
-  async create(userId: string, fileName: string, buffer: Buffer, projectId?: string | null) {
-    const fileCount = await prisma.knowledgeFile.count({ where: { userId } });
-    if (fileCount >= MAX_FILES) {
-      throw new Error("Knowledge file limit reached (50 files)");
-    }
-    if (buffer.byteLength > MAX_FILE_SIZE) {
-      throw new Error("File too large (max 25MB)");
-    }
-
-    const mimeType = detectMimeType(fileName);
+  async create(
+    userId: string,
+    name: string,
+    buffer: Buffer,
+    projectId?: string | null
+  ): Promise<KnowledgeFileSummary & { storageKey: string }> {
+    const mimeType = detectMimeType(name);
     const text = extractText(mimeType, buffer);
-    if (!text) {
-      throw new Error("No text could be extracted from this file");
-    }
-
     const chunks = chunkText(text);
-    if (chunks.length > MAX_CHUNKS) {
-      throw new Error(`File too large to index (max ${MAX_CHUNKS} chunks)`);
-    }
 
-    return prisma.knowledgeFile.create({
+    const file = await prisma.knowledgeFile.create({
       data: {
         userId,
-        projectId: projectId ?? null,
-        name: fileName.replace(/\.[^.]+$/, ""),
-        fileName,
+        name,
+        fileName: name,
+        fileSize: buffer.length,
         fileType: mimeType,
-        fileSize: buffer.byteLength,
-        storageKey: `${userId}/${crypto.randomUUID()}-${fileName}`,
+        storageKey: `knowledge/${uuidv4()}`,
         status: "ready",
-        chunks: {
-          create: chunks.map((c) => ({
-            index: c.index,
-            content: c.content,
-          })),
-        },
+        projectId: projectId ?? undefined,
       },
     });
+
+    if (chunks.length > 0) {
+      await prisma.knowledgeChunk.createMany({
+        data: chunks.map((c) => ({
+          fileId: file.id,
+          content: c.content,
+          index: c.index,
+        })),
+      });
+    }
+
+    return {
+      id: file.id,
+      name: file.name,
+      fileName: file.fileName,
+      fileSize: file.fileSize,
+      storageKey: file.storageKey,
+      status: file.status,
+      error: file.error,
+      createdAt: file.createdAt,
+      updatedAt: file.updatedAt,
+    };
   }
 
-  async list(userId: string, projectId?: string | null) {
+  async list(userId: string, projectId?: string | null): Promise<KnowledgeFileSummary[]> {
     return prisma.knowledgeFile.findMany({
-      where: projectId ? { userId, projectId } : { userId },
+      where: {
+        userId,
+        ...(projectId ? { projectId } : {}),
+      },
       orderBy: { createdAt: "desc" },
-      include: { _count: { select: { chunks: true } } },
     });
   }
 
-  async findByIdAndUser(id: string, userId: string) {
-    return prisma.knowledgeFile.findFirst({ where: { id, userId } });
+  async findByIdAndUser(id: string, userId: string): Promise<KnowledgeFileSummary | null> {
+    return prisma.knowledgeFile.findFirst({
+      where: { id, userId },
+    });
   }
 
-  async remove(id: string, userId: string) {
-    return prisma.knowledgeFile.deleteMany({ where: { id, userId } });
-  }
-
-  async rename(id: string, userId: string, name: string) {
+  async rename(id: string, userId: string, name: string): Promise<{ count: number }> {
     return prisma.knowledgeFile.updateMany({
       where: { id, userId },
       data: { name },
     });
   }
 
-  async retrieve(userId: string, query: string, fileIds?: string[], k = RETRIEVE_K): Promise<RetrievedChunk[]> {
-    const files = fileIds?.length
-      ? await prisma.knowledgeFile.findMany({ where: { id: { in: fileIds }, userId, status: "ready" } })
-      : await prisma.knowledgeFile.findMany({ where: { userId, status: "ready" } });
+  async remove(id: string, userId: string): Promise<{ count: number }> {
+    return prisma.knowledgeFile.deleteMany({
+      where: { id, userId },
+    });
+  }
 
-    const ids = files.map((f) => f.id);
-    if (ids.length === 0) return [];
+  async linkToMessage(messageId: string, fileIds: string[]): Promise<void> {
+    if (fileIds.length === 0) return;
+    await prisma.messageKnowledge.createMany({
+      data: fileIds.map((fid) => ({ messageId, fileId: fid })),
+    });
+  }
 
-    const chunks = await prisma.knowledgeChunk.findMany({ where: { fileId: { in: ids } } });
-    const fileNameById = new Map(files.map((f) => [f.id, f.fileName]));
+  async retrieve(
+    userId: string,
+    query: string,
+    fileIds?: string[],
+    k = RETRIEVE_K
+  ): Promise<RetrievedChunk[]> {
+    const files = await prisma.knowledgeFile.findMany({
+      where: {
+        userId,
+        status: "ready",
+        ...(fileIds && fileIds.length ? { id: { in: fileIds } } : {}),
+      },
+      select: { id: true, name: true },
+    });
+    if (files.length === 0) return [];
+
+    const fileMap = new Map(files.map((f) => [f.id, f.name]));
+    const fileIdsForChunks = files.map((f) => f.id);
+
+    const chunks = await prisma.knowledgeChunk.findMany({
+      where: { fileId: { in: fileIdsForChunks } },
+      select: {
+        id: true,
+        content: true,
+        index: true,
+        fileId: true,
+      },
+    });
 
     return chunks
       .map((c) => ({
         id: c.id,
         content: c.content,
         index: c.index,
-        fileName: fileNameById.get(c.fileId) ?? "file",
+        fileName: fileMap.get(c.fileId) ?? "unknown",
         fileId: c.fileId,
         score: searchScore(query, c.content),
       }))
-      .filter((c) => c.score > 0)
       .sort((a, b) => b.score - a.score)
       .slice(0, k);
-  }
-
-  async linkToMessage(messageId: string, fileIds: string[]) {
-    if (fileIds.length === 0) return;
-    await prisma.messageKnowledge.createMany({
-      data: fileIds.map((fileId) => ({ messageId, fileId })),
-      skipDuplicates: true,
-    });
   }
 }
 

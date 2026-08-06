@@ -8,7 +8,7 @@ import { NavigationRail, MobileRailDrawer } from "./NavigationRail";
 import { TopBar } from "./TopBar";
 import { MobileBottomBar } from "./MobileBottomBar";
 import { CommandPalette } from "@/components/layout/CommandPalette";
-import { PremiumCursor } from "@/components/ui/effects/PremiumCursor";
+
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 interface AppShellProps {
@@ -55,7 +55,7 @@ export function AppShell({ children }: AppShellProps) {
 
         {/* Global overlays */}
         <CommandPalette />
-        <PremiumCursor />
+
         <MobileRailDrawer />
         <MobileBottomBar />
       </TooltipProvider>

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { planService } from "@/services/PlanService";
 import { checkMessageLimit } from "@/lib/ratelimit";
+import { auditLogService } from "@/services/AuditLogService";
 
 const PLAN_PRICE_MAP: Record<string, string | undefined> = {
   Pro: process.env.PADDLE_PRICE_PRO ?? "pri_01kyn5577vywxh8z8b40h96ka5",
@@ -72,6 +73,12 @@ export const POST = api.POST(async (ctx, body) => {
     });
 
     logger.info("Checkout created", { userId: user.id, plan });
+
+    void auditLogService.record("billing.subscribe", "checkout", {
+      actorId: ctx.user.id,
+      metadata: { plan: plan.toLowerCase(), priceId },
+    });
+
     return ok({ url: checkout.url });
   } catch (err) {
     if (err instanceof ApiError) {

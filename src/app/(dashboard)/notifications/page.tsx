@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Bell, CheckCheck, Trash2, Filter, ChevronDown,
   Clock, Zap, Download, CreditCard, AtSign, Users, BookOpen,
+  MessageCircle, Gift,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -18,11 +19,13 @@ import {
 interface NotificationItem {
   id: string;
   type: string;
+  channel: string;
   title: string;
   body: string | null;
   link: string | null;
   readAt: string | null;
   createdAt: string;
+  metadata: Record<string, unknown> | null;
 }
 
 const TYPE_ICONS: Record<string, React.ElementType> = {
@@ -33,7 +36,10 @@ const TYPE_ICONS: Record<string, React.ElementType> = {
   export_completed: Download,
   export_failed: Download,
   mention: AtSign,
+  comment: MessageCircle,
   subscription: CreditCard,
+  digest: Bell,
+  system: Bell,
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -44,7 +50,10 @@ const TYPE_LABELS: Record<string, string> = {
   export_completed: "Export",
   export_failed: "Export Failed",
   mention: "Mention",
+  comment: "Comment",
   subscription: "Subscription",
+  digest: "Digest",
+  system: "System",
 };
 
 export default function NotificationsPage() {

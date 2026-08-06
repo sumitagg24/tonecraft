@@ -3,6 +3,7 @@ import { billingService } from "@/billing/BillingService";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { planService } from "@/services/PlanService";
+import { auditLogService } from "@/services/AuditLogService";
 
 export async function POST(req: Request) {
   const body = await req.text();
@@ -94,6 +95,12 @@ async function syncSubscription(normalized: { type: string; data: Record<string,
           cancelAtPeriodEnd: isCanceled,
         },
       });
+
+      void auditLogService.record("billing.subscribe", "subscription", {
+        actorId: userId,
+        resourceId: subscriptionId,
+        metadata: { plan: planFromPriceId(priceId), status: data.status, eventType: normalized.type },
+      });
       break;
     }
     case "subscription.cancelled": {
@@ -113,6 +120,12 @@ async function syncSubscription(normalized: { type: string; data: Record<string,
           cancelAtPeriodEnd: false,
         },
       });
+
+      void auditLogService.record("billing.unsubscribe", "subscription", {
+        actorId: userId,
+        resourceId: subscriptionId,
+        metadata: { eventType: normalized.type },
+      });
       break;
     }
     case "subscription.payment_succeeded": {
@@ -127,6 +140,12 @@ async function syncSubscription(normalized: { type: string; data: Record<string,
           status: "active",
         },
       });
+
+      void auditLogService.record("billing.subscribe", "subscription", {
+        actorId: userId,
+        resourceId: subscriptionId,
+        metadata: { eventType: normalized.type },
+      });
       break;
     }
     case "subscription.payment_failed": {
@@ -140,6 +159,12 @@ async function syncSubscription(normalized: { type: string; data: Record<string,
         update: {
           status: "past_due",
         },
+      });
+
+      void auditLogService.record("billing.subscribe", "subscription", {
+        actorId: userId,
+        resourceId: subscriptionId,
+        metadata: { eventType: normalized.type, status: "past_due" },
       });
       break;
     }

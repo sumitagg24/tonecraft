@@ -1,27 +1,886 @@
-model Prompt {
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                String                  @id @default(cuid())
+  clerkId           String                  @unique
+  name              String?
+  email             String                  @unique
+  image             String?
+  preferredLanguage String                  @default("english")
+  defaultTone       String                  @default("professional")
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  autoSave          Boolean                 @default(true)
+  creativityLevel   Int?                    @default(70)
+  preferredModel    String?                 @default("auto")
+  preferredPlatform String?                 @default("email")
+  preferredStyle    String?                 @default("standard")
+  responseLength    String?                 @default("medium")
+  streamingEnabled  Boolean                 @default(true)
+  defaultPersonaId  String?
+  chats             Chat[]
+  personas          Persona[]
+  subscription      Subscription?
+  usage             Usage?
+  usageRecords      UsageRecord[]
+  projects          Project[]
+  projectMembership ProjectMember[]
+  prompts           Prompt[]
+  knowledgeFiles    KnowledgeFile[]
+  drafts            Draft[]
+  notifications     Notification[]
+  notificationPrefs NotificationPreference?
+  shareLinks        ShareLink[]
+  exportJobs        ExportJob[]
+  bookmarks         Bookmark[]
+  comments          Comment[]
+  promptCollections PromptCollection[]
+  promptShares      PromptShare[]
+  promptRatings     PromptRating[]
+  promptVersions    PromptVersion[]         @relation("PromptVersionCreator")
+  collectionShares  PromptCollectionShare[]
+  sharedWithPrompts PromptShare[]           @relation("PromptSharedWith")
+  promptHistories   PromptHistory[]
+  workspaces        Workspace[]
+  workspaceMembers  WorkspaceMember[]
+  sentInvites       WorkspaceInvite[]       @relation("SentInvites")
+  activityFeeds     ActivityFeed[]
+  activities        Activity[]
+  snapshots         VersionSnapshot[]
+  presences         Presence[]
+  typingIndicators  TypingIndicator[]
+  operations        DocumentOperation[]
+  auditLogs         AuditLog[]              @relation("AuditActor")
+  pushSubscriptions PushSubscription[]
+
+  // NOTE: no redundant @@index on clerkId/email — @unique already builds them.
+}
+
+model Chat {
+  id               String            @id @default(cuid())
+  userId           String
+  title            String            @default("New Chat")
+  tone             String            @default("professional")
+  model            String            @default("auto")
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  isArchived       Boolean           @default(false)
+  isFavorite       Boolean           @default(false)
+  isPinned         Boolean           @default(false)
+  language         String?
+  platform         String?
+  projectId        String?
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project          Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  messages         Message[]
+  drafts           Draft[]
+  shareLinks       ShareLink[]
+  exportJobs       ExportJob[]
+  activities       Activity[]
+  typingIndicators TypingIndicator[]
+  presences        Presence[]
+
+  @@index([userId, updatedAt])
+  @@index([userId, isPinned])
+  @@index([userId, isFavorite])
+  @@index([userId, isArchived])
+  @@index([projectId])
+}
+
+model Message {
+  id          String             @id @default(cuid())
+  chatId      String
+  role        String
+  content     String
+  tone        String?
+  tokens      Int?
+  latency     Int?
+  model       String?
+  platform    String?
+  language    String?
+  createdAt   DateTime           @default(now())
+  editedAt    DateTime?
+  feedback    String?
+  isEdited    Boolean            @default(false)
+  parentId    String?
+  attachments Attachment[]
+  chat        Chat               @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  parent      Message?           @relation("MessageChain", fields: [parentId], references: [id])
+  children    Message[]          @relation("MessageChain")
+  knowledge   MessageKnowledge[]
+  comments    Comment[]
+
+  @@index([chatId, createdAt])
+  @@index([chatId, feedback])
+  @@index([parentId])
+}
+
+model Attachment {
+  id         String   @id @default(cuid())
+  messageId  String
+  fileName   String
+  fileType   String
+  fileSize   Int
+  storageKey String
+  createdAt  DateTime @default(now())
+  message    Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+}
+
+model Persona {
+  id               String   @id @default(cuid())
+  userId           String
+  name             String
+  description      String?
+  systemPrompt     String
+  icon             String?
+  color            String   @default("#6366F1")
+  isDefault        Boolean  @default(false)
+  tone             String   @default("professional")
+  temperature      Int?     @default(70)
+  emojiUsage       String   @default("subtle")
+  writingStyle     String   @default("standard")
+  platformDefaults Json?
+  isFavorite       Boolean  @default(false)
+  projectId        String?
+  createdAt        DateTime @default(now())
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project          Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([projectId])
+}
+
+model Usage {
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  messagesSent     Int       @default(0)
+  tokensUsed       Int       @default(0)
+  filesUploaded    Int       @default(0)
+  storageUsed      Int       @default(0)
+  resetDate        DateTime  @default(now())
+  creditsUsed      Int       @default(0)
+  periodStart      DateTime  @default(now())
+  periodEnd        DateTime?
+  dailyMessages    Int       @default(0)
+  dailyTokens      Int       @default(0)
+  lastDailyReset   DateTime  @default(now())
+  lastMonthlyReset DateTime  @default(now())
+  monthlyMessages  Int       @default(0)
+  monthlyTokens    Int       @default(0)
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UsageRecord {
   id          String     @id @default(cuid())
   userId      String
-  title       String
-  description String?
-  content     String
-  category    String     @default("general")
-  variables   Json?
-  isFavorite  Boolean    @default(false)
-  isArchived  Boolean    @default(false)
-  projectId   String?
+  provider    String
+  model       String
+  tokens      Int        @default(0)
+  latency     Int        @default(0)
+  success     Boolean    @default(true)
+  error       String?
   createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  workspaceId String?
+  projectId   String?
   user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  project     Project?   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  bookmarks   Bookmark[]
-  versions    PromptVersion[]  // Added for versioning
-  ratings     PromptRating[]  // Added for ratings
-  tags        PromptTag[]    // Added for tags
-  sharedWith  [
-    PromptCollectionShare,
-    PromptShare         // Both are valid sharing types
-  ]
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id])
+  project     Project?   @relation(fields: [projectId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([userId, provider])
+  @@index([workspaceId, createdAt])
+  @@index([projectId, createdAt])
+}
+
+model Subscription {
+  id                     String    @id @default(cuid())
+  userId                 String    @unique
+  status                 String
+  plan                   String    @default("free")
+  currentPeriodStart     DateTime?
+  currentPeriodEnd       DateTime?
+  cancelAtPeriodEnd      Boolean   @default(false)
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  paymentProvider        String    @default("paddle")
+  providerCustomerId     String?
+  providerSubscriptionId String?   @unique
+  providerPriceId        String?
+  user                   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Workspace {
+  id           String            @id @default(cuid())
+  userId       String
+  name         String
+  description  String?
+  color        String            @default("#6366F1")
+  visibility   Visibility        @default(public)
+  modes        WorkspaceModes[]  @default([chat])
+  members      WorkspaceMember[]
+  invites      WorkspaceInvite[]
+  projects     Project[]
+  archives     ActivityFeed[]
+  usageRecords UsageRecord[]
+  settings     Json              @default("{}")
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prompts      Prompt[]
+
+  @@index([userId])
+  @@index([visibility])
+}
+
+enum Visibility {
+  public
+  private
+  shared
+}
+
+enum WorkspaceModes {
+  chat
+  focus
+  writer
+  split
+  compact
+  minimal
+}
+
+model WorkspaceMember {
+  id          String     @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        MemberRole @default(member)
+  createdAt   DateTime   @default(now())
+  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId, workspaceId])
+  @@index([workspaceId, role])
+}
+
+enum MemberRole {
+  member
+  manager
+  admin
+}
+
+model WorkspaceInvite {
+  id          String       @id @default(cuid())
+  workspaceId String
+  email       String
+  role        MemberRole   @default(member)
+  token       String?      @unique
+  expiresAt   DateTime?
+  status      InviteStatus @default(pending)
+  createdAt   DateTime     @default(now())
+  sentBy      User?        @relation("SentInvites", fields: [sentById], references: [id], onDelete: SetNull)
+  sentById    String?
+  projectIds  String[]     @default([])
+  workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, email])
+  @@index([workspaceId, expiresAt])
+  @@index([email])
+}
+
+enum InviteStatus {
+  pending
+  accepted
+  rejected
+  expired
+}
+
+model ActivityFeed {
+  id          String       @id @default(cuid())
+  workspaceId String
+  userId      String
+  type        ActivityType @default(members_invite)
+  payload     Json
+  createdAt   DateTime     @default(now())
+  workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@index([userId])
+  @@index([type])
+}
+
+enum ActivityType {
+  members_invite
+  members_remove
+  project_create
+  project_update
+  project_delete
+  members_status
+  typing
+  chat_message
+  presence_update
+}
+
+model Project {
+  id             String          @id @default(cuid())
+  userId         String
+  workspaceId    String?
+  name           String
+  emoji          String?
+  color          String          @default("#6366F1")
+  description    String?
+  parentId       String?
+  parent         Project?        @relation("ProjectTree", fields: [parentId], references: [id])
+  children       Project[]       @relation("ProjectTree")
+  archived       Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace      Workspace?      @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  chats          Chat[]
+  personas       Persona[]
+  prompts        Prompt[]
+  knowledgeFiles KnowledgeFile[]
+  members        ProjectMember[]
+  usageRecords   UsageRecord[]
+  shareLinks     ShareLink[]
+  exportJobs     ExportJob[]
+  activities     Activity[]
+  presences      Presence[]
+
+  @@index([userId, parentId])
+  @@index([userId, archived])
+  @@index([workspaceId])
+}
+
+model ProjectMember {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String
+  role      String   @default("viewer")
+  createdAt DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@index([userId])
+}
+
+model Prompt {
+  id              String                 @id @default(cuid())
+  userId          String
+  title           String
+  description     String?
+  content         String
+  category        String                 @default("general")
+  variables       Json?
+  isFavorite      Boolean                @default(false)
+  isArchived      Boolean                @default(false)
+  projectId       String?
+  workspaceId     String?
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  user            User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project         Project?               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  workspace       Workspace?             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  bookmarks       Bookmark[]
+  versions        PromptVersion[]
+  ratings         PromptRating[]
+  tags            PromptTag[]
+  shares          PromptShare[]
+  collectionItems PromptCollectionItem[]
+  histories       PromptHistory[]
 
   @@index([userId, category])
   @@index([projectId])
+  @@index([workspaceId])
+  @@index([isFavorite])
+  @@index([isArchived])
+}
+
+model PromptVersion {
+  id          String   @id @default(cuid())
+  promptId    String
+  version     Int
+  title       String
+  description String?
+  content     String
+  variables   Json?
+  createdBy   String
+  createdAt   DateTime @default(now())
+  prompt      Prompt   @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  user        User     @relation("PromptVersionCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@unique([promptId, version])
+  @@index([promptId])
+  @@index([createdBy])
+}
+
+model PromptRating {
+  id        String   @id @default(cuid())
+  promptId  String
+  userId    String
+  rating    Int
+  review    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  prompt    Prompt   @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([promptId, userId])
+  @@index([promptId])
+  @@index([userId])
+}
+
+model PromptTag {
+  id        String   @id @default(cuid())
+  promptId  String
+  name      String
+  createdAt DateTime @default(now())
+  prompt    Prompt   @relation(fields: [promptId], references: [id], onDelete: Cascade)
+
+  @@unique([promptId, name])
+  @@index([name])
+  @@index([promptId])
+}
+
+model PromptShare {
+  id           String    @id @default(cuid())
+  promptId     String
+  userId       String
+  sharedWithId String
+  permission   String    @default("view")
+  expiresAt    DateTime?
+  createdAt    DateTime  @default(now())
+  prompt       Prompt    @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sharedWith   User      @relation("PromptSharedWith", fields: [sharedWithId], references: [id], onDelete: Cascade)
+
+  @@index([promptId])
+  @@index([sharedWithId])
+  @@index([userId])
+}
+
+model PromptCollection {
+  id          String                  @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  isPublic    Boolean                 @default(false)
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+  user        User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items       PromptCollectionItem[]
+  shares      PromptCollectionShare[]
+  histories   PromptHistory[]
+
+  @@index([userId])
+  @@index([isPublic])
+}
+
+model PromptCollectionItem {
+  id           String           @id @default(cuid())
+  collectionId String
+  promptId     String
+  position     Int              @default(0)
+  addedAt      DateTime         @default(now())
+  collection   PromptCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  prompt       Prompt           @relation(fields: [promptId], references: [id], onDelete: Cascade)
+
+  @@unique([collectionId, promptId])
+  @@index([collectionId])
+  @@index([promptId])
+}
+
+model PromptCollectionShare {
+  id           String           @id @default(cuid())
+  collectionId String
+  sharedWithId String
+  permission   String           @default("view")
+  sharedAt     DateTime         @default(now())
+  collection   PromptCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  user         User             @relation(fields: [sharedWithId], references: [id], onDelete: Cascade)
+
+  @@unique([collectionId, sharedWithId])
+  @@index([sharedWithId])
+  @@index([collectionId])
+}
+
+model PromptHistory {
+  id           String            @id @default(cuid())
+  promptId     String?
+  collectionId String?
+  userId       String
+  action       String
+  metadata     Json?
+  createdAt    DateTime          @default(now())
+  prompt       Prompt?           @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  collection   PromptCollection? @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([promptId])
+  @@index([collectionId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model KnowledgeFile {
+  id           String             @id @default(cuid())
+  userId       String
+  projectId    String?
+  name         String
+  fileName     String
+  fileType     String
+  fileSize     Int
+  storageKey   String
+  status       String             @default("pending")
+  error        String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project      Project?           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  chunks       KnowledgeChunk[]
+  job          KnowledgeJob?
+  messageLinks MessageKnowledge[]
+
+  @@index([userId])
+  @@index([projectId, status])
+}
+
+model KnowledgeChunk {
+  id        String        @id @default(cuid())
+  fileId    String
+  content   String
+  index     Int
+  embedding Json?
+  createdAt DateTime      @default(now())
+  file      KnowledgeFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@index([fileId, index])
+}
+
+model KnowledgeJob {
+  id        String        @id @default(cuid())
+  fileId    String        @unique
+  status    String        @default("queued")
+  error     String?
+  attempts  Int           @default(0)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  file      KnowledgeFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+}
+
+model MessageKnowledge {
+  id        String        @id @default(cuid())
+  messageId String
+  fileId    String
+  createdAt DateTime      @default(now())
+  message   Message       @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  file      KnowledgeFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@index([fileId])
+}
+
+enum NotificationType {
+  generation_finished
+  credits_low
+  team_invite
+  knowledge_indexed
+  export_completed
+  export_failed
+  mention
+  comment
+  subscription
+  digest
+  system
+}
+
+enum NotificationChannel {
+  in_app
+  email
+  push
+  realtime
+}
+
+model Notification {
+  id        String              @id @default(cuid())
+  userId    String
+  type      NotificationType
+  channel   NotificationChannel @default(in_app)
+  title     String
+  body      String?
+  link      String?
+  readAt    DateTime?
+  metadata  Json?
+  createdAt DateTime            @default(now())
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
+  @@index([userId, type])
+  @@index([type, createdAt])
+}
+
+model NotificationPreference {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  emailEnabled       Boolean  @default(true)
+  pushEnabled        Boolean  @default(false)
+  inAppEnabled       Boolean  @default(true)
+  realtimeEnabled    Boolean  @default(true)
+  dailyDigest        Boolean  @default(false)
+  generationComplete Boolean  @default(true)
+  creditsLow         Boolean  @default(true)
+  knowledgeReady     Boolean  @default(true)
+  exportReady        Boolean  @default(true)
+  invite             Boolean  @default(true)
+  comment            Boolean  @default(true)
+  mention            Boolean  @default(true)
+  subscription       Boolean  @default(true)
+  system             Boolean  @default(true)
+  updatedAt          DateTime @updatedAt
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorId     String?
+  actor       User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+  action      String
+  resource    String
+  resourceId  String?
+  workspaceId String?
+  targetId    String?
+  ip          String?
+  userAgent   String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([workspaceId, createdAt])
+  @@index([actorId, createdAt])
+  @@index([action])
+  @@index([resource, createdAt])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  keys      Json
+  createdAt DateTime @default(now())
+  lastUsed  DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Draft {
+  id        String         @id @default(cuid())
+  userId    String
+  chatId    String?
+  content   String
+  tone      String?
+  personaId String?
+  platform  String?
+  language  String?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chat      Chat?          @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  versions  DraftVersion[]
+
+  @@unique([userId, chatId])
+  @@index([userId, updatedAt])
+}
+
+model DraftVersion {
+  id        String   @id @default(cuid())
+  draftId   String
+  content   String
+  createdAt DateTime @default(now())
+  draft     Draft    @relation(fields: [draftId], references: [id], onDelete: Cascade)
+
+  @@index([draftId, createdAt])
+}
+
+model ShareLink {
+  id        String    @id @default(cuid())
+  token     String    @unique
+  userId    String
+  chatId    String?
+  projectId String?
+  role      String    @default("viewer")
+  expiresAt DateTime?
+  revoked   Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chat      Chat?     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  project   Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // NOTE: no redundant @@index on token — @unique already provides it.
+}
+
+model ExportJob {
+  id        String   @id @default(cuid())
+  userId    String
+  chatId    String?
+  projectId String?
+  format    String
+  status    String   @default("queued")
+  resultKey String?
+  error     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chat      Chat?    @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  userId    String
+  messageId String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId, createdAt])
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  userId    String
+  messageId String?
+  chatId    String?
+  promptId  String?
+  label     String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prompt    Prompt?  @relation(fields: [promptId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model Activity {
+  id          String   @id @default(cuid())
+  userId      String
+  projectId   String?
+  chatId      String?
+  type        String
+  title       String
+  description String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project     Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  chat        Chat?    @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([projectId, createdAt])
+  @@index([chatId, createdAt])
+  @@index([type])
+}
+
+model VersionSnapshot {
+  id            String            @id @default(cuid())
+  resourceType  String
+  resourceId    String
+  userId        String
+  version       Int
+  title         String?
+  content       Json
+  diff          Json?
+  changeType    String
+  changeSummary String?
+  sizeBytes     Int
+  isAuto        Boolean           @default(false)
+  parentId      String?
+  parent        VersionSnapshot?  @relation("SnapshotTree", fields: [parentId], references: [id])
+  children      VersionSnapshot[] @relation("SnapshotTree")
+  createdAt     DateTime          @default(now())
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([resourceType, resourceId, version])
+  @@index([resourceType, resourceId, version])
+  @@index([resourceType, resourceId, createdAt])
+  @@index([userId, createdAt])
+}
+
+model Presence {
+  id             String   @id @default(cuid())
+  userId         String
+  projectId      String?
+  chatId         String?
+  status         String   @default("active")
+  cursorX        Float?
+  cursorY        Float?
+  selectionStart Int?
+  selectionEnd   Int?
+  currentPath    String?
+  lastSeen       DateTime @default(now()) @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project        Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  chat           Chat?    @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, projectId, chatId])
+  @@index([projectId, lastSeen])
+  @@index([chatId, lastSeen])
+}
+
+model TypingIndicator {
+  id        String   @id @default(cuid())
+  userId    String
+  chatId    String
+  isTyping  Boolean  @default(true)
+  startedAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, chatId])
+  @@index([chatId, updatedAt])
+}
+
+model CollaborationSession {
+  id           String    @id @default(cuid())
+  projectId    String?
+  chatId       String?
+  resourceType String
+  resourceId   String
+  participants String[]
+  startedAt    DateTime  @default(now())
+  endedAt      DateTime?
+  lastActivity DateTime  @default(now()) @updatedAt
+
+  @@index([projectId, lastActivity])
+  @@index([chatId, lastActivity])
+  @@index([resourceType, resourceId])
+}
+
+model DocumentOperation {
+  id           String   @id @default(cuid())
+  resourceType String
+  resourceId   String
+  userId       String
+  version      Int
+  operation    Json
+  baseVersion  Int
+  applied      Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([resourceType, resourceId, version])
+  @@index([resourceType, resourceId, createdAt])
 }

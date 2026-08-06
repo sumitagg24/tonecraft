@@ -24,6 +24,7 @@ function getTitle(pathname: string): { title: string; crumb?: string } {
   if (pathname === "/search") return { title: "Search" };
   if (pathname === "/notifications" || pathname.startsWith("/notifications")) return { title: "Notifications" };
   if (pathname === "/analytics" || pathname.startsWith("/analytics")) return { title: "Analytics" };
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) return { title: "Workspace Admin" };
   if (pathname === "/settings" || pathname.startsWith("/settings")) return { title: "Account" };
   if (pathname === "/billing") return { title: "Account", crumb: "Billing" };
   return { title: "ToneCraft" };
