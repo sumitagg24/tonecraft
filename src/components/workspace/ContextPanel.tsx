@@ -7,7 +7,7 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { TONES, PLATFORMS } from "@/lib/constants";
-import { Sparkles, Loader2, Smile } from "lucide-react";
+import { Wand2, Loader2, Smile } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useChatStore } from "@/stores/chat-store";
 import { hoverScale } from "@/styles/motion";
@@ -30,7 +30,7 @@ export function ContextPanel() {
         {/* Header */}
         <div>
           <h2 className="text-sm font-semibold flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-primary" />
+            <Wand2 className="w-4 h-4 text-primary" />
             Context Controls
           </h2>
           <p className="text-xs text-muted-foreground mt-1">Configure how your messages are crafted</p>
@@ -177,7 +177,7 @@ export function ContextPanel() {
               </>
             ) : (
               <>
-                <Sparkles className="w-4 h-4" />
+                <Wand2 className="w-4 h-4" />
                 Generate
               </>
             )}

@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/suite/PageHeader";
 import {
-  CalendarDays, ChevronLeft, ChevronRight, Plus, Trash2, Loader2, Mic2, Sparkles,
+  CalendarDays, ChevronLeft, ChevronRight, Plus, Trash2, Loader2, Mic2, Wand2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -133,7 +133,7 @@ export default function CalendarPage() {
           icon={<CalendarDays className="w-4 h-4" />}
           actions={
             <Button onClick={addNotesAsEvent} variant="outline" className="gap-1.5">
-              <Sparkles className="w-4 h-4 text-primary" /> Add notes to calendar
+              <Wand2 className="w-4 h-4 text-primary" /> Add notes to calendar
             </Button>
           }
         />
@@ -266,7 +266,7 @@ export default function CalendarPage() {
                   className="w-full rounded-lg border border-border/40 bg-muted/20 px-3 py-2 text-xs outline-none focus-visible:ring-1 focus-visible:ring-primary/50 resize-none"
                 />
                 <Button onClick={generateNotes} disabled={notesLoading || !transcript.trim()} className="w-full gap-1.5" size="sm">
-                  {notesLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  {notesLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
                   {notesLoading ? "Analyzing…" : "Generate notes"}
                 </Button>
                 {notes && (

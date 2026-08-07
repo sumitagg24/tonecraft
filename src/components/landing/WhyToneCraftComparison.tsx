@@ -1,6 +1,7 @@
 "use client";
 import { motion } from "framer-motion";
-import { Check, X, Bot, Palette, Globe, Zap, Shield, Layers, Sparkles } from "lucide-react";
+import { Check, X, Bot, Palette, Globe, Zap, Shield, Layers, Wand2 } from "lucide-react";
+import { sectionReveal, sectionItem, sectionChip } from "@/styles/motion";
 
 const COMPARISONS = [
   {
@@ -43,44 +44,46 @@ const COMPARISONS = [
 
 export function WhyToneCraftComparison() {
   return (
-    <section className="relative py-32 overflow-hidden">
+    <section id="why" className="relative py-28 md:py-36 overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-border to-transparent" />
       <div className="absolute inset-0 aurora-bg opacity-20 pointer-events-none" />
 
-      <div className="max-w-5xl mx-auto px-4 relative z-10">
+      <div className="max-w-5xl mx-auto px-6 relative z-10">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          variants={sectionReveal}
+          initial="hidden"
+          whileInView="visible"
           viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
+          className="text-center mb-14 md:mb-16"
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-violet-500/10 to-indigo-500/10 text-violet-600 dark:text-violet-400 text-xs font-medium mb-4">
-            <Sparkles className="w-3.5 h-3.5" />
+          <motion.div
+            variants={sectionChip}
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium mb-4"
+          >
+            <Wand2 className="w-3.5 h-3.5" />
             Why ToneCraft
-          </div>
-          <h2 className="text-3xl md:text-5xl font-bold mb-4 tracking-tight">
+          </motion.div>
+          <motion.h2 variants={sectionItem} className="font-display text-4xl md:text-6xl tracking-tight mb-4">
             Not just another AI chat
-          </h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+          </motion.h2>
+          <motion.p variants={sectionItem} className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
             ToneCraft is purpose-built for communication. While general AI chats require
             constant prompt engineering, ToneCraft handles the nuance automatically.
-          </p>
+          </motion.p>
         </motion.div>
 
-        <div className="space-y-3">
-          {COMPARISONS.map((item, i) => {
+        <motion.div
+          variants={sectionReveal}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          className="space-y-3"
+        >
+          {COMPARISONS.map((item) => {
             const Icon = item.icon;
             return (
-              <motion.div
-                key={item.category}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: i * 0.05 }}
-                className="group"
-              >
-                <div className="glass-panel rounded-2xl p-4 md:p-5 transition-all duration-200 hover:border-white/10">
+              <motion.div key={item.category} variants={sectionItem} className="group">
+                <div className="glass-panel rounded-2xl p-4 md:p-5 transition-all duration-200 hover:border-border/70">
                   <div className="flex items-start gap-4">
                     <div className="hidden md:flex w-10 h-10 rounded-xl bg-primary/10 items-center justify-center flex-shrink-0 transition-transform duration-200 group-hover:scale-110">
                       <Icon className="w-5 h-5 text-primary" />
@@ -120,7 +123,7 @@ export function WhyToneCraftComparison() {
               </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       </div>
     </section>
   );

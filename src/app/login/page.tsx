@@ -1,11 +1,33 @@
 "use client";
 import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { SignIn } from "@clerk/nextjs";
 import { Loader2 } from "lucide-react";
+import { Logo } from "@/components/shared/Logo";
+import { safeRedirectUrl } from "@/lib/utils";
+
+function SignInForm() {
+  const searchParams = useSearchParams();
+  // Only internal, relative targets — blocks open-redirect attempts.
+  const redirectUrl = safeRedirectUrl(searchParams.get("redirect_url"));
+  return (
+    <SignIn
+      fallbackRedirectUrl={redirectUrl}
+      routing="hash"
+      appearance={{
+        elements: {
+          rootBox: "mx-auto",
+          card: "shadow-lg",
+        },
+      }}
+    />
+  );
+}
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center gap-6 bg-gradient-to-br from-background to-muted p-4">
+      <Logo size="lg" />
       <Suspense
         fallback={
           <div className="w-full max-w-md flex items-center justify-center p-8">
@@ -13,15 +35,7 @@ export default function LoginPage() {
           </div>
         }
       >
-        <SignIn
-          routing="hash"
-          appearance={{
-            elements: {
-              rootBox: "mx-auto",
-              card: "shadow-lg",
-            },
-          }}
-        />
+        <SignInForm />
       </Suspense>
     </div>
   );

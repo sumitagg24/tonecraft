@@ -3,7 +3,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Send, Mic, Loader2, X, ChevronDown, Sliders,
-  Globe, Paperclip, Square, Check, Wand2, Sparkles, BookOpenCheck,
+  Globe, Paperclip, Square, Check, Wand2, Users, BookOpenCheck,
 } from "lucide-react";
 import { useChatStore } from "@/stores/chat-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { TONES, PLATFORMS } from "@/lib/constants";
 import { duration, ease } from "@/styles/motion";
 import { toast } from "sonner";
+import { useRecentTools } from "@/hooks/use-recent-tools";
 
 const ALLOWED_MIME_TYPES = new Set([
   "image/jpeg", "image/png", "image/gif", "image/webp",
@@ -55,6 +56,7 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
   const context = useChatStore((s) => s.context);
   const setContext = useChatStore((s) => s.setContext);
   const { showAdvancedControls, toggleAdvancedControls, showSuggestions } = useWorkspaceStore();
+  const { record } = useRecentTools();
 
   // Close tone/platform pickers when clicking outside the toolbar
   useEffect(() => {
@@ -134,6 +136,7 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
 
   const applyTool = useCallback(async (tool: ToolDefinition) => {
     setOpenPicker(null);
+    record(tool.id);
     const current = input.trim();
     if (!current) {
       setInput(`${tool.title}: `);
@@ -164,7 +167,7 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
     } finally {
       setToolLoading(false);
     }
-  }, [input, selectedTone, context]);
+  }, [input, selectedTone, context, record]);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -174,8 +177,8 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
   }, [input]);
 
   return (
-    <div className="border-t border-border/20 bg-background/60 backdrop-blur-xl pb-[env(safe-area-inset-bottom)]">
-      <div className="max-w-4xl mx-auto">
+    <div className="px-3 sm:px-6 pb-3 sm:pb-4 pt-2 sm:pt-3">
+      <div className="mx-auto max-w-4xl rounded-2xl border border-border/25 bg-background/70 backdrop-blur-2xl shadow-premium">
         {/* Smart Suggestions */}
         <AnimatePresence>
           {showSuggestions && !isFocused && !input && !isLoading && (
@@ -247,7 +250,7 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               placeholder={isLoading ? "Generating response..." : "Write your message... (/) for commands"}
-              className="w-full bg-transparent border-0 focus-visible:ring-0 resize-none px-4 pt-3 pb-1 text-sm leading-relaxed placeholder:text-muted-foreground/40 min-h-[44px] max-h-[240px] outline-none disabled:opacity-60"
+              className="w-full bg-transparent border-0 focus-visible:ring-0 resize-none px-4 pt-3 pb-1 text-[15px] leading-[1.85] placeholder:text-muted-foreground/40 min-h-[44px] max-h-[240px] outline-none disabled:opacity-60"
               rows={1}
               disabled={isLoading || uploading}
               aria-label="Message input"
@@ -305,7 +308,7 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
                     label="Select persona"
                     aria-expanded={openPicker === "persona"}
                   >
-                    <Sparkles className="w-4 h-4" />
+                    <Users className="w-4 h-4" />
                     <span className="text-xs font-medium hidden sm:inline">Persona</span>
                     <ChevronDown className={cn("w-3 h-3 opacity-50 transition-transform", openPicker === "persona" && "rotate-180")} />
                   </ToolbarButton>
@@ -425,7 +428,7 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
                   </span>
                 )}
                 {!isLoading && !input && (
-                  <span className="hidden md:inline text-micro text-muted-foreground/40 whitespace-nowrap">⌘Enter to send</span>
+                  <span className="hidden md:inline text-micro text-muted-foreground/40 whitespace-nowrap">Enter to send</span>
                 )}
 
                 <div className="flex items-center gap-1">
@@ -457,7 +460,7 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
                       className={cn(
                         "h-10 w-10 sm:h-9 sm:w-9 rounded-xl flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-50",
                         input.trim() && !uploading
-                          ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-glow hover:from-violet-500 hover:to-indigo-500"
+                          ? "bg-brand text-brand-foreground shadow-[0_8px_24px_-8px_hsl(var(--brand)/0.5)] hover:bg-brand/90"
                           : "bg-muted/30 text-muted-foreground/50"
                       )}
                       aria-label="Send message"

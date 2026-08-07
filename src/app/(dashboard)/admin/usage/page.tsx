@@ -116,7 +116,7 @@ export default function AdminUsagePage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 mb-2">
-              <BarChart3 className="w-4 h-4 text-violet-500" />
+              <BarChart3 className="w-4 h-4 text-brand" />
               <span className="text-xs text-muted-foreground">Total Tokens</span>
             </div>
             <p className="text-2xl font-bold">{formatNumber(data.overview.totalTokens)}</p>
@@ -226,7 +226,7 @@ export default function AdminUsagePage() {
                 <div className="flex-1 space-y-1">
                   <div className="h-4 bg-muted rounded overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-violet-500 to-indigo-500 rounded"
+                      className="h-full bg-brand rounded"
                       style={{
                         width: `${(d.tokens / Math.max(...data.dailyUsage.map((x) => x.tokens), 1)) * 100}%`,
                       }}

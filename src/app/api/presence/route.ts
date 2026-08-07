@@ -21,8 +21,10 @@ export const POST = api.POST(async (ctx, body) => {
   return ok(presence);
 });
 
-export const GET = api.GET(async (ctx, body) => {
-  const { projectId, chatId } = body as { projectId?: string; chatId?: string };
+export const GET = api.GET(async (ctx) => {
+  const sp = ctx.request.nextUrl.searchParams;
+  const projectId = sp.get("projectId") ?? undefined;
+  const chatId = sp.get("chatId") ?? undefined;
   if (projectId) {
     const presences = await collaborationService.getProjectPresences(projectId);
     return ok({ presences });

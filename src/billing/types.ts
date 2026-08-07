@@ -33,7 +33,8 @@ export type WebhookEventType =
   | "subscription.updated"
   | "subscription.cancelled"
   | "subscription.payment_succeeded"
-  | "subscription.payment_failed";
+  | "subscription.payment_failed"
+  | "ignored";
 
 export interface WebhookEvent {
   type: WebhookEventType;

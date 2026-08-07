@@ -40,6 +40,8 @@ interface ChatState {
   setSearchQuery: (query: string) => void;
   setSearchResults: (results: ChatState["searchResults"]) => void;
   updateChatInList: (chatId: string, updates: Partial<Chat>) => void;
+  /** Swap an optimistic temp chat (id: `temp-*`) for the server-created chat. */
+  resolveTempChat: (tempId: string, real: Chat) => void;
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -92,5 +94,13 @@ export const useChatStore = create<ChatState>((set) => ({
     set((state) => ({
       chats: state.chats.map((c) => c.id === chatId ? { ...c, ...updates } : c),
       currentChat: state.currentChat?.id === chatId ? { ...state.currentChat, ...updates } : state.currentChat,
+    })),
+  resolveTempChat: (tempId, real) =>
+    set((state) => ({
+      chats: state.chats.some((c) => c.id === tempId)
+        ? state.chats.map((c) => (c.id === tempId ? real : c))
+        : [real, ...state.chats],
+      currentChat: state.currentChat?.id === tempId ? real : state.currentChat,
+      messages: state.currentChat?.id === tempId ? (real.messages ?? []) : state.messages,
     })),
 }));

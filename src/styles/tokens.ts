@@ -109,8 +109,8 @@ export const tokens = {
 export const themes = [
   { id: "light", label: "Light", icon: "Sun" },
   { id: "dark", label: "Dark", icon: "Moon" },
-  { id: "midnight", label: "Midnight", icon: "MoonStar" },
-  { id: "aurora", label: "Aurora", icon: "Sparkles" },
+  { id: "midnight", label: "Midnight", icon: "Moon" },
+  { id: "aurora", label: "Aurora", icon: "Wand2" },
   { id: "glass", label: "Glass", icon: "Droplets" },
   { id: "oled", label: "OLED", icon: "Circle" },
 ] as const;

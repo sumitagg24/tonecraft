@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Star } from "lucide-react";
+import { Heart } from "lucide-react";
 import { TONES } from "@/lib/constants";
 import { useChatStore } from "@/stores/chat-store";
 import { cn } from "@/lib/utils";
@@ -93,7 +93,7 @@ export function TonePicker({ onSelect, onClose }: TonePickerProps) {
             isFav ? "text-amber-400" : "text-muted-foreground/30 hover:text-muted-foreground"
           )}
         >
-          <Star className={cn("w-3.5 h-3.5", isFav && "fill-current")} />
+          <Heart className={cn("w-3.5 h-3.5", isFav && "fill-current")} />
         </button>
       </div>
     );

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { planService } from "@/services/PlanService";
 import { auditLogService } from "@/services/AuditLogService";
+import { getPriceId } from "@/lib/billing-prices";
 
 export async function POST(req: Request) {
   const body = await req.text();
@@ -24,9 +25,13 @@ export async function POST(req: Request) {
   const normalized = await billingService.handleWebhookEvent(event);
 
   logger.info("Webhook received", { type: normalized.type });
-  void auditLogService.record("billing.webhook_received", "billing", {
-    metadata: { eventType: normalized.type },
-  });
+  // Only record events we actually act on — ignored ones (product.*, customer.*,
+  // transaction.created, …) would otherwise spam the audit log.
+  if (normalized.type !== "ignored") {
+    void auditLogService.record("billing.webhook_received", "billing", {
+      metadata: { eventType: normalized.type },
+    });
+  }
 
   try {
     await syncSubscription(normalized);
@@ -52,6 +57,10 @@ function extractUserId(data: PaddleData): string | null {
 }
 
 async function syncSubscription(normalized: { type: string; data: Record<string, unknown> }) {
+  // Events we don't act on (see PaddleProvider.mapEventType) are safe no-ops.
+  if (normalized.type === "ignored") {
+    return;
+  }
   const data = normalized.data as PaddleData;
   const userId = extractUserId(data);
   if (!userId) {
@@ -178,7 +187,20 @@ async function syncSubscription(normalized: { type: string; data: Record<string,
 
 function planFromPriceId(priceId: string | null): string {
   if (!priceId) return "free";
-  if (priceId === (process.env.PADDLE_PRICE_PRO ?? "pri_01kyn5577vywxh8z8b40h96ka5")) return "pro";
-  if (priceId === (process.env.PADDLE_PRICE_ENTERPRISE ?? "pri_01kyn5rt66qd17jq4b67v85j6v")) return "enterprise";
+  // Monthly, annual, and INR price IDs all map to the same plan tier.
+  if (
+    priceId === getPriceId("Pro", "month", "USD") ||
+    priceId === getPriceId("Pro", "year", "USD") ||
+    priceId === getPriceId("Pro", "month", "INR")
+  ) {
+    return "pro";
+  }
+  if (
+    priceId === getPriceId("Enterprise", "month", "USD") ||
+    priceId === getPriceId("Enterprise", "year", "USD") ||
+    priceId === getPriceId("Enterprise", "month", "INR")
+  ) {
+    return "enterprise";
+  }
   return "free";
 }

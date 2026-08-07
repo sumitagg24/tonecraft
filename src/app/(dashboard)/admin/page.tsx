@@ -97,7 +97,7 @@ export default function AdminOverviewPage() {
 
   const statCards = [
     { label: "Members", value: data.members.total.toString(), icon: Users, color: "text-blue-500" },
-    { label: "Projects", value: data.projects.total.toString(), icon: Folder, color: "text-violet-500" },
+    { label: "Projects", value: data.projects.total.toString(), icon: Folder, color: "text-brand" },
     { label: "Chats", value: data.chats.total.toString(), icon: MessageSquare, color: "text-emerald-500" },
     { label: "Messages", value: formatNumber(data.messages.total), icon: Activity, color: "text-amber-500" },
     { label: "Knowledge Files", value: data.knowledge.files.toString(), icon: HardDrive, color: "text-cyan-500" },
@@ -230,7 +230,7 @@ export default function AdminOverviewPage() {
                 </div>
                 <div className="w-full h-2 bg-muted rounded-full mt-1 overflow-hidden">
                   <div
-                    className="h-full bg-violet-500 rounded-full"
+                    className="h-full bg-brand rounded-full"
                     style={{ width: "100%" }}
                   />
                 </div>

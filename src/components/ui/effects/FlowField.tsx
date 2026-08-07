@@ -87,7 +87,7 @@ function DefaultContent() {
       >
         Chaos finds its
         <br />
-        <span className="bg-gradient-to-r from-emerald-300 via-teal-200 to-violet-300 bg-clip-text text-transparent">
+        <span className="bg-gradient-to-r from-amber-300 via-orange-200 to-rose-300 bg-clip-text text-transparent">
           own beauty
         </span>
       </motion.h1>

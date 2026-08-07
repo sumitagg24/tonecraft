@@ -8,6 +8,7 @@ const auditLogSelect = {
   resource: true,
   resourceId: true,
   workspaceId: true,
+  organizationId: true,
   targetId: true,
   metadata: true,
   createdAt: true,
@@ -20,6 +21,7 @@ const auditLogSelectWithActor = {
 
 export interface AuditLogFilter {
   workspaceId?: string;
+  organizationId?: string;
   actorId?: string;
   resource?: string;
   action?: string;
@@ -37,6 +39,7 @@ export interface AuditLogRecord {
   resource: string;
   resourceId: string | null;
   workspaceId: string | null;
+  organizationId: string | null;
   targetId: string | null;
   metadata: Record<string, unknown> | null;
   createdAt: Date;
@@ -49,6 +52,7 @@ export class AuditLogRepository {
     resource: string;
     resourceId?: string | null;
     workspaceId?: string | null;
+    organizationId?: string | null;
     targetId?: string | null;
     ip?: string | null;
     userAgent?: string | null;
@@ -61,6 +65,7 @@ export class AuditLogRepository {
         resource: data.resource,
         resourceId: data.resourceId ?? null,
         workspaceId: data.workspaceId ?? null,
+        organizationId: data.organizationId ?? null,
         targetId: data.targetId ?? null,
         ip: data.ip ?? null,
         userAgent: data.userAgent ?? null,
@@ -73,6 +78,7 @@ export class AuditLogRepository {
   async findMany(filter: AuditLogFilter): Promise<{ items: AuditLogRecord[]; total: number }> {
     const {
       workspaceId,
+      organizationId,
       actorId,
       resource,
       action,
@@ -84,6 +90,7 @@ export class AuditLogRepository {
 
     const where: Record<string, unknown> = {};
     if (workspaceId) where.workspaceId = workspaceId;
+    if (organizationId) where.organizationId = organizationId;
     if (actorId) where.actorId = actorId;
     if (resource) where.resource = resource;
     if (action) where.action = action;

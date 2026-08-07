@@ -20,7 +20,7 @@ function createPrismaClient() {
     })();
 
   const pool = new Pool({
-    connectionString,
+    connectionString: normalizeSslMode(connectionString),
     max: 5,                       // well under Neon's direct-connection limit
     connectionTimeoutMillis: 10_000, // fail fast instead of hanging forever
     idleTimeoutMillis: 10_000,    // discard idle clients before the server closes them
@@ -32,6 +32,15 @@ function createPrismaClient() {
 
   const adapter = new PrismaPg(pool);
   return new PrismaClient({ adapter });
+}
+
+/**
+ * pg emits a noisy deprecation warning for sslmode=prefer|require|verify-ca
+ * (it treats them as aliases of verify-full). Normalize to the explicit mode
+ * so the warning never fires, regardless of what the shell/CI exports.
+ */
+function normalizeSslMode(url: string): string {
+  return url.replace(/sslmode=(prefer|require|verify-ca)(?=&|$)/gi, "sslmode=verify-full");
 }
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient();

@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth";
 import { logger } from "./logger";
 import { z, ZodError } from "zod";
 import { checkEndpointLimit, checkIpLimit } from "./ratelimit";
+import { featureFlagService } from "@/services/FeatureFlagService";
+import type { FeatureKey } from "@/config/features";
 
 /**
  * Standardized API handler used by every JSON API route.
@@ -55,6 +57,13 @@ export interface WithApiHandlerOptions<S extends z.ZodTypeAny = z.ZodTypeAny> {
     ipLimit?: number;
     key: string;
   };
+  /**
+   * Runtime feature gate — the route returns 403 FEATURE_DISABLED unless the
+   * feature is enabled for the user (plan default + DB override). Lets
+   * operators toggle whole surfaces (marketplace, memory, developer API)
+   * without deploying. Only applies to authed routes.
+   */
+  feature?: FeatureKey;
 }
 
 /** Best-effort client IP (x-forwarded-for from the proxy). */
@@ -109,7 +118,7 @@ function buildHandler(
   options: WithApiHandlerOptions,
   method: string
 ): RouteHandler {
-  const { schema, auth: requireAuth = true, rateLimit } = options;
+  const { schema, auth: requireAuth = true, rateLimit, feature } = options;
 
   return async (req, ctx) => {
     const startTime = Date.now();
@@ -124,6 +133,27 @@ function buildHandler(
         return NextResponse.json(
           { success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized" } },
           { status: 401 }
+        );
+      }
+    }
+
+    // 1a. Phase 17/19 — runtime feature gate (marketplace, memory, developer API…).
+    if (feature && session?.user?.id) {
+      const enabled = await featureFlagService.isEnabled(session.user.id, feature);
+      if (!enabled) {
+        logger.info(`[API] Feature disabled ${requestId} ${method} ${req.nextUrl.pathname}`, {
+          userId: session.user.id,
+          feature,
+        });
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: "FEATURE_DISABLED",
+              message: `Feature "${feature}" is not enabled for this workspace. Ask an admin to enable it.`,
+            },
+          },
+          { status: 403 }
         );
       }
     }
@@ -152,10 +182,14 @@ function buildHandler(
       }
     }
 
-    // 2. Body parsing (JSON only — multipart/form-data is read by handlers directly)
+    // 2. Payload parsing. Body-bearing methods (POST/PATCH/PUT) parse the JSON
+    //    request body; bodyless methods (GET/DELETE) receive the query params.
+    //    Schemas only apply to body-bearing methods — GET/DELETE routes validate
+    //    their query params in-handler.
+    const hasBody = method === "POST" || method === "PATCH" || method === "PUT";
     let body: unknown;
-    const contentType = req.headers.get("content-type") ?? "";
-    if (schema || method === "POST" || method === "PATCH" || method === "PUT") {
+    if (hasBody) {
+      const contentType = req.headers.get("content-type") ?? "";
       const isJson = contentType === "" || contentType.includes("application/json");
       if (isJson) {
         try {
@@ -164,10 +198,12 @@ function buildHandler(
           body = undefined;
         }
       }
+    } else {
+      body = Object.fromEntries(req.nextUrl.searchParams);
     }
 
     // 3. Validation — never serialize a raw ZodError
-    if (schema) {
+    if (schema && hasBody) {
       const parsed = schema.safeParse(body);
       if (!parsed.success) {
         const message = flattenZodError(parsed.error);
@@ -212,7 +248,12 @@ function buildHandler(
       );
     } catch (error) {
       const duration = Date.now() - startTime;
-      logger.error(`[API] ${requestId} ${method} ${req.nextUrl.pathname} ${duration}ms`, error);
+      logger.error(`[API] ${requestId} ${method} ${req.nextUrl.pathname} ${duration}ms`, {
+        requestId,
+        method,
+        path: req.nextUrl.pathname,
+        ...(session?.user?.id ? { userId: session.user.id } : {}),
+      }, error instanceof Error ? error : new Error(String(error)));
       return NextResponse.json(
         {
           success: false,

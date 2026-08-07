@@ -52,9 +52,13 @@ const config: Config = {
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         surface: {
-          DEFAULT: "hsl(240 10% 6%)",
-          elevated: "hsl(240 10% 8%)",
-          overlay: "hsl(240 10% 5%)",
+          DEFAULT: "hsl(var(--surface))",
+          elevated: "hsl(var(--surface-elevated))",
+          overlay: "hsl(var(--background) / 0.8)",
+        },
+        brand: {
+          DEFAULT: "hsl(var(--brand))",
+          foreground: "hsl(var(--brand-foreground))",
         },
         tone: {
           professional: "#3b82f6",
@@ -78,8 +82,8 @@ const config: Config = {
           "sans-serif",
         ],
         display: [
-          "var(--font-sans)",
-          "SF Pro Display",
+          "var(--font-display)",
+          "Instrument Serif",
           "Inter",
           "system-ui",
           "-apple-system",
@@ -129,12 +133,15 @@ const config: Config = {
         "4xl": "2rem",
       },
       boxShadow: {
-        "premium": "0 0 0 1px hsl(0 0% 100% / 0.05), 0 2px 4px hsl(0 0% 0% / 0.3), 0 8px 16px hsl(0 0% 0% / 0.2)",
-        "card": "0 0 0 1px hsl(0 0% 100% / 0.03), 0 4px 8px hsl(0 0% 0% / 0.25), 0 12px 24px hsl(0 0% 0% / 0.15)",
-        "glow": "0 0 20px -4px hsl(var(--primary) / 0.15)",
-        "glow-lg": "0 0 40px -8px hsl(var(--primary) / 0.2)",
-        "inner-glow": "inset 0 1px 0 0 hsl(0 0% 100% / 0.05)",
-        "dock": "0 4px 30px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05)",
+        "premium": "0 1px 3px hsl(0 0% 0% / 0.06), 0 4px 12px hsl(0 0% 0% / 0.04)",
+        "card": "0 1px 2px hsl(0 0% 0% / 0.03), 0 0 0 0.5px hsl(var(--border) / 0.5)",
+        "editorial": "0 2px 8px hsl(0 0% 0% / 0.04), 0 0 0 0.5px hsl(var(--border) / 0.3)",
+        "editorial-lg": "0 4px 20px hsl(0 0% 0% / 0.06), 0 0 0 0.5px hsl(var(--border) / 0.2)",
+        "glow": "0 0 20px -4px hsl(var(--primary) / 0.1)",
+        "glow-lg": "0 0 40px -8px hsl(var(--primary) / 0.15)",
+        "inner-glow": "inset 0 1px 0 0 hsl(0 0% 100% / 0.04)",
+        "dock": "0 2px 20px rgba(0, 0, 0, 0.06), 0 0 0 0.5px hsl(var(--border) / 0.4)",
+        "float": "0 4px 24px -4px hsl(0 0% 0% / 0.08), 0 0 0 0.5px hsl(var(--border) / 0.3)",
       },
       keyframes: {
         "accordion-down": {

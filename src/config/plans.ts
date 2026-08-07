@@ -30,7 +30,6 @@ export interface PlanFeatures {
   readonly fileUploads: boolean;
   readonly exportPdf: boolean;
   readonly modelSelector: boolean;
-  readonly apiAccess: boolean;
   readonly teamWorkspace: boolean;
   readonly advancedAnalytics: boolean;
 }
@@ -65,7 +64,6 @@ const FREE_PLAN: PlanConfig = {
     fileUploads: true,
     exportPdf: false,
     modelSelector: false,
-    apiAccess: false,
     teamWorkspace: false,
     advancedAnalytics: false,
   },
@@ -75,7 +73,7 @@ const FREE_PLAN: PlanConfig = {
 const PRO_PLAN: PlanConfig = {
   tier: PlanTier.PRO,
   label: "Pro",
-  priceCents: 1200,
+  priceCents: 600,
   limits: {
     messagesPerDay: Infinity,
     messagesPerHour: 100,
@@ -93,7 +91,6 @@ const PRO_PLAN: PlanConfig = {
     fileUploads: true,
     exportPdf: true,
     modelSelector: true,
-    apiAccess: false,
     teamWorkspace: false,
     advancedAnalytics: true,
   },
@@ -103,7 +100,7 @@ const PRO_PLAN: PlanConfig = {
 const ENTERPRISE_PLAN: PlanConfig = {
   tier: PlanTier.ENTERPRISE,
   label: "Enterprise",
-  priceCents: 4900,
+  priceCents: 1500,
   limits: {
     messagesPerDay: Infinity,
     messagesPerHour: Infinity,
@@ -121,7 +118,6 @@ const ENTERPRISE_PLAN: PlanConfig = {
     fileUploads: true,
     exportPdf: true,
     modelSelector: true,
-    apiAccess: true,
     teamWorkspace: true,
     advancedAnalytics: true,
   },

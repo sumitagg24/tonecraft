@@ -6,6 +6,13 @@ import { toast } from "sonner";
 
 let activeController: AbortController | null = null;
 
+/**
+ * Pending optimistic chat creations keyed by temp id. When a message is sent
+ * to a temp chat before the server row exists, sendMessage awaits the real
+ * chat so the POST targets the persisted id instead of 404ing.
+ */
+const pendingChatCreations = new Map<string, Promise<Chat | null>>();
+
 // Error codes that indicate the user has hit a free-tier limit and needs to upgrade.
 const FREE_TIER_LIMIT_ERRORS = new Set([
   "RATE_LIMITED",
@@ -31,12 +38,24 @@ export function useChat() {
   const sendMessage = useCallback(
     async (content: string, chatId: string, opts?: { knowledgeFileIds?: string[] }) => {
       const { selectedTone, selectedModel, selectedPersona, setIsLoading, clearStreamingContent, addMessage, appendStreamingContent, setMessages, context } = useChatStore.getState();
+
+      // If this is an optimistic temp chat whose server row is still being
+      // created, wait for it so the message POST lands on a real chat id.
+      let targetChatId = chatId;
+      if (chatId.startsWith("temp-")) {
+        const pending = pendingChatCreations.get(chatId);
+        if (pending) {
+          const real = await pending;
+          if (real) targetChatId = real.id;
+        }
+      }
+
       setIsLoading(true);
       clearStreamingContent();
 
       const tempUserMessage: Message = {
         id: `temp-${Date.now()}`,
-        chatId,
+        chatId: targetChatId,
         role: "user",
         content,
         tone: selectedTone,
@@ -56,7 +75,7 @@ export function useChat() {
       activeController = controller;
 
       try {
-        const response = await fetch(`/api/chats/${chatId}/messages`, {
+        const response = await fetch(`/api/chats/${targetChatId}/messages`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           signal: controller.signal,
@@ -94,7 +113,7 @@ export function useChat() {
           }
         }
 
-        const chat = await api<Chat>(`/api/chats/${chatId}`);
+        const chat = await api<Chat>(`/api/chats/${targetChatId}`);
         setMessages(chat.messages ?? []);
         clearStreamingContent();
       } catch (error) {
@@ -104,7 +123,7 @@ export function useChat() {
           for (let attempt = 0; attempt < 3; attempt++) {
             await new Promise((r) => setTimeout(r, 250));
             try {
-              const chat = await api<Chat>(`/api/chats/${chatId}`);
+              const chat = await api<Chat>(`/api/chats/${targetChatId}`);
               const lastAssistant = [...(chat.messages ?? [])].reverse().find((m) => m.role === "assistant");
               if (lastAssistant && lastAssistant.content) {
                 setMessages(chat.messages ?? []);
@@ -159,6 +178,55 @@ export function useChat() {
       body: JSON.stringify(data || {}),
     });
   }, []);
+
+  /**
+   * Optimistic New Chat: returns a temp chat id instantly so the UI can
+   * navigate without waiting for the network round-trip, then swaps in the
+   * server-created chat (and tells the caller the real id via onReady).
+   */
+  const createChatOptimistic = useCallback(async (data?: { title?: string; tone?: string } | ((real: Chat) => void), onReady?: (real: Chat) => void) => {
+    const tempId = `temp-${Date.now()}`;
+    const { selectedTone, setCurrentChat } = useChatStore.getState();
+    // Allow both call styles: (onReady) and ({ title }, onReady).
+    const isOptions = typeof data === "object" && data !== null;
+    const ready = isOptions ? onReady : (data as ((real: Chat) => void) | undefined);
+    const options = isOptions ? (data as { title?: string; tone?: string }) : undefined;
+    const tempChat: Chat = {
+      id: tempId,
+      userId: "",
+      title: options?.title || "New Chat",
+      tone: options?.tone || selectedTone,
+      model: "auto",
+      messages: [],
+      isPinned: false,
+      isFavorite: false,
+      isArchived: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    setCurrentChat(tempChat);
+    // Fire the real creation in the background; swap ids when it lands.
+    const pending = createChat(options).then((real) => {
+      pendingChatCreations.delete(tempId);
+      useChatStore.getState().resolveTempChat(tempId, real);
+      // Only hand off navigation if the user is still on this temp chat —
+      // otherwise they've moved on and shouldn't be yanked back.
+      if (useChatStore.getState().currentChat?.id === tempId) {
+        ready?.(real);
+      }
+      return real;
+    }).catch(() => {
+      pendingChatCreations.delete(tempId);
+      // If creation failed, drop the temp chat so the UI falls back to the
+      // empty state instead of showing a phantom chat.
+      const { currentChat, setCurrentChat: setC } = useChatStore.getState();
+      if (currentChat?.id === tempId) setC(null);
+      toast.error("Failed to create chat");
+      return null;
+    });
+    pendingChatCreations.set(tempId, pending);
+    return tempId;
+  }, [createChat]);
 
   const fetchChats = useCallback(async () => {
     try {
@@ -274,7 +342,7 @@ export function useChat() {
   }, []);
 
   return {
-    sendMessage, stopStreaming, createChat, fetchChats, deleteChat,
+    sendMessage, stopStreaming, createChat, createChatOptimistic, fetchChats, deleteChat,
     renameChat, togglePin, toggleFavorite, archiveChat,
     regenerateMessage, continueMessage, editMessage, setMessageFeedback,
   };

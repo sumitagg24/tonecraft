@@ -68,7 +68,9 @@ export const useWorkspaceStore = create<WorkspaceStoreState>()(
     mode: "chat",
     sidebarOpen: true,
     sidebarWidth: 280,
-    contextPanelOpen: true,
+    // AI Context panel is hidden by default — opened on demand via the
+    // right-panel toggle in the chat header (user request).
+    contextPanelOpen: false,
     contextPanelWidth: 320,
     showAdvancedControls: false,
     showSuggestions: true,

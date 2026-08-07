@@ -4,6 +4,13 @@ import { PlanTier, getPlanConfig, type PlanConfig } from "./plans";
 // models route through openrouter. Re-add only with a real @ai-sdk/anthropic client.
 export type ProviderName = "groq" | "openrouter" | "google" | "openai";
 
+// Google model IDs are pinned to current GA releases (Gemini 3.x). `gemini-2.5-*`
+// returns 404 for new API keys ("no longer available to new users"). Override via
+// env if you need a different model — e.g. GOOGLE_AI_MODEL=gemini-3.5-flash-lite.
+// NOTE: displayName stays static even when overridden — only modelId follows env.
+const GOOGLE_FLASH_MODEL = process.env.GOOGLE_AI_MODEL || "gemini-3.6-flash";
+const GOOGLE_PRO_MODEL = process.env.GOOGLE_AI_PRO_MODEL || "gemini-3.1-pro-preview";
+
 export type ModelStatus = "available" | "deprecated" | "unavailable";
 
 export type ModelTier = "free" | "pro";
@@ -64,8 +71,8 @@ const MODELS: readonly ModelEntry[] = [
   {
     id: "gemini-flash",
     provider: "google",
-    displayName: "Gemini 2.5 Flash",
-    modelId: "gemini-2.5-flash",
+    displayName: "Gemini 3.6 Flash",
+    modelId: GOOGLE_FLASH_MODEL,
     tier: "free",
     creditCost: 2,
     contextWindow: 1048576,
@@ -78,8 +85,8 @@ const MODELS: readonly ModelEntry[] = [
   {
     id: "gemini-pro",
     provider: "google",
-    displayName: "Gemini 2.5 Pro",
-    modelId: "gemini-2.5-pro",
+    displayName: "Gemini 3.1 Pro",
+    modelId: GOOGLE_PRO_MODEL,
     tier: "pro",
     creditCost: 5,
     contextWindow: 2097152,

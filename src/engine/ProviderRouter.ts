@@ -302,6 +302,11 @@ export class ProviderRouter {
         msg.includes("too many requests") ||
         msg.includes("429") ||
         msg.includes("timeout") ||
+        msg.includes("api key") ||
+        msg.includes("apikey") ||
+        msg.includes("unauthorized") ||
+        msg.includes("invalid key") ||
+        msg.includes("missing key") ||
         // 5xx / network errors should ride the failover queue too (audit A12)
         msg.includes("500") ||
         msg.includes("502") ||

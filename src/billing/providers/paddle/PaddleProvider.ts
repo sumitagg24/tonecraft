@@ -188,8 +188,13 @@ export class PaddleProvider implements PaymentProvider {
       case "subscription.past_due":
         return "subscription.payment_failed";
       default:
-        logger.warn(`Unmapped Paddle event type: ${raw}`);
-        return "subscription.updated";
+        // Events we don't act on (transaction.created, product.*, customer.*,
+        // …) must NOT touch subscriptions — returning "ignored" makes the
+        // webhook handler skip the sync entirely. Previously these fell
+        // through to "subscription.updated" and could overwrite a user's
+        // subscription row with transaction data.
+        logger.debug(`Ignoring unmapped Paddle event type: ${raw}`);
+        return "ignored";
     }
   }
 

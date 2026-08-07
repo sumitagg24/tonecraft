@@ -17,8 +17,10 @@ export const POST = api.POST(async (ctx, body) => {
   return ok(session, 201);
 });
 
-export const GET = api.GET(async (ctx, body) => {
-  const { resourceType, resourceId } = body as { resourceType?: string; resourceId?: string };
+export const GET = api.GET(async (ctx) => {
+  const sp = ctx.request.nextUrl.searchParams;
+  const resourceType = sp.get("resourceType") ?? undefined;
+  const resourceId = sp.get("resourceId") ?? undefined;
   if (resourceType && resourceId) {
     const session = await collaborationService.getActiveSession(resourceType, resourceId);
     return ok({ session });

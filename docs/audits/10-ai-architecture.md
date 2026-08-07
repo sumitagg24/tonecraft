@@ -51,6 +51,8 @@ ResponseFormatter.format(...) → EngineResult
 
 The legacy array only runs on the `!plan` / `isPro` backward-compat path (`resolveQueue`), which means anything routing without a plan can call **retired model IDs**. `provider-clients.ts` is a third, dead copy (audit 01 flagged it). Fix: delete the legacy array + `isPro` path, or re-derive `PROVIDERS` from `models.ts`; single source of truth is `config/models.ts` + `ModelRegistry`.
 
+> Update 2026-08-07: `config/models.ts` now pins Google models to `gemini-3.6-flash` / `gemini-3.1-pro-preview` (the `gemini-2.5-*` IDs 404 for new API keys), overridable via `GOOGLE_AI_MODEL` / `GOOGLE_AI_PRO_MODEL`. Do not revert to 2.5 IDs.
+
 ### A2. `anthropic` provider type exists but no client exists (Medium)
 
 `ProviderName` includes `"anthropic"` and `getClient()` has no `anthropic` case → runtime `throw new Error("Unknown provider: anthropic")`. No model currently uses it (`openrouter-claude` routes through openrouter), so it's latent — but the type lies and a future model entry would hard-fail. Either add `createAnthropic` (the SDK is available via `@ai-sdk/anthropic` — not currently a dependency) or drop the union member.

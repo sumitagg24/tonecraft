@@ -1,6 +1,6 @@
 "use client";
 import { toast } from "sonner";
-import { Check, X, AlertTriangle, Info, Sparkles, Copy, Bookmark, Trash2 } from "lucide-react";
+import { Check, X, AlertTriangle, Info, Wand2, Copy, Bookmark, Trash2 } from "lucide-react";
 import type { ReactElement } from "react";
 
 function PremiumToastContent({
@@ -82,7 +82,7 @@ export function usePremiumToast() {
 
     upgrade: () =>
       toast.custom((t) => (
-        <PremiumToastContent iconEl={<Sparkles className="w-4 h-4" />} iconColor="text-violet-500" message="Upgrade available" description="Unlock premium features" onDismiss={() => toast.dismiss(t)} />
+        <PremiumToastContent iconEl={<Wand2 className="w-4 h-4" />} iconColor="text-brand" message="Upgrade available" description="Unlock premium features" onDismiss={() => toast.dismiss(t)} />
       ), { duration: 4000 }),
   };
 }

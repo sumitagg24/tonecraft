@@ -40,10 +40,10 @@ const features = [
 
 export function Capabilities() {
   return (
-    <section id="features" className="relative py-24 md:py-32 overflow-hidden">
+    <section id="features" className="relative py-28 md:py-36 overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-border to-transparent" />
 
-      <div className="max-w-6xl mx-auto px-4">
+      <div className="max-w-6xl mx-auto px-6">
         <motion.div
           variants={sectionReveal}
           initial="hidden"
@@ -57,7 +57,7 @@ export function Capabilities() {
           >
             Core capabilities
           </motion.div>
-          <motion.h2 variants={sectionItem} className="text-3xl md:text-5xl font-bold mb-4 tracking-tight">
+          <motion.h2 variants={sectionItem} className="font-display text-4xl md:text-6xl tracking-tight mb-4">
             Everything you need to communicate better
           </motion.h2>
           <motion.p variants={sectionItem} className="text-muted-foreground text-base md:text-lg max-w-xl mx-auto">
@@ -65,15 +65,18 @@ export function Capabilities() {
           </motion.p>
         </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-          {features.map((feature, i) => (
+        <motion.div
+          variants={sectionReveal}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6"
+        >
+          {features.map((feature) => (
             <motion.div
               key={feature.title}
               variants={sectionItem}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              transition={{ delay: (i % 3) * 0.08 }}
+              whileHover={{ y: -2 }}
               className="group glass-panel rounded-2xl p-6 hover:border-border/70 hover:shadow-card transition-all duration-300"
             >
               <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110">
@@ -83,7 +86,7 @@ export function Capabilities() {
               <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
             </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );

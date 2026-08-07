@@ -66,10 +66,174 @@ model User {
   agentRuns         AgentRun[]
   automations       Automation[]
   integrations      Integration[]
+  ownedOrganizations Organization[]    @relation("OrgOwner")
+  organizationMembers OrganizationMember[] @relation("OrgMember")
+  marketplaceListings MarketplaceListing[]
+  listingReviews      ListingReview[]
+  listingDownloads    ListingDownload[]
+  creatorProfile      CreatorProfile?
+  following           CreatorFollow[]    @relation("CreatorFollower")
+  followers           CreatorFollow[]    @relation("CreatorFollowing")
 
   // NOTE: no redundant @@index on clerkId/email — @unique already builds them.
 }
 
+// ════════════════════════════════════════════════════════════════════
+// Phase 14 — AI Marketplace
+// Users publish prompts, agents, workflows, personas, and templates.
+// ════════════════════════════════════════════════════════════════════
+
+enum ListingKind {
+  prompt
+  agent
+  workflow
+  persona
+  template
+}
+
+enum ListingStatus {
+  draft
+  published
+  archived
+}
+
+/// A published (or draft) marketplace item — the asset itself is stored as
+/// structured `content` JSON (prompt text, agent config, workflow steps…).
+model MarketplaceListing {
+  id            String        @id @default(cuid())
+  kind          ListingKind
+  title         String
+  description   String?
+  content       Json
+  tags          String[]      @default([])
+  license       String        @default("cc-by-4.0")
+  priceCredits  Int           @default(0)
+  status        ListingStatus @default(draft)
+  authorId      String
+  ratingAgg     Float         @default(0)
+  ratingCount   Int           @default(0)
+  downloadCount Int           @default(0)
+  trendingScore Float         @default(0)
+  featured      Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  author        User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  reviews       ListingReview[]
+  downloads     ListingDownload[]
+
+  @@index([kind, status])
+  @@index([authorId])
+  @@index([status, trendingScore])
+  @@index([status, downloadCount])
+  @@index([status, ratingAgg])
+  @@index([featured, status])
+}
+
+/// Star rating + optional written review on a listing (one per user).
+model ListingReview {
+  id        String            @id @default(cuid())
+  listingId String
+  userId    String
+  rating    Int
+  review    String?
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  listing   MarketplaceListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([listingId, userId])
+  @@index([listingId, rating])
+}
+
+/// A recorded install of a listing (drives download counts + creator stats).
+model ListingDownload {
+  id        String            @id @default(cuid())
+  listingId String
+  userId    String
+  createdAt DateTime          @default(now())
+  listing   MarketplaceListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([listingId, userId])
+  @@index([listingId, createdAt])
+}
+
+/// Public creator profile — handle, bio, and stats surfaced from listings.
+model CreatorProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  handle    String   @unique
+  bio       String?
+  location  String?
+  website   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([handle])
+}
+
+/// Follow graph between creators and users.
+model CreatorFollow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+  follower    User     @relation("CreatorFollower", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("CreatorFollowing", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followingId])
+}
+
+// ════════════════════════════════════════════════════════════════════
+// Phase 17 — AI Memory System
+// Long-term memory scoped to a user, workspace, team, or agent, plus a
+// lightweight knowledge graph over memory items.
+// ════════════════════════════════════════════════════════════════════
+
+enum MemoryOwnerType {
+  user
+  workspace
+  team
+  agent
+}
+
+/// A discrete remembered fact. `embedding` is a Json float array produced by
+/// `src/lib/embeddings.ts`; `metadata` carries source/tone/importance hints.
+model MemoryItem {
+  id             String          @id @default(cuid())
+  ownerType      MemoryOwnerType
+  ownerId        String
+  content        String
+  embedding      Json?
+  metadata       Json? // { source: 'chat'|'explicit'|'knowledge'|'agent', tone?, projectId?, tags? }
+  importance     Int             @default(50) // 0–100, bumped by recall
+  lastAccessedAt DateTime        @default(now())
+  createdAt      DateTime        @default(now())
+  linksFrom      MemoryLink[]    @relation("MemoryLinkFrom")
+  linksTo        MemoryLink[]    @relation("MemoryLinkTo")
+
+  @@index([ownerType, ownerId])
+  @@index([ownerType, ownerId, importance])
+  @@index([ownerId])
+}
+
+/// Knowledge-graph edge between two memory items ("relates to", "causes", …).
+model MemoryLink {
+  id          String     @id @default(cuid())
+  fromId      String
+  toId        String
+  relation    String     @default("relates_to")
+  createdAt   DateTime   @default(now())
+  from        MemoryItem @relation("MemoryLinkFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  to          MemoryItem @relation("MemoryLinkTo", fields: [toId], references: [id], onDelete: Cascade)
+
+  @@unique([fromId, toId, relation])
+  @@index([toId])
+}
+
+// ════════════════════════════════════════════════════════════════════
 model Chat {
   id               String            @id @default(cuid())
   userId           String
@@ -226,26 +390,32 @@ model Subscription {
 }
 
 model Workspace {
-  id           String            @id @default(cuid())
-  userId       String
-  name         String
-  description  String?
-  color        String            @default("#6366F1")
-  visibility   Visibility        @default(public)
-  modes        WorkspaceModes[]  @default([chat])
-  members      WorkspaceMember[]
-  invites      WorkspaceInvite[]
-  projects     Project[]
-  archives     ActivityFeed[]
-  usageRecords UsageRecord[]
-  settings     Json              @default("{}")
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  prompts      Prompt[]
+  id             String            @id @default(cuid())
+  userId         String
+  organizationId String?
+  teamId         String?
+  name           String
+  description    String?
+  color          String            @default("#6366F1")
+  visibility     Visibility        @default(public)
+  modes          WorkspaceModes[]  @default([chat])
+  members        WorkspaceMember[]
+  invites        WorkspaceInvite[]
+  projects       Project[]
+  archives       ActivityFeed[]
+  usageRecords   UsageRecord[]
+  settings       Json              @default("{}")
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization?     @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  team           Team?             @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  prompts        Prompt[]
 
   @@index([userId])
   @@index([visibility])
+  @@index([organizationId])
+  @@index([teamId])
 }
 
 enum Visibility {
@@ -659,20 +829,23 @@ model NotificationPreference {
 }
 
 model AuditLog {
-  id          String   @id @default(cuid())
-  actorId     String?
-  actor       User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
-  action      String
-  resource    String
-  resourceId  String?
-  workspaceId String?
-  targetId    String?
-  ip          String?
-  userAgent   String?
-  metadata    Json?
-  createdAt   DateTime @default(now())
+  id             String        @id @default(cuid())
+  actorId        String?
+  actor          User?         @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+  action         String
+  resource       String
+  resourceId     String?
+  workspaceId    String?
+  organizationId String?
+  targetId       String?
+  ip             String?
+  userAgent      String?
+  metadata       Json?
+  createdAt      DateTime      @default(now())
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
 
   @@index([workspaceId, createdAt])
+  @@index([organizationId, createdAt])
   @@index([actorId, createdAt])
   @@index([action])
   @@index([resource, createdAt])
@@ -1092,4 +1265,94 @@ model FeatureOverride {
   updatedBy String?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+}
+
+// ════════════════════════════════════════════════════════════════════
+// Phase 13 — Enterprise
+// Hierarchy: Organization (Company) → Team → Workspace → Project
+// ════════════════════════════════════════════════════════════════════
+
+enum OrgRole {
+  owner
+  admin
+  manager
+  member
+}
+
+enum DataResidency {
+  us
+  eu
+  asia
+}
+
+/// A company. The top of the enterprise hierarchy. Owns teams + workspaces.
+model Organization {
+  id           String              @id @default(cuid())
+  name         String
+  slug         String              @unique
+  ownerId      String
+  plan         String              @default("enterprise")
+  dataResidency DataResidency      @default(us)
+  branding     Json                @default("{}") // logoUrl, primaryColor, accentColor, customDomain…
+  sso          Json                @default("{}") // providers, enforcedDomains, saml metadata
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  owner        User                @relation("OrgOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members      OrganizationMember[]
+  teams        Team[]
+  workspaces   Workspace[]
+  security     SecurityPolicy?
+  auditLogs    AuditLog[]
+
+  @@index([ownerId])
+  @@index([plan])
+}
+
+/// Org-level membership (roles + department) — distinct from per-workspace roles.
+model OrganizationMember {
+  id             String       @id @default(cuid())
+  organizationId String
+  userId         String
+  role           OrgRole      @default(member)
+  department     String?
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation("OrgMember", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([organizationId, role])
+  @@index([userId])
+}
+
+/// A department/group inside an organization. Workspaces can be assigned to a team.
+model Team {
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  department     String?
+  color          String       @default("#6366F1")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  workspaces     Workspace[]
+
+  @@index([organizationId])
+}
+
+/// Org-level security policy (password policy, 2FA, session timeout, device limits).
+model SecurityPolicy {
+  id                  String       @id @default(cuid())
+  organizationId      String       @unique
+  minPasswordLength   Int          @default(8)
+  requireUppercase    Boolean      @default(true)
+  requireNumber       Boolean      @default(true)
+  requireSymbol       Boolean      @default(false)
+  enforce2fa          Boolean      @default(false)
+  sessionTimeoutMinutes Int        @default(60)
+  maxDevices          Int          @default(5)
+  passwordExpiryDays  Int?
+  ipAllowlist         String[]     @default([])
+  updatedAt           DateTime     @updatedAt
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }

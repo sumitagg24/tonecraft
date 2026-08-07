@@ -1,22 +1,47 @@
 /**
- * Error monitoring abstraction (audit 12 P0.6).
+ * Error monitoring abstraction (audit 12 P0.6, Phase 13 server wiring).
  *
- * Routes errors to an external service when configured. Today that service is
- * Sentry via a minimal, dependency-free envelope client — no SDK install
- * required. Swapping in @sentry/nextjs later means changing only the
- * `sendError` implementation below; every call site (`logger.error`, route
- * handlers) stays the same.
+ * Routes errors to Sentry via a minimal, dependency-free envelope client — no
+ * SDK install required. Swapping in @sentry/nextjs later means changing only
+ * the `sendError` implementation below; every call site (`logger.error`, route
+ * handlers, `instrumentation.ts`) stays the same.
  *
  * Activation:
  *   SENTRY_DSN=https://<public_key>@o<org>.ingest.sentry.io/<project_id>
  *   (server-side errors)
  *   NEXT_PUBLIC_SENTRY_DSN=...   (client-side errors)
+ *
+ * Server-side reliability:
+ *  - `reportError` stays fire-and-forget for hot paths (route handlers, logger).
+ *  - `reportErrorAsync` is awaited by server hooks that must not lose events
+ *    (Next 16 `onRequestError` in `src/instrumentation.ts`).
+ *  - `flush()` awaits all in-flight sends — call it before serverless functions
+ *    / cron workers return when delivery must be guaranteed.
  */
 
 type ErrorReporter = {
   reportError(error: unknown, context?: Record<string, unknown>): void;
+  reportErrorAsync(error: unknown, context?: Record<string, unknown>): Promise<void>;
   flush?(): Promise<void>;
 };
+
+/** Rich context attached to server-reported events (route handlers, RSC errors). */
+export interface ReportContext extends Record<string, unknown> {
+  /** Request info (method, url, user agent) — surfaced in Sentry's request panel. */
+  request?: {
+    method?: string;
+    url?: string;
+    headers?: Record<string, string>;
+  };
+  /** Authenticated user id — linked to the user in Sentry. */
+  userId?: string;
+  /** Next.js digest for RSC-processed errors (see instrumentation.ts). */
+  digest?: string;
+  /** App-provided metadata. */
+  extra?: Record<string, unknown>;
+}
+
+const inFlight = new Set<Promise<void>>();
 
 function getDsn(): string | undefined {
   return process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN;
@@ -58,21 +83,51 @@ function serializeValue(value: unknown): unknown {
   return value;
 }
 
-async function sendError(error: unknown, context?: Record<string, unknown>): Promise<void> {
+function pickHeaders(headers: Record<string, string> | undefined): Record<string, string> | undefined {
+  if (!headers) return undefined;
+  // Only forward low-cardinality headers — never cookies/auth tokens. The
+  // referer's query string is dropped since it can carry sensitive params.
+  const allowed = ["user-agent", "x-forwarded-for", "x-vercel-id", "referer", "content-type"];
+  const picked: Record<string, string> = {};
+  for (const key of allowed) {
+    const value = headers[key] ?? headers[key.toLowerCase()];
+    if (!value) continue;
+    if (key.toLowerCase() === "referer") {
+      try {
+        const url = new URL(value);
+        picked[key] = `${url.origin}${url.pathname}`;
+      } catch {
+        picked[key] = value;
+      }
+    } else {
+      picked[key] = value;
+    }
+  }
+  return Object.keys(picked).length > 0 ? picked : undefined;
+}
+
+interface BuiltEvent {
+  event: Record<string, unknown>;
+  host: string;
+  publicKey: string;
+  projectId: string;
+}
+
+function buildEvent(error: unknown, context?: ReportContext): BuiltEvent | null {
   const dsn = getDsn();
-  if (!dsn) return; // not configured — no-op
+  if (!dsn) return null;
 
   try {
     const parsed = new URL(dsn);
     const publicKey = parsed.username || parsed.host.split("@")[0];
     const projectId = parsed.pathname.replace(/^\//, "").split("/")[0];
-    if (!publicKey || !projectId || !parsed.host) return;
+    if (!publicKey || !projectId || !parsed.host) return null;
 
     const eventId = normalizeEventId();
     const err = error instanceof Error ? error : new Error(typeof error === "string" ? error : "Reported error");
     const frames = parseStackFrames(err.stack);
 
-    const event = {
+    const event: Record<string, unknown> = {
       event_id: eventId,
       timestamp: new Date().toISOString(),
       platform: "javascript",
@@ -88,37 +143,98 @@ async function sendError(error: unknown, context?: Record<string, unknown>): Pro
           },
         ],
       },
-      extra: context ? Object.fromEntries(Object.entries(context).map(([k, v]) => [k, serializeValue(v)])) : undefined,
     };
 
-    const envelope = [
-      JSON.stringify({ event_id: eventId, sent_at: new Date().toISOString(), dsn }),
-      JSON.stringify({ type: "event", content_type: "application/json" }),
-      JSON.stringify(event),
-    ].join("\n");
+    if (context?.digest) {
+      event.digest = context.digest;
+    }
+    if (context?.userId) {
+      event.user = { id: context.userId };
+    }
+    if (context?.request?.url || context?.request?.method) {
+      event.request = {
+        url: context.request.url,
+        method: context.request.method,
+        headers: pickHeaders(context.request.headers),
+      };
+    }
+    const extra = { ...(context?.extra ?? {}) };
+    if (context) {
+      // Any remaining top-level context keys ride along as extra.
+      for (const [k, v] of Object.entries(context)) {
+        if (["request", "userId", "digest", "extra"].includes(k)) continue;
+        extra[k] = v;
+      }
+    }
+    if (Object.keys(extra).length > 0) {
+      event.extra = Object.fromEntries(Object.entries(extra).map(([k, v]) => [k, serializeValue(v)]));
+    }
 
-    await fetch(`https://${parsed.host}/api/${projectId}/envelope/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-sentry-envelope",
-        "X-Sentry-Auth": `Sentry sentry_version=7, sentry_client=tonecraft/1.0, sentry_key=${publicKey}`,
-      },
-      body: envelope,
-    });
+    return { event, host: parsed.host, publicKey, projectId };
   } catch {
-    // reporting must never throw into the app
+    return null;
   }
 }
 
-/** Fire-and-forget error reporting. Never throws. */
-export function reportError(error: unknown, context?: Record<string, unknown>): void {
+async function sendError(error: unknown, context?: ReportContext): Promise<void> {
+  const built = buildEvent(error, context);
+  if (!built) return; // not configured or malformed DSN — no-op
+
+  const { event, host, publicKey, projectId } = built;
+
+  const envelope = [
+    JSON.stringify({ event_id: event.event_id as string, sent_at: new Date().toISOString(), dsn: getDsn() }),
+    JSON.stringify({ type: "event", content_type: "application/json" }),
+    JSON.stringify(event),
+  ].join("\n");
+
+  await fetch(`https://${host}/api/${projectId}/envelope/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-sentry-envelope",
+      "X-Sentry-Auth": `Sentry sentry_version=7, sentry_client=tonecraft/1.0, sentry_key=${publicKey}`,
+    },
+    body: envelope,
+  });
+}
+
+function track(promise: Promise<void>): Promise<void> {
+  inFlight.add(promise);
+  promise.finally(() => inFlight.delete(promise));
+  return promise;
+}
+
+/** Fire-and-forget error reporting. Never throws. (Hot paths: logger, handlers.) */
+export function reportError(error: unknown, context?: ReportContext): void {
   if (!getDsn()) return;
-  void sendError(error, context);
+  void track(
+    sendError(error, context).catch(() => {
+      // reporting must never throw into the app
+    })
+  );
+}
+
+/** Awaited error reporting for server hooks that must not lose events. Never throws. */
+export async function reportErrorAsync(error: unknown, context?: ReportContext): Promise<void> {
+  if (!getDsn()) return;
+  await track(
+    sendError(error, context).catch(() => {
+      // reporting must never throw into the app
+    })
+  );
+}
+
+/** Wait for every in-flight report to finish. Call before serverless exit. */
+export async function flushErrorReports(): Promise<void> {
+  while (inFlight.size > 0) {
+    await Promise.allSettled([...inFlight]);
+  }
 }
 
 export const errorReporter: ErrorReporter = {
   reportError,
+  reportErrorAsync,
   async flush() {
-    // No-op: sendError is awaited fire-and-forget; add batching here if needed.
+    await flushErrorReports();
   },
 };

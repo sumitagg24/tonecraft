@@ -49,9 +49,6 @@ export function TopNavigation() {
         >
           <Search className="h-4 w-4 shrink-0" />
           <span className="flex-1 text-left">Search anything...</span>
-          <kbd className="hidden sm:inline-flex items-center gap-1 rounded-md border border-border/30 bg-muted/50 px-1.5 py-0.5 text-micro font-mono text-muted-foreground/70">
-            <Command className="h-2.5 w-2.5" />K
-          </kbd>
         </button>
 
         <div className="flex items-center gap-1 ml-auto">

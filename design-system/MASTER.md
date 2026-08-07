@@ -1,5 +1,20 @@
 # ToneCraft Enterprise Design System v1.0
 
+## 0.0 Document Map
+
+| Phase | Document | Purpose |
+|---|---|---|
+| 1 | `Vision.md` | Why the product exists — personas, emotional goals, metrics, anti-goals |
+| 2 | `Creative-Direction.md` | Mood, inspiration mix, love/hate list |
+| 3 | `Art-Direction.md` | Backgrounds, lighting, glass, hero, AI visualization, depth |
+| 4 | `Visual-Identity.md` | Type/color/space/radius/button/input philosophy |
+| 5 | `Design-System-v1.md` + this file | Exact token values + master rules |
+| 6 | `Components/*` (14) | Per-component specs |
+| 7 | `Motion.md` | Per-element motion guide (source: `src/styles/motion.ts`) |
+| 8 | `Pages/*` (9) | Per-page specs |
+| 9 | `Flows/*` (7) | Interaction flows |
+| 10 | `Implementation-Prompts.md` | One scoped prompt per page for coding agents |
+
 ## 0. Vision & Positioning
 
 **Product Category**: AI-Powered Creative Collaboration Platform

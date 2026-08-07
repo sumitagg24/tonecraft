@@ -12,12 +12,18 @@ const directUrl =
   process.env["DIRECT_URL"] ??
   (process.env["DATABASE_URL"] ?? "").replace("-pooler", "");
 
+// pg warns for sslmode=prefer|require|verify-ca (aliases of verify-full) —
+// normalize so the deprecation warning never prints during CLI runs.
+const safeDirectUrl = directUrl.replace(/sslmode=(prefer|require|verify-ca)(?=&|$)/gi, "sslmode=verify-full");
+
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
+    // Marketplace demo seed — `prisma db seed` (see prisma/seed.js).
+    seed: "node prisma/seed.js",
   },
   datasource: {
-    url: directUrl,
+    url: safeDirectUrl,
   },
 });

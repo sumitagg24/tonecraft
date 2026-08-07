@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono, Instrument_Serif } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "@/components/ui/sonner";
 import { ReducedMotionProvider } from "@/hooks/use-reduced-motion";
 import { GlobalEffects } from "@/components/shared/Effects";
+import { ServiceWorkerRegistration } from "@/components/shared/ServiceWorkerRegistration";
+import { PaddleCheckoutAutoOpen } from "@/components/shared/PaddleCheckoutAutoOpen";
 import "@/lib/startup-validation";
 import "./globals.css";
 
@@ -18,6 +20,13 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-mono",
+});
+
+const instrumentSerif = Instrument_Serif({
+  subsets: ["latin"],
+  weight: "400",
+  display: "swap",
+  variable: "--font-display",
 });
 
 export const metadata: Metadata = {
@@ -63,7 +72,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${jetbrainsMono.variable}`}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      data-scroll-behavior="smooth"
+      className={`${inter.variable} ${jetbrainsMono.variable} ${instrumentSerif.variable}`}
+    >
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -71,7 +85,10 @@ export default function RootLayout({
               (function() {
                 try {
                   var theme = localStorage.getItem('theme');
-                  if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                  if (theme === 'light') {
+                    document.documentElement.classList.remove('dark');
+                  } else {
+                    // ToneCraft is dark-first; light is the opt-in.
                     document.documentElement.classList.add('dark');
                   }
                 } catch (e) {}
@@ -87,13 +104,14 @@ export default function RootLayout({
         <ClerkProvider>
           <ThemeProvider
             attribute="class"
-            defaultTheme="system"
-            enableSystem
+            defaultTheme="dark"
             disableTransitionOnChange
           >
             <ReducedMotionProvider>
               {children}
               <GlobalEffects />
+              <ServiceWorkerRegistration />
+              <PaddleCheckoutAutoOpen />
               <Toaster position="bottom-right" />
             </ReducedMotionProvider>
           </ThemeProvider>

@@ -211,7 +211,7 @@ export default function AdminChartsPage() {
                 <div key={d.date} className="flex flex-col items-center flex-1 min-w-[40px]">
                   <div className="w-full h-full flex items-end justify-center">
                     <div
-                      className="w-full bg-gradient-to-t from-violet-500 to-indigo-400 rounded-t"
+                      className="w-full bg-gradient-to-t from-brand to-amber-400 rounded-t"
                       style={{
                         height: `${(d.tokens / maxDailyTokens) * 100}%`,
                         minHeight: "2px",

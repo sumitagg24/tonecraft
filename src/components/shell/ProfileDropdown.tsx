@@ -70,7 +70,9 @@ export default function ProfileDropdown({
               {data.avatar ? (
                 <AvatarImage src={data.avatar} alt={data.name || "User"} />
               ) : (
-                <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                <AvatarFallback className="bg-brand text-brand-foreground font-display text-xs font-semibold tracking-wide">
+                  {initials}
+                </AvatarFallback>
               )}
             </Avatar>
             <span className="hidden sm:flex flex-1 min-w-0">
@@ -119,10 +121,7 @@ export default function ProfileDropdown({
                   {item.value && (
                     <span
                       className={cn(
-                        "ml-auto rounded-md px-1.5 py-0.5 text-xs font-medium",
-                        item.badge === "blue"
-                          ? "border border-blue-500/15 bg-blue-500/10 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400"
-                          : "border border-purple-500/15 bg-purple-500/10 text-purple-600 dark:bg-purple-500/15 dark:text-purple-400"
+                        "ml-auto rounded-md px-1.5 py-0.5 text-xs font-medium border border-brand/25 bg-brand/10 text-brand dark:bg-brand/15 dark:text-brand"
                       )}
                     >
                       {item.value}

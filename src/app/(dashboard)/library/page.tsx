@@ -33,7 +33,7 @@ export default function LibraryPage() {
             <t.icon className="w-3.5 h-3.5" />
             {t.label}
             {tab === t.id && (
-              <motion.div layoutId="library-tab" className="absolute inset-x-0 -bottom-px h-0.5 bg-gradient-to-r from-violet-500 to-indigo-500" />
+              <motion.div layoutId="library-tab" className="absolute inset-x-0 -bottom-px h-0.5 bg-brand" />
             )}
           </button>
         ))}

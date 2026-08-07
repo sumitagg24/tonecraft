@@ -1,73 +1,106 @@
 "use client";
-import { useRef } from "react";
-import { motion, useInView } from "framer-motion";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Sparkles, MessageSquare } from "lucide-react";
-import Link from "next/link";
-import { sectionItem, sectionChip } from "@/styles/motion";
+import { motion } from "framer-motion";
+import { sectionReveal, sectionItem, sectionChip } from "@/styles/motion";
+import { Quote } from "lucide-react";
+
+interface Testimonial {
+  id: string;
+  quote: string;
+  author: string;
+  role: string;
+  company: string;
+  avatar: string;
+}
+
+const TESTIMONIALS: Testimonial[] = [
+  {
+    id: "t1",
+    quote: "ToneCraft has fundamentally transformed how our executive leadership team communicates across global channels.",
+    author: "Eleanor Vance",
+    role: "VP of Communications",
+    company: "Vanguard Publishing",
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+  },
+  {
+    id: "t2",
+    quote: "The nuance and precision of tone modulation is unlike any AI tool I've used before. It actually understands editorial nuance.",
+    author: "Julian Thorne",
+    role: "Senior Managing Editor",
+    company: "Chronicle Media",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+  },
+  {
+    id: "t3",
+    quote: "I save hours every single day turning raw notes into impeccably crafted client proposals and public updates.",
+    author: "Sophia Mercer",
+    role: "Principal Strategist",
+    company: "Apex Design Co",
+    avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80",
+  },
+];
 
 export function Testimonials() {
-  const containerRef = useRef<HTMLElement>(null);
-  const headingRef = useRef<HTMLDivElement>(null);
-  const inView = useInView(headingRef, { once: true, margin: "-80px" });
-
   return (
-    <section ref={containerRef} className="relative py-32 overflow-hidden">
-      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-border to-transparent" />
-
-      <div className="max-w-7xl mx-auto px-4">
-        <div ref={headingRef} className="text-center mb-16">
+    <section id="testimonials" className="relative py-28 md:py-36 overflow-hidden">
+      <div className="max-w-6xl mx-auto px-6">
+        <motion.div
+          variants={sectionReveal}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          className="text-center mb-14 md:mb-16"
+        >
           <motion.div
             variants={sectionChip}
-            initial="hidden"
-            animate={inView ? "visible" : "hidden"}
-            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium mb-4"
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium mb-4"
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            Early Access
+            <Quote className="w-3.5 h-3.5" />
+            Editorial Stories
           </motion.div>
-          <motion.h2
-            variants={sectionItem}
-            initial="hidden"
-            animate={inView ? "visible" : "hidden"}
-            className="text-3xl md:text-5xl font-bold mb-4 tracking-tight"
-          >
-            Join the first wave
+          <motion.h2 variants={sectionItem} className="font-display text-4xl md:text-6xl tracking-tight mb-4">
+            Trusted by master communicators
           </motion.h2>
-          <motion.p
-            variants={sectionItem}
-            initial="hidden"
-            animate={inView ? "visible" : "hidden"}
-            className="text-muted-foreground text-lg max-w-xl mx-auto"
-          >
-            We&apos;re in Early Access. Your feedback will help shape the future of communication.
+          <motion.p variants={sectionItem} className="text-muted-foreground text-base md:text-lg max-w-xl mx-auto leading-relaxed">
+            Discover how leaders, editors, and creators elevate every sentence with ToneCraft.
           </motion.p>
-        </div>
+        </motion.div>
 
-        <div className="max-w-md mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={inView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.3 }}
-          >
-            <Card className="bg-surface/50 border-border/40 hover:border-white/10 transition-all duration-300 hover:shadow-card group overflow-hidden">
-              <div className="h-1 w-16 bg-gradient-to-r from-primary to-primary/30 mx-auto mt-0 rounded-b-full" />
-              <CardContent className="p-8 text-center">
-                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                  <MessageSquare className="w-6 h-6 text-primary" />
-                </div>
-                <p className="text-sm leading-relaxed text-muted-foreground mb-6 max-w-sm mx-auto">
-                  Testimonials are being written by our first users right now.
-                  Be among the first to share your experience.
+        <motion.div
+          variants={sectionReveal}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-8"
+        >
+          {TESTIMONIALS.map((t) => (
+            <motion.div
+              key={t.id}
+              variants={sectionItem}
+              whileHover={{ y: -2 }}
+              className="group bg-background rounded-3xl p-8 border border-border/60 shadow-editorial flex flex-col justify-between transition-all duration-300 hover:border-border/80 hover:shadow-editorial-lg"
+            >
+              <div className="mb-8">
+                <Quote className="w-8 h-8 text-foreground/20 mb-4 group-hover:text-foreground/40 transition-colors duration-300" />
+                <p className="font-display text-xl text-foreground leading-snug italic">
+                  &ldquo;{t.quote}&rdquo;
                 </p>
-                <Button asChild variant="outline" size="sm">
-                  <Link href="/chat">Share Your Experience</Link>
-                </Button>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
+              </div>
+
+              <div className="flex items-center gap-3.5 pt-6 border-t border-border/40">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={t.avatar}
+                  alt={t.author}
+                  className="w-11 h-11 rounded-full object-cover border border-border/60"
+                />
+                <div>
+                  <h4 className="font-semibold text-sm text-foreground">{t.author}</h4>
+                  <p className="text-xs text-muted-foreground">{t.role} · {t.company}</p>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
       </div>
     </section>
   );

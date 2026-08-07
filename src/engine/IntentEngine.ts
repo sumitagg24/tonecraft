@@ -40,17 +40,51 @@ const INTENT_MAP: Record<string, IntentMapping> = {
   "polite-reply": { intent: "reply", defaultTone: "polite", description: "Polite reply" },
   "sarcastic-reply": { intent: "reply", defaultTone: "sarcastic", description: "Sarcastic reply" },
 
-  // Social family
+  // Social family — LinkedIn
   "linkedin-post": { intent: "social", defaultTone: "professional", defaultPlatform: "linkedin", description: "LinkedIn post" },
+  "linkedin-hook": { intent: "social", defaultTone: "professional", defaultPlatform: "linkedin", description: "LinkedIn hook" },
+  "linkedin-carousel": { intent: "social", defaultTone: "professional", defaultPlatform: "linkedin", description: "LinkedIn carousel" },
+  "linkedin-thought-leadership": { intent: "social", defaultTone: "professional", defaultPlatform: "linkedin", description: "LinkedIn thought leadership" },
+  "linkedin-personal-story": { intent: "social", defaultTone: "friendly", defaultPlatform: "linkedin", description: "LinkedIn personal story" },
+  "linkedin-hiring": { intent: "social", defaultTone: "professional", defaultPlatform: "linkedin", description: "LinkedIn hiring post" },
+  "linkedin-announcement": { intent: "social", defaultTone: "professional", defaultPlatform: "linkedin", description: "LinkedIn company announcement" },
+
+  // Social family — X / Twitter
   "twitter-thread": { intent: "social", defaultTone: "casual", defaultPlatform: "twitter", description: "Twitter/X thread" },
+  "twitter-hook": { intent: "social", defaultTone: "casual", defaultPlatform: "twitter", description: "X hook" },
+  "twitter-viral": { intent: "social", defaultTone: "casual", defaultPlatform: "twitter", description: "X viral rewrite" },
+  "twitter-quote-reply": { intent: "reply", defaultTone: "casual", defaultPlatform: "twitter", description: "X quote reply" },
+  "twitter-long-thread": { intent: "social", defaultTone: "casual", defaultPlatform: "twitter", description: "Long to X thread" },
+
+  // Social family — Threads
+  "threads-post": { intent: "social", defaultTone: "casual", defaultPlatform: "threads", description: "Threads post" },
+  "threads-casual": { intent: "social", defaultTone: "casual", defaultPlatform: "threads", description: "Threads casual rewrite" },
+  "threads-storytelling": { intent: "social", defaultTone: "friendly", defaultPlatform: "threads", description: "Threads storytelling" },
+  "threads-engagement": { intent: "social", defaultTone: "casual", defaultPlatform: "threads", description: "Threads engagement" },
+
+  // Social family — Reddit
+  "reddit-helpful": { intent: "reply", defaultTone: "friendly", defaultPlatform: "reddit", description: "Reddit helpful reply" },
+  "reddit-community-safe": { intent: "social", defaultTone: "friendly", defaultPlatform: "reddit", description: "Reddit community-safe post" },
+
+  // Social family — Other platforms
   "instagram-caption": { intent: "social", defaultTone: "friendly", defaultPlatform: "instagram", description: "Instagram caption" },
   "facebook-post": { intent: "social", defaultTone: "friendly", defaultPlatform: "facebook", description: "Facebook post" },
-  "threads-post": { intent: "social", defaultTone: "casual", defaultPlatform: "threads", description: "Threads post" },
   "youtube-description": { intent: "social", defaultTone: "professional", defaultPlatform: "youtube", description: "YouTube description" },
+  "medium-post": { intent: "social", defaultTone: "professional", defaultPlatform: "medium", description: "Medium article" },
+  "producthunt-launch": { intent: "social", defaultTone: "professional", defaultPlatform: "producthunt", description: "Product Hunt launch" },
+  "hackernews-post": { intent: "social", defaultTone: "professional", defaultPlatform: "hackernews", description: "Hacker News post" },
+  "github-readme": { intent: "custom", defaultTone: "professional", defaultPlatform: "github", description: "GitHub README" },
+  "whatsapp-post": { intent: "social", defaultTone: "friendly", defaultPlatform: "whatsapp", description: "WhatsApp message" },
+  "slack-post": { intent: "social", defaultTone: "professional", defaultPlatform: "slack", description: "Slack message" },
+  "discord-post": { intent: "social", defaultTone: "friendly", defaultPlatform: "discord", description: "Discord message" },
 
   // Email family
   "email-writer": { intent: "email", defaultTone: "professional", defaultPlatform: "email", description: "Write email" },
   "cold-email": { intent: "email", defaultTone: "professional", defaultPlatform: "email", description: "Cold email" },
+  "cold-email-followup": { intent: "email", defaultTone: "professional", defaultPlatform: "email", description: "Email follow-up" },
+  "hr-email": { intent: "email", defaultTone: "professional", defaultPlatform: "email", description: "HR email" },
+  "apology-email": { intent: "email", defaultTone: "polite", defaultPlatform: "email", description: "Apology email" },
+  "negotiation-email": { intent: "email", defaultTone: "professional", defaultPlatform: "email", description: "Negotiation email" },
   "business-proposal": { intent: "email", defaultTone: "corporate", defaultPlatform: "email", description: "Business proposal" },
   "meeting-request": { intent: "email", defaultTone: "professional", defaultPlatform: "email", description: "Meeting request" },
 

@@ -19,6 +19,8 @@ export interface PromptItem {
   isFavorite: boolean;
   isArchived: boolean;
   projectId: string | null;
+  /** Optional tone tag — not all prompts carry one (API may omit it). */
+  tone?: string | null;
   createdAt: string;
   updatedAt: string;
 }

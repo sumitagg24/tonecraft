@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
-  Plus, Trash2, Pencil, Star, Loader2, Users, Check, Download, Upload, Sparkles, X,
+  Plus, Trash2, Pencil, Heart, Loader2, Users, Check, Download, Upload, UserPlus, X,
 } from "lucide-react";
 import { api } from "@/lib/api-client";
 
@@ -260,7 +260,7 @@ export function PersonasLibraryPage() {
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="border rounded-xl p-4 mb-5 bg-muted/10">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-primary" /> Create Persona
+              <UserPlus className="w-4 h-4 text-primary" /> Create Persona
             </h2>
             <Button variant="ghost" size="icon" onClick={() => setCreating(null)}><X className="w-4 h-4" /></Button>
           </div>
@@ -324,7 +324,7 @@ export function PersonasLibraryPage() {
                   className="text-muted-foreground/40 hover:text-amber-500 transition-colors"
                   aria-label={p.isFavorite ? "Remove favorite" : "Add favorite"}
                 >
-                  <Star className={cn("w-4 h-4", p.isFavorite && "text-amber-500 fill-amber-500")} />
+                  <Heart className={cn("w-4 h-4", p.isFavorite && "text-amber-500 fill-amber-500")} />
                 </button>
               </div>
               <div className="flex flex-wrap gap-1.5">

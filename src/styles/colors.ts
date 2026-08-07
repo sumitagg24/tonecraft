@@ -20,8 +20,8 @@ export const color = {
     violet: "#a855f7",
     purple: "#8b5cf6",
     indigo: "#6366f1",
-    gradient: "bg-gradient-to-r from-violet-600 to-indigo-600",
-    gradientSoft: "bg-gradient-to-br from-violet-500 to-indigo-600",
+    gradient: "bg-brand",
+    gradientSoft: "bg-gradient-to-br from-[#f97316] to-[#f59e0b]",
   },
 
   // ─── Semantic (theme-aware) ───────────────────────────────────────────

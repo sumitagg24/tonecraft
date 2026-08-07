@@ -3,7 +3,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { spring, MotionPresets } from "@/styles/motion";
 import {
-  Sparkles, Briefcase, Smile, Zap, Building2,
+  PenLine, Briefcase, Smile, Zap, Building2,
   Globe, CheckSquare, FileText, Copy, Mail,
   Camera, Reply, Laugh,
 } from "lucide-react";
@@ -66,7 +66,7 @@ export function InlineActionRing({ containerRef }: { containerRef: React.RefObje
   }, []);
 
   const actions: ActionRingAction[] = [
-    { id: "rewrite", label: "Rewrite", icon: Sparkles, color: "#a855f7", action: (text) => handleAction("Rewrite this:", text) },
+    { id: "rewrite", label: "Rewrite", icon: PenLine, color: "#a855f7", action: (text) => handleAction("Rewrite this:", text) },
     { id: "professional", label: "Professional", icon: Briefcase, color: "#3b82f6", action: (text) => handleAction("Make this professional:", text) },
     { id: "casual", label: "Casual", icon: Smile, color: "#10b981", action: (text) => handleAction("Make this casual:", text) },
     { id: "genz", label: "Gen Z", icon: Zap, color: "#a855f7", action: (text) => handleAction("Make this Gen Z:", text) },

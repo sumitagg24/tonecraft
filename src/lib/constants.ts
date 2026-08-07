@@ -8,8 +8,9 @@ export const APP_DESCRIPTION =
 export const NAV_LINKS = [
   { label: "Features", href: "#features" },
   { label: "Demo", href: "#demo" },
-  { label: "How It Works", href: "#how" },
+  { label: "Comparison", href: "#why" },
   { label: "Pricing", href: "#pricing" },
+  { label: "Roadmap", href: "#roadmap" },
   { label: "FAQ", href: "#faq" },
 ];
 
@@ -27,7 +28,7 @@ export const TONES: { id: string; label: string; description: string; color: str
 ];
 
 export const FREE_TIER_LIMITS = {
-  messagesPerDay: 50,
+  messagesPerDay: 30,
   messagesPerHour: 10,
   maxTokensPerMessage: 2000,
   maxFileSize: 5 * 1024 * 1024,
@@ -50,7 +51,7 @@ export const PRICING_TIERS = [
     price: 0,
     description: "For individuals getting started",
     features: [
-      "50 messages per day",
+      "30 AI generations per day",
       "All tone presets",
       "4K context window",
       "5 file uploads/day",
@@ -61,7 +62,7 @@ export const PRICING_TIERS = [
   },
   {
     name: "Pro",
-    price: 12,
+    price: 6,
     description: "For power users and professionals",
     features: [
       "Unlimited messages",
@@ -76,18 +77,17 @@ export const PRICING_TIERS = [
   },
   {
     name: "Enterprise",
-    price: 49,
+    price: 15,
     description: "For teams and organizations",
     features: [
       "Everything in Pro",
       "Team workspaces",
       "32K context window",
       "Unlimited file uploads",
-      "API access",
       "SSO & Admin controls",
       "Dedicated support",
     ],
-    cta: "Contact Sales",
+    cta: "Get Enterprise",
     popular: false,
   },
 ];
@@ -150,6 +150,11 @@ export const PLATFORMS = [
   { name: "Discord", icon: "MessageSquare", color: color.platform.discord },
   { name: "LinkedIn", icon: "Linkedin", color: color.platform.linkedin },
   { name: "Twitter", icon: "Twitter", color: color.platform.twitter },
+  { name: "Threads", icon: "AtSign", color: "#111111" },
+  { name: "Reddit", icon: "MessageSquare", color: "#ff4500" },
+  { name: "Medium", icon: "BookOpen", color: "#00ab6c" },
+  { name: "Product Hunt", icon: "Rocket", color: "#da552f" },
+  { name: "Hacker News", icon: "Terminal", color: "#ff6600" },
   { name: "Telegram", icon: "Send", color: color.platform.telegram },
   { name: "Email", icon: "Mail", color: color.platform.email },
 ];
@@ -159,7 +164,7 @@ export const AI_THINKING_STATES = [
   { label: "Finding Emotion", icon: "Heart" },
   { label: "Improving Grammar", icon: "CheckCircle" },
   { label: "Optimizing Platform", icon: "Monitor" },
-  { label: "Generating Response", icon: "Sparkles" },
+  { label: "Generating Response", icon: "Wand2" },
 ];
 
 

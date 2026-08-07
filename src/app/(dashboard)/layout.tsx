@@ -1,5 +1,6 @@
 "use client";
 import { AppShell } from "@/components/shell/AppShell";
+import { PageTransitionWrapper } from "@/components/shared/PageTransitionWrapper";
 
 export default function DashboardLayout({
   children,
@@ -8,9 +9,9 @@ export default function DashboardLayout({
 }) {
   return (
     <AppShell>
-      <div className="h-full animate-content-in">
+      <PageTransitionWrapper className="h-full">
         {children}
-      </div>
+      </PageTransitionWrapper>
     </AppShell>
   );
 }

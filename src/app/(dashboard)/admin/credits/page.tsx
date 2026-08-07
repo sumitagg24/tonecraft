@@ -109,7 +109,7 @@ export default function AdminCreditsPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 mb-2">
-              <CreditCard className="w-4 h-4 text-violet-500" />
+              <CreditCard className="w-4 h-4 text-brand" />
               <span className="text-xs text-muted-foreground">Total Tokens</span>
             </div>
             <p className="text-2xl font-bold">{formatNumber(data.credits.totalTokens)}</p>
@@ -148,7 +148,7 @@ export default function AdminCreditsPage() {
                 <div className="flex-1">
                   <div className="h-6 bg-muted rounded overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-violet-500 to-indigo-500 rounded"
+                      className="h-full bg-brand rounded"
                       style={{
                         width: `${(d.tokens / Math.max(...data.dailyUsage.map((x) => x.tokens), 1)) * 100}%`,
                       }}

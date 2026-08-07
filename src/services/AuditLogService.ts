@@ -53,11 +53,36 @@ export type AuditAction =
   | "agent.run"
   | "agent.delete"
   | "integration.connect"
-  | "integration.disconnect";
+  | "integration.disconnect"
+  // Phase 13 — Enterprise
+  | "organization.create"
+  | "organization.update"
+  | "organization.delete"
+  | "organization.member_add"
+  | "organization.member_remove"
+  | "organization.member_role_change"
+  | "team.create"
+  | "team.update"
+  | "team.delete"
+  | "workspace.org_assign"
+  | "security.policy_update"
+  | "sso.config_update"
+  | "branding.update"
+  // Phase 14 — Marketplace
+  | "marketplace.publish"
+  | "marketplace.update"
+  | "marketplace.delete"
+  | "marketplace.download"
+  | "marketplace.review"
+  // Phase 19 — Developer platform
+  | "api_key.create"
+  | "api_key.revoke"
+  | "webhook.create";
 
 export interface AuditContext {
   actorId?: string | null;
   workspaceId?: string | null;
+  organizationId?: string | null;
   resourceId?: string | null;
   targetId?: string | null;
   ip?: string | null;
@@ -74,6 +99,7 @@ export class AuditLogService {
         resource,
         resourceId: ctx.resourceId ?? null,
         workspaceId: ctx.workspaceId ?? null,
+        organizationId: ctx.organizationId ?? null,
         targetId: ctx.targetId ?? null,
         ip: ctx.ip ?? null,
         userAgent: ctx.userAgent ?? null,

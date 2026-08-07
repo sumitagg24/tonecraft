@@ -96,7 +96,7 @@ export default function AdminProjectsPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 mb-2">
-              <Folder className="w-4 h-4 text-violet-500" />
+              <Folder className="w-4 h-4 text-brand" />
               <span className="text-xs text-muted-foreground">Total Projects</span>
             </div>
             <p className="text-2xl font-bold">{data.totalProjects}</p>

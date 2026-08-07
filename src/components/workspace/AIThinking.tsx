@@ -1,52 +1,54 @@
 "use client";
 import { motion } from "framer-motion";
-import { ai, spring, duration } from "@/styles/motion";
-import { Sparkles, Bot } from "lucide-react";
+import { spring, duration } from "@/styles/motion";
+import { Feather } from "lucide-react";
 
 const thinkingPhases = [
-  { label: "Thinking", icon: "brain" },
-  { label: "Crafting", icon: "sparkles" },
-  { label: "Refining", icon: "stars" },
-  { label: "Polishing", icon: "gem" },
+  { label: "Thinking" },
+  { label: "Crafting" },
+  { label: "Refining" },
+  { label: "Polishing" },
 ];
 
 export function AIThinking({ phase = 0 }: { phase?: number }) {
   const current = thinkingPhases[phase % thinkingPhases.length];
 
   return (
-    <div className="flex items-start gap-3 px-6 py-5 max-w-4xl mx-auto w-full">
+    <div className="flex items-start gap-3 px-6 py-4 max-w-4xl mx-auto w-full">
       <motion.div
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         transition={spring.elastic}
         className="relative shrink-0"
       >
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-glow">
-          <Bot className="w-5 h-5 text-white" />
+        <div className="w-8 h-8 rounded-full bg-brand flex items-center justify-center">
+          <Feather className="w-3.5 h-3.5 text-white" />
         </div>
-        <motion.div
-          {...ai.thinking}
-          className="absolute -inset-1 rounded-2xl bg-gradient-to-br from-violet-500/20 to-indigo-600/20 blur-md"
-        />
       </motion.div>
 
-      <div className="flex-1 min-w-0 pt-1.5">
-        <div className="flex items-center gap-2 mb-2">
+      <div className="flex-1 min-w-0 pt-1">
+        <div className="flex items-center gap-2.5 mb-2">
           <motion.span
             key={current.label}
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: duration.fast }}
-            className="text-sm font-medium text-foreground/80"
+            className="text-[13px] font-medium text-foreground/70"
           >
             {current.label}
           </motion.span>
           <AnimatedDots />
         </div>
 
-        <div className="h-16 relative overflow-hidden">
-          <StreamingWave />
+        {/* Quiet shimmer line */}
+        <div className="relative h-px w-full overflow-hidden bg-border/20">
+          <motion.div
+            animate={{ x: ["-100%", "200%"] }}
+            transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-primary/40 to-transparent"
+            aria-hidden="true"
+          />
         </div>
       </div>
     </div>
@@ -55,45 +57,16 @@ export function AIThinking({ phase = 0 }: { phase?: number }) {
 
 function AnimatedDots() {
   return (
-    <span className="flex items-center gap-0.5">
+    <span className="flex items-center gap-0.5" aria-hidden="true">
       {[0, 1, 2].map((i) => (
         <motion.span
           key={i}
-          animate={{ y: [0, -3, 0], opacity: [0.4, 1, 0.4] }}
-          transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.15, ease: "easeInOut" }}
-          className="w-1 h-1 rounded-full bg-primary/60"
+          animate={{ y: [0, -2, 0], opacity: [0.35, 1, 0.35] }}
+          transition={{ duration: 0.9, repeat: Infinity, delay: i * 0.15, ease: "easeInOut" }}
+          className="w-1 h-1 rounded-full bg-primary/50"
         />
       ))}
     </span>
-  );
-}
-
-const WAVE_BARS = Array.from({ length: 40 }, (_, i) => ({
-  duration: 2 + ((i * 37 + 17) % 100) / 100,
-  height: 4 + (((i * 23 + 7) % 100) / 100) * 12,
-}));
-
-function StreamingWave() {
-  return (
-    <div className="flex items-end gap-0.5 h-full">
-      {WAVE_BARS.map((bar, i) => (
-        <motion.div
-          key={i}
-          animate={{
-            height: [4, 8, 4, 12, 4, 8, 4],
-            opacity: [0.2, 0.5, 0.2, 0.7, 0.2, 0.4, 0.2],
-          }}
-          transition={{
-            duration: bar.duration,
-            repeat: Infinity,
-            delay: i * 0.05,
-            ease: "easeInOut",
-          }}
-          className="w-1 rounded-full bg-gradient-to-t from-violet-500/60 to-indigo-500/30"
-          style={{ height: bar.height }}
-        />
-      ))}
-    </div>
   );
 }
 
@@ -119,7 +92,7 @@ export function ResponseIncoming() {
         animate={{ rotate: 360 }}
         transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
       >
-        <Sparkles className="w-3.5 h-3.5" />
+        <Feather className="w-3.5 h-3.5" />
       </motion.div>
       <span>Response incoming...</span>
     </motion.div>
@@ -150,11 +123,11 @@ export function GenerationComplete() {
 
 export function GradientPulse() {
   return (
-    <div className="relative w-full h-1 overflow-hidden rounded-full bg-muted/30">
+    <div className="relative w-full h-px overflow-hidden rounded-full bg-border/20">
       <motion.div
         animate={{ x: ["-100%", "200%"] }}
         transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute inset-0 w-1/2 rounded-full bg-gradient-to-r from-transparent via-violet-500/50 to-transparent"
+        className="absolute inset-0 w-1/2 rounded-full bg-gradient-to-r from-transparent via-brand/40 to-transparent"
       />
     </div>
   );

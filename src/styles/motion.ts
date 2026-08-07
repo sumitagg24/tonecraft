@@ -23,22 +23,22 @@ export const ease = {
   backOut: "backOut" as const,
 } as const;
 
-// ─── Spring Presets ────────────────────────────────────────────────────
+// ─── Spring Presets (Calm & Physically Connected) ─────────────────────
 export const spring: Record<string, Transition> = {
-  snappy: { type: "spring", stiffness: 300, damping: 25 },
-  gentle: { type: "spring", stiffness: 200, damping: 20 },
-  soft: { type: "spring", stiffness: 150, damping: 18 },
-  heavy: { type: "spring", stiffness: 400, damping: 30 },
-  elastic: { type: "spring", stiffness: 260, damping: 20 },
+  snappy: { type: "spring", stiffness: 280, damping: 26 },
+  gentle: { type: "spring", stiffness: 200, damping: 24 },
+  soft: { type: "spring", stiffness: 160, damping: 22 },
+  heavy: { type: "spring", stiffness: 350, damping: 32 },
+  elastic: { type: "spring", stiffness: 240, damping: 24 },
 };
 
-// ─── Hover / Tap ───────────────────────────────────────────────────────
+// ─── Hover / Tap (Subtle Micro-Interactions) ───────────────────────────
 export const hover: Record<string, Transition> = {
   button: { duration: duration.fast, ease: ease.default },
-  card: { duration: duration.fast, ease: ease.default },
+  card: { duration: duration.normal, ease: ease.out },
   icon: { duration: duration.instant, ease: ease.default },
-  sidebarItem: { duration: duration.instant, ease: ease.default },
-  toolCard: { duration: duration.fast, ease: ease.default },
+  sidebarItem: { duration: duration.fast, ease: ease.default },
+  toolCard: { duration: duration.normal, ease: ease.out },
 };
 
 export const tap: Record<string, Transition> = {
@@ -47,19 +47,19 @@ export const tap: Record<string, Transition> = {
 };
 
 export const hoverScale = {
-  button: { whileHover: { scale: 1.02 }, whileTap: { scale: 0.98 }, transition: hover.button },
-  card: { whileHover: { scale: 1.01 }, transition: hover.card },
-  icon: { whileHover: { scale: 1.05 }, whileTap: { scale: 0.95 }, transition: hover.icon },
-  sidebarItem: { whileHover: { scale: 1.01 }, transition: hover.sidebarItem },
-  subtle: { whileHover: { scale: 1.02 }, whileTap: { scale: 0.98 }, transition: hover.button },
+  button: { whileHover: { scale: 1.015 }, whileTap: { scale: 0.985 }, transition: hover.button },
+  card: { whileHover: { y: -2 }, transition: hover.card },
+  icon: { whileHover: { scale: 1.04 }, whileTap: { scale: 0.96 }, transition: hover.icon },
+  sidebarItem: { whileHover: { x: 2 }, transition: hover.sidebarItem },
+  subtle: { whileHover: { scale: 1.01 }, whileTap: { scale: 0.99 }, transition: hover.button },
 };
 
 export const hoverLift = {
-  card: { whileHover: { y: -4 }, transition: hover.card },
-  pricing: { whileHover: { y: -6 }, transition: hover.card },
+  card: { whileHover: { y: -2, transition: { duration: 0.2, ease: ease.out } } },
+  pricing: { whileHover: { y: -3, transition: { duration: 0.25, ease: ease.out } } },
 };
 
-// ─── Base Variants ─────────────────────────────────────────────────────
+// ─── Base Variants (Soft Invisible Transitions) ────────────────────────
 export const fadeIn: Variants = {
   initial: { opacity: 0 },
   animate: { opacity: 1 },
@@ -67,20 +67,18 @@ export const fadeIn: Variants = {
 };
 
 export const fadeInUp: Variants = {
-  initial: { opacity: 0, y: 20 },
+  initial: { opacity: 0, y: 8 },
   animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: 20 },
+  exit: { opacity: 0, y: 6 },
 };
 
 export const fadeInScale: Variants = {
-  initial: { opacity: 0, scale: 0.95 },
+  initial: { opacity: 0, scale: 0.97 },
   animate: { opacity: 1, scale: 1 },
-  exit: { opacity: 0, scale: 0.95 },
+  exit: { opacity: 0, scale: 0.97 },
 };
 
 export const slideUp: Variants = {
-  initial: { opacity: 0, y: 16 },
-  animate: { opacity: 1, y: 0 },
   exit: { opacity: 0, y: 16 },
 };
 

@@ -4,11 +4,15 @@ import { AnimatePresence } from "framer-motion";
 import { usePrompts } from "@/hooks/use-prompts";
 import { usePromptsStore, type PromptItem, type PromptVariableDef } from "@/stores/prompts-store";
 import { Modal } from "@/components/shared/Modal";
+import { PageHeader } from "@/components/suite/PageHeader";
+import { Skeleton } from "@/components/ui/skeleton";
+import { TONES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
-  Search, X, Plus, Star, Clock, Trash2, Pencil, Check,
-  Upload, Download, Eye, Play, BookOpen, Sparkles, ChevronRight, FileText,
+  Search, X, Plus, Heart, Clock, Trash2, Pencil, Check,
+  Upload, Download, Eye, Play, BookOpen, Wand2, ChevronRight, FileText,
+  LayoutGrid, List as ListIcon, Filter, RefreshCw,
 } from "lucide-react";
 
 const RECENT_KEY = "tc:prompt-recent";
@@ -19,6 +23,8 @@ export function PromptLibraryPage({ projectId }: { projectId?: string }) {
   const { fetchPrompts, createPrompt, updatePrompt, deletePrompt, toggleFavorite, renderPrompt, importPrompts } = usePrompts();
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedTone, setSelectedTone] = useState("all");
+  const [layoutMode, setLayoutMode] = useState<"grid" | "list">("grid");
   const [view, setView] = useState<"all" | "favorites" | "recent">("all");
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<PromptItem | null>(null);
@@ -51,16 +57,18 @@ export function PromptLibraryPage({ projectId }: { projectId?: string }) {
     if (view === "favorites") list = list.filter((p) => p.isFavorite);
     if (view === "recent") list = list.filter((p) => recent.includes(p.id));
     if (selectedCategory !== "all") list = list.filter((p) => p.category === selectedCategory);
+    if (selectedTone !== "all") list = list.filter((p) => (p.tone || "").toLowerCase() === selectedTone.toLowerCase());
     if (search) {
       const q = search.toLowerCase();
       list = list.filter((p) =>
         p.title.toLowerCase().includes(q) ||
         p.description?.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q)
+        p.category.toLowerCase().includes(q) ||
+        p.content.toLowerCase().includes(q)
       );
     }
     return list;
-  }, [prompts, view, recent, selectedCategory, search]);
+  }, [prompts, view, recent, selectedCategory, selectedTone, search]);
 
   const handleCreate = useCallback(async (data: { title: string; description?: string; content: string; category?: string; variables?: PromptVariableDef[] }) => {
     await createPrompt({ ...data, projectId });
@@ -111,70 +119,124 @@ export function PromptLibraryPage({ projectId }: { projectId?: string }) {
     reader.readAsText(file);
   }, [importPrompts, fetchPrompts, projectId]);
 
-  return (
-    <div className="h-full flex flex-col max-w-5xl mx-auto w-full px-4 sm:px-6 py-6">
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <h1 className="text-lg font-bold tracking-tight flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-primary" />
-            Prompt Library
-          </h1>
-          <p className="text-xs text-muted-foreground/60 mt-0.5">Reusable templates with variables, favorites, and import/export.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="h-8 px-3 rounded-lg border border-border/30 flex items-center gap-1.5 text-xs text-muted-foreground/70 hover:text-foreground hover:border-border/60 transition-all cursor-pointer">
-            {importing ? <Clock className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-            Import
-            <input type="file" accept=".json" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImport(f); e.target.value = ""; }} />
-          </label>
-          <button
-            onClick={handleExport}
-            className="h-8 px-3 rounded-lg border border-border/30 flex items-center gap-1.5 text-xs text-muted-foreground/70 hover:text-foreground hover:border-border/60 transition-all"
-          >
-            <Download className="w-3.5 h-3.5" />
-            Export
-          </button>
-          <button
-            onClick={() => { setEditing(null); setEditorOpen(true); }}
-            className="h-8 px-3 rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-xs font-medium flex items-center gap-1.5 hover:from-violet-500 hover:to-indigo-500 shadow-glow transition-all"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            New Prompt
-          </button>
-        </div>
-      </div>
+  const clearFilters = () => {
+    setSearch("");
+    setSelectedCategory("all");
+    setSelectedTone("all");
+    setView("all");
+  };
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-2 mb-4">
+  return (
+    <div className="h-full flex flex-col max-w-7xl mx-auto w-full px-4 sm:px-6 py-6">
+      {/* PageHeader */}
+      <PageHeader
+        title="Prompt Library"
+        description="Browse, search, and use saved prompts and prompt templates across conversations."
+        icon={<BookOpen className="w-5 h-5 text-white" />}
+        actions={
+          <>
+            <label className="h-8 px-3 rounded-lg border border-border/30 flex items-center gap-1.5 text-xs text-muted-foreground/70 hover:text-foreground hover:border-border/60 transition-all cursor-pointer">
+              {importing ? <Clock className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+              Import
+              <input type="file" accept=".json" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImport(f); e.target.value = ""; }} />
+            </label>
+            <button
+              onClick={handleExport}
+              className="h-8 px-3 rounded-lg border border-border/30 flex items-center gap-1.5 text-xs text-muted-foreground/70 hover:text-foreground hover:border-border/60 transition-all"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Export
+            </button>
+            <button
+              onClick={() => { setEditing(null); setEditorOpen(true); }}
+              className="h-8 px-3 rounded-lg bg-brand text-brand-foreground text-xs font-medium flex items-center gap-1.5  shadow-glow transition-all"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              New Prompt
+            </button>
+          </>
+        }
+      />
+
+      {/* Filters & Controls */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4">
+        {/* Search */}
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search prompts..."
+            placeholder="Search prompts by title, description, category, or keywords..."
             className="w-full h-9 bg-muted/30 border border-border/30 rounded-lg pl-9 pr-8 text-xs placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+            aria-label="Search prompts"
           />
           {search && (
-            <button onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground" aria-label="Clear">
+            <button onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground" aria-label="Clear search">
               <X className="w-3 h-3" />
             </button>
           )}
         </div>
-        <div className="flex items-center gap-1">
-          {(["all", "favorites", "recent"] as const).map((v) => (
-            <button
-              key={v}
-              onClick={() => setView(v)}
-              className={cn(
-                "h-8 px-3 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all capitalize",
-                view === v ? "bg-muted/50 text-foreground" : "text-muted-foreground/60 hover:text-foreground"
-              )}
+
+        {/* View / Filter Bar */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Tone Selector */}
+          <div className="relative">
+            <select
+              value={selectedTone}
+              onChange={(e) => setSelectedTone(e.target.value)}
+              className="h-8 px-2.5 rounded-lg border border-border/30 bg-muted/20 text-xs text-muted-foreground hover:text-foreground outline-none focus:ring-1 focus:ring-primary/30"
+              aria-label="Filter by tone"
             >
-              {v === "favorites" && <Star className="w-3 h-3" />}
-              {v === "recent" && <Clock className="w-3 h-3" />}
-              {v}
+              <option value="all">All Tones</option>
+              {TONES.map((t) => (
+                <option key={t.id} value={t.id}>{t.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* View Filter Pills */}
+          <div className="flex items-center gap-1 bg-muted/20 p-0.5 rounded-lg border border-border/20">
+            {(["all", "favorites", "recent"] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                className={cn(
+                  "h-7 px-2.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-all capitalize",
+                  view === v ? "bg-background text-foreground shadow-sm border border-border/20" : "text-muted-foreground/60 hover:text-foreground"
+                )}
+              >
+                {v === "favorites" && <Heart className="w-3 h-3 text-amber-500 fill-amber-500" />}
+                {v === "recent" && <Clock className="w-3 h-3" />}
+                {v}
+              </button>
+            ))}
+          </div>
+
+          {/* Grid vs List toggle */}
+          <div className="flex items-center gap-0.5 bg-muted/20 p-0.5 rounded-lg border border-border/20">
+            <button
+              onClick={() => setLayoutMode("grid")}
+              className={cn(
+                "h-7 w-7 rounded-md flex items-center justify-center transition-all",
+                layoutMode === "grid" ? "bg-background text-foreground shadow-sm border border-border/20" : "text-muted-foreground/60 hover:text-foreground"
+              )}
+              title="Grid view"
+              aria-label="Grid view"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
             </button>
-          ))}
+            <button
+              onClick={() => setLayoutMode("list")}
+              className={cn(
+                "h-7 w-7 rounded-md flex items-center justify-center transition-all",
+                layoutMode === "list" ? "bg-background text-foreground shadow-sm border border-border/20" : "text-muted-foreground/60 hover:text-foreground"
+              )}
+              title="List view"
+              aria-label="List view"
+            >
+              <ListIcon className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -183,18 +245,18 @@ export function PromptLibraryPage({ projectId }: { projectId?: string }) {
         <button
           onClick={() => setSelectedCategory("all")}
           className={cn(
-            "shrink-0 px-3 py-1.5 rounded-lg text-tiny font-medium transition-all border",
+            "shrink-0 px-3 py-1 rounded-full text-tiny font-medium transition-all border",
             selectedCategory === "all" ? "bg-primary/10 border-primary/30 text-primary" : "border-border/20 text-muted-foreground/70 hover:border-border/40"
           )}
         >
-          All
+          All Categories
         </button>
         {categories.map((cat) => (
           <button
             key={cat}
             onClick={() => setSelectedCategory(cat)}
             className={cn(
-              "shrink-0 px-3 py-1.5 rounded-lg text-tiny font-medium transition-all border capitalize",
+              "shrink-0 px-3 py-1 rounded-full text-tiny font-medium transition-all border capitalize",
               selectedCategory === cat ? "bg-primary/10 border-primary/30 text-primary" : "border-border/20 text-muted-foreground/70 hover:border-border/40"
             )}
           >
@@ -203,19 +265,88 @@ export function PromptLibraryPage({ projectId }: { projectId?: string }) {
         ))}
       </div>
 
-      {/* Grid */}
+      {/* Grid / List Main Area */}
       <div className="flex-1 overflow-y-auto scrollbar-thin">
         {loading ? (
-          <p className="text-center text-xs text-muted-foreground/40 py-16">Loading prompts…</p>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-16">
-            <FileText className="w-8 h-8 text-muted-foreground/20 mx-auto mb-3" />
-            <p className="text-xs text-muted-foreground/60">No prompts found. Create your first one.</p>
+          /* Loading State Skeletons */
+          <div className={cn(
+            layoutMode === "grid"
+              ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3"
+              : "flex flex-col gap-2"
+          )}>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="p-4 rounded-xl border border-border/20 bg-card/40 space-y-3">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="w-8 h-8 rounded-lg" />
+                  <Skeleton className="w-4 h-4 rounded-full" />
+                </div>
+                <Skeleton className="w-3/4 h-4 rounded" />
+                <Skeleton className="w-full h-10 rounded" />
+                <div className="flex items-center justify-between pt-2">
+                  <Skeleton className="w-16 h-4 rounded-full" />
+                  <Skeleton className="w-14 h-8 rounded-md" />
+                </div>
+              </div>
+            ))}
           </div>
-        ) : (
-          <div className={cn("grid gap-2", view === "recent" ? "" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3")}>
+        ) : filtered.length === 0 ? (
+          /* Empty State */
+          <div className="flex flex-col items-center justify-center py-20 text-center rounded-2xl border border-dashed border-border/30 bg-muted/5 p-6">
+            <div className="w-12 h-12 rounded-2xl bg-muted/30 border border-border/20 flex items-center justify-center mb-3">
+              {search || selectedCategory !== "all" || selectedTone !== "all" || view !== "all" ? (
+                <Filter className="w-6 h-6 text-muted-foreground/40" />
+              ) : (
+                <FileText className="w-6 h-6 text-muted-foreground/40" />
+              )}
+            </div>
+            <h5 className="text-base font-semibold text-foreground">
+              {search || selectedCategory !== "all" || selectedTone !== "all" || view !== "all"
+                ? "No prompts match your search"
+                : "No saved prompts"}
+            </h5>
+            <p className="text-xs text-muted-foreground/60 max-w-sm mt-1 mb-4">
+              {search || selectedCategory !== "all" || selectedTone !== "all" || view !== "all"
+                ? "Try adjusting your search query, category, or tone filter."
+                : "Create custom prompt templates to reuse across your conversations."}
+            </p>
+            {search || selectedCategory !== "all" || selectedTone !== "all" || view !== "all" ? (
+              <button
+                onClick={clearFilters}
+                className="h-8 px-4 rounded-lg border border-border/30 text-xs font-medium flex items-center gap-1.5 hover:bg-muted/30 transition-all"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                Clear filters
+              </button>
+            ) : (
+              <button
+                onClick={() => { setEditing(null); setEditorOpen(true); }}
+                className="h-8 px-4 rounded-lg bg-brand text-brand-foreground text-xs font-medium shadow-glow  transition-all flex items-center gap-1.5"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                New Prompt
+              </button>
+            )}
+          </div>
+        ) : layoutMode === "grid" ? (
+          /* Grid View */
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {filtered.map((prompt) => (
               <PromptCard
+                key={prompt.id}
+                prompt={prompt}
+                onToggleFavorite={() => toggleFavorite(prompt.id, !prompt.isFavorite)}
+                onEdit={() => { setEditing(prompt); setEditorOpen(true); }}
+                onDelete={() => deletePrompt(prompt.id)}
+                onPreview={() => setPreviewId(prompt.id)}
+                onRun={() => { rememberRecent(prompt.id); setRunId(prompt.id); setPreviewId(prompt.id); }}
+              />
+            ))}
+          </div>
+        ) : (
+          /* List View */
+          <div className="flex flex-col gap-2">
+            {filtered.map((prompt) => (
+              <PromptListItem
                 key={prompt.id}
                 prompt={prompt}
                 onToggleFavorite={() => toggleFavorite(prompt.id, !prompt.isFavorite)}
@@ -278,15 +409,15 @@ function PromptCard({
   return (
     <div className="group relative p-4 rounded-xl border border-border/20 bg-background/30 hover:border-border/40 hover:bg-muted/20 transition-all hover:-translate-y-0.5">
       <div className="flex items-start justify-between mb-2">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500/10 to-indigo-600/10 border border-border/20 flex items-center justify-center shrink-0">
-          <Sparkles className="w-4 h-4 text-primary" />
+        <div className="w-8 h-8 rounded-lg bg-brand/10 border border-border/20 flex items-center justify-center shrink-0">
+          <Wand2 className="w-4 h-4 text-primary" />
         </div>
         <button
           onClick={onToggleFavorite}
           className="opacity-0 group-hover:opacity-100 transition-opacity"
           aria-label={prompt.isFavorite ? "Remove favorite" : "Add favorite"}
         >
-          <Star className={cn("w-4 h-4", prompt.isFavorite ? "text-amber-500 fill-amber-500" : "text-muted-foreground/40")} />
+          <Heart className={cn("w-4 h-4", prompt.isFavorite ? "text-amber-500 fill-amber-500" : "text-muted-foreground/40")} />
         </button>
       </div>
       <h3 className="text-sm font-semibold mb-1 truncate">{prompt.title}</h3>
@@ -301,6 +432,37 @@ function PromptCard({
           <button onClick={onEdit} className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground/60 hover:text-foreground hover:bg-muted/40" aria-label="Edit"><Pencil className="w-3.5 h-3.5" /></button>
           <button onClick={onDelete} className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10" aria-label="Delete"><Trash2 className="w-3.5 h-3.5" /></button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function PromptListItem({
+  prompt, onToggleFavorite, onEdit, onDelete, onPreview, onRun,
+}: {
+  prompt: PromptItem; onToggleFavorite: () => void; onEdit: () => void;
+  onDelete: () => void; onPreview: () => void; onRun: () => void;
+}) {
+  return (
+    <div className="group flex items-center gap-3 px-4 py-3 rounded-xl border border-border/20 bg-background/30 hover:border-border/40 hover:bg-muted/20 transition-all">
+      <div className="w-8 h-8 rounded-lg bg-brand/10 border border-border/20 flex items-center justify-center shrink-0">
+        <Wand2 className="w-4 h-4 text-primary" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <h3 className="text-sm font-semibold truncate">{prompt.title}</h3>
+        <p className="text-tiny text-muted-foreground/60 truncate">
+          {prompt.description || prompt.content}
+        </p>
+      </div>
+      <span className="text-micro px-2 py-0.5 rounded-full bg-muted/40 text-muted-foreground/70 capitalize shrink-0">{prompt.category}</span>
+      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+        <button onClick={onPreview} className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground/60 hover:text-foreground hover:bg-muted/40" aria-label="Preview"><Eye className="w-3.5 h-3.5" /></button>
+        <button onClick={onRun} className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground/60 hover:text-foreground hover:bg-muted/40" aria-label="Run"><Play className="w-3.5 h-3.5" /></button>
+        <button onClick={onEdit} className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground/60 hover:text-foreground hover:bg-muted/40" aria-label="Edit"><Pencil className="w-3.5 h-3.5" /></button>
+        <button onClick={onDelete} className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10" aria-label="Delete"><Trash2 className="w-3.5 h-3.5" /></button>
+        <button onClick={onToggleFavorite} className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground/60 hover:text-amber-500" aria-label={prompt.isFavorite ? "Remove favorite" : "Add favorite"}>
+          <Heart className={cn("w-3.5 h-3.5", prompt.isFavorite ? "text-amber-500 fill-amber-500" : "text-muted-foreground/40")} />
+        </button>
       </div>
     </div>
   );
@@ -410,7 +572,7 @@ function PromptEditor({
 
         <div className="flex justify-end gap-2 mt-5">
           <button onClick={onClose} className="h-8 px-4 rounded-lg text-xs text-muted-foreground/70 hover:text-foreground border border-border/30 transition-all">Cancel</button>
-          <button onClick={save} className="h-8 px-4 rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-xs font-medium shadow-glow hover:from-violet-500 hover:to-indigo-500 transition-all flex items-center gap-1.5">
+          <button onClick={save} className="h-8 px-4 rounded-lg bg-brand text-brand-foreground text-xs font-medium shadow-glow  transition-all flex items-center gap-1.5">
             <Check className="w-3.5 h-3.5" />
             Save
           </button>
@@ -511,7 +673,7 @@ function PromptRunDialog({
           <button onClick={run} className="h-8 px-4 rounded-lg text-xs border border-border/30 hover:border-border/60 transition-all flex items-center gap-1.5">
             <Eye className="w-3.5 h-3.5" /> Preview
           </button>
-          <button onClick={() => onRun(values)} className="h-8 px-4 rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-xs font-medium shadow-glow hover:from-violet-500 hover:to-indigo-500 transition-all flex items-center gap-1.5">
+          <button onClick={() => onRun(values)} className="h-8 px-4 rounded-lg bg-brand text-brand-foreground text-xs font-medium shadow-glow  transition-all flex items-center gap-1.5">
             <Play className="w-3.5 h-3.5" /> Run &amp; Copy
           </button>
         </div>

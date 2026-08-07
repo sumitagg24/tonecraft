@@ -2,8 +2,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Search, MessageSquare, Star, Pin, ArrowRight,
-  FileText, Sparkles, Zap, Hash, Plus,
+  Search, MessageSquare, Pin, ArrowRight,
+  FileText, Wand2, Zap, Hash, Plus,
   RefreshCw, Briefcase, MessageCircle, Smile, Heart, Gem, Laugh,
   CheckSquare, Globe, Mail, Camera, Terminal, Headphones,
 } from "lucide-react";
@@ -14,7 +14,7 @@ import { useRouter } from "next/navigation";
 import { useChatStore } from "@/stores/chat-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { getAllCapabilities } from "@/stores/capability-registry";
-import { fadeIn, fadeInScale, comboboxTransition } from "@/styles/motion";
+import { fadeIn, comboboxTransition } from "@/styles/motion";
 import { useChat } from "@/hooks/use-chat";
 import { NAV_ITEMS } from "@/components/shell/nav-items";
 
@@ -39,10 +39,10 @@ export function CommandPalette() {
   const router = useRouter();
   const chats = useChatStore((s) => s.chats);
   const setMode = useWorkspaceStore((s) => s.setMode);
-  const { createChat } = useChat();
+  const { createChatOptimistic } = useChat();
 
   const allResults: Result[] = [
-    { id: "new-chat", label: "New Chat", description: "Start a fresh conversation", icon: Plus, action: async () => { const chat = await createChat(); router.push(`/chat/${chat.id}`); setOpen(false); }, category: "action" },
+    { id: "new-chat", label: "New Chat", description: "Start a fresh conversation", icon: Plus, action: async () => { const tempId = await createChatOptimistic((real) => router.replace(`/chat/${real.id}`)); router.push(`/chat/${tempId}`); setOpen(false); }, category: "action" },
 
     // Every destination in the app — generated from NAV_ITEMS so new pages
     // are reachable from ⌘K automatically.
@@ -74,7 +74,7 @@ export function CommandPalette() {
     ...chats.filter(c => !c.isArchived).slice(0, 8).map(c => ({
       id: c.id, label: c.title,
       description: `${c.tone || "chat"} · ${c._count?.messages || 0} messages`,
-      icon: c.isPinned ? Pin : c.isFavorite ? Star : MessageSquare,
+      icon: c.isPinned ? Pin : c.isFavorite ? Heart : MessageSquare,
       href: `/chat/${c.id}`, category: "chat" as ResultCategory,
       color: c.isPinned ? "#eab308" : c.isFavorite ? "#f59e0b" : undefined,
     })),
@@ -148,12 +148,14 @@ export function CommandPalette() {
             onClick={() => setOpen(false)}
           />
           <motion.div
-            variants={fadeInScale}
-            initial="initial"
-            animate="animate"
-            exit="exit"
+            initial={{ opacity: 0, scale: 0.97, x: "-50%" }}
+            animate={{ opacity: 1, scale: 1, x: "-50%" }}
+            exit={{ opacity: 0, scale: 0.97, x: "-50%" }}
             transition={comboboxTransition}
-            className="fixed top-[12%] left-1/2 -translate-x-1/2 z-50 w-full max-w-lg"
+            // x: -50% composes with framer-motion's transform — the Tailwind
+            // -translate-x-1/2 class would be overridden by the inline scale
+            // transform, pushing the palette off-center.
+            className="fixed top-[12%] left-1/2 z-50 w-full max-w-lg"
           >
             <div className="glass-panel rounded-2xl border-border/50 shadow-2xl overflow-hidden">
               <div className="flex items-center gap-3 px-4 py-3 border-b border-border/30">
@@ -187,29 +189,33 @@ export function CommandPalette() {
                           const globalIndex = results.indexOf(item);
                           const isSelected = globalIndex === selectedIndex;
                           return (
-                            <button
+                            <motion.button
                               key={item.id}
                               onClick={() => selectItem(item)}
                               onMouseEnter={() => setSelectedIndex(globalIndex)}
-                              className={cn(
-                                "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-all",
-                                isSelected
-                                  ? "bg-muted/60 border border-border/30"
-                                  : "hover:bg-muted/20 border border-transparent"
-                              )}
+                              whileTap={{ scale: 0.985 }}
+                              transition={{ duration: 0.12 }}
+                              className="relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-all"
                             >
-                              <item.icon className={cn("h-4 w-4 shrink-0", item.color || "text-muted-foreground")} />
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium truncate">{item.label}</p>
+                              {isSelected && (
+                                <motion.div
+                                  layoutId="activePaletteHighlight"
+                                  className="absolute inset-0 rounded-xl bg-muted/60 border border-border/40 z-0"
+                                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                                />
+                              )}
+                              <item.icon className="relative z-10 h-4 w-4 shrink-0 text-muted-foreground" />
+                              <div className="relative z-10 flex-1 min-w-0">
+                                <p className="font-medium truncate text-foreground">{item.label}</p>
                                 {item.description && (
-                                  <p className="text-tiny text-muted-foreground/60 truncate">{item.description}</p>
+                                  <p className="text-tiny text-muted-foreground/70 truncate">{item.description}</p>
                                 )}
                               </div>
                               <ArrowRight className={cn(
-                                "h-3.5 w-3.5 shrink-0 transition-opacity",
+                                "relative z-10 h-3.5 w-3.5 shrink-0 transition-opacity",
                                 isSelected ? "opacity-100 text-muted-foreground" : "opacity-0"
                               )} />
-                            </button>
+                            </motion.button>
                           );
                         })}
                       </div>
@@ -250,9 +256,8 @@ function pageDescription(id: string): string {
     notes: "Quick notes and ideas",
     tasks: "Kanban board and task lists",
     calendar: "Schedule and AI meeting notes",
-    agents: "Specialized AI agents and chains",
+
     automations: "Recurring AI workflows",
-    integrations: "Connect Slack, GitHub, and more",
     notifications: "Alerts and activity",
     analytics: "Usage and insights",
     admin: "Workspace administration",
@@ -275,7 +280,7 @@ function getCapIcon(icon: string): React.ElementType {
     CheckSquare, Globe, FileText, Mail, LinkedinIcon, TwitterIcon, Camera,
     Terminal, Headphones,
   };
-  return map[icon] || Sparkles;
+  return map[icon] || Wand2;
 }
 
 function getCapColor(category: string): string {

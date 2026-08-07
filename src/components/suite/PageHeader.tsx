@@ -1,27 +1,64 @@
 "use client";
+import { cn } from "@/lib/utils";
 
 interface PageHeaderProps {
   title: string;
   description?: string;
   icon?: React.ReactNode;
   actions?: React.ReactNode;
+  variant?: "default" | "dense" | "with-action" | "centered";
+  className?: string;
 }
 
-export function PageHeader({ title, description, icon, actions }: PageHeaderProps) {
+export function PageHeader({
+  title,
+  description,
+  icon,
+  actions,
+  variant = "default",
+  className = "",
+}: PageHeaderProps) {
+  const isDense = variant === "dense";
+  const isCentered = variant === "centered";
+  const descriptionId = description ? `page-header-desc-${title.toLowerCase().replace(/\s+/g, "-")}` : undefined;
+
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-      <div className="flex items-center gap-3 min-w-0">
+    <div
+      className={cn(
+        "flex flex-col sm:flex-row justify-between gap-4 mb-6 py-2 px-1",
+        isCentered ? "items-center text-center sm:text-left" : "sm:items-center",
+        className
+      )}
+    >
+      <div className={cn("flex items-center gap-3 min-w-0", isCentered && "flex-col sm:flex-row")}>
         {icon && (
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white shadow-glow shrink-0">
+          <div
+            className="w-10 h-10 rounded-xl bg-brand flex items-center justify-center text-brand-foreground shrink-0 shadow-[0_6px_18px_-6px_hsl(var(--brand)/0.55)]"
+            aria-hidden="true"
+          >
             {icon}
           </div>
         )}
         <div className="min-w-0">
-          <h1 className="text-xl font-bold tracking-tight">{title}</h1>
-          {description && <p className="text-sm text-muted-foreground">{description}</p>}
+          {isDense ? (
+            <h2 className="text-2xl font-semibold tracking-tight text-foreground">{title}</h2>
+          ) : (
+            <h1
+              className="text-2xl sm:text-[28px] font-bold tracking-tight text-foreground"
+              aria-describedby={descriptionId}
+            >
+              {title}
+            </h1>
+          )}
+          {!isDense && description && (
+            <p id={descriptionId} className="text-sm text-muted-foreground mt-1">
+              {description}
+            </p>
+          )}
         </div>
       </div>
-      {actions && <div className="flex items-center gap-2 flex-wrap">{actions}</div>}
+      {actions && <div className="flex items-center gap-2 flex-wrap shrink-0">{actions}</div>}
     </div>
   );
 }
+

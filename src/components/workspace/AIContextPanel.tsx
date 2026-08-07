@@ -3,15 +3,18 @@ import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useChatStore } from "@/stores/chat-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
-import { TONES } from "@/lib/constants";
+import { TONES, PLATFORMS } from "@/lib/constants";
 import { ease } from "@/styles/motion";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { api } from "@/lib/api-client";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
 import type { Persona } from "@/types";
 import {
-  ChevronDown, Sparkles, MessageSquare, Clock, Hash,
+  ChevronDown, Wand2, MessageSquare, Clock, Hash,
   Zap, Globe, Palette, FileText, Brain, BarChart3,
-  PanelRightClose, User, Target, Sliders, Paperclip, Languages, Smile,
+  PanelRightClose, User, Target, Sliders, Paperclip, Languages, Smile, Check,
 } from "lucide-react";
 
 export function AIContextPanel() {
@@ -48,10 +51,10 @@ export function AIContextPanel() {
   }, [messages]);
 
   return (
-    <aside className="h-full bg-sidebar/30 backdrop-blur-2xl border-l border-border/20 flex flex-col overflow-hidden">
+    <aside aria-label="AI Context panel" className="h-full bg-sidebar/30 backdrop-blur-2xl border-l border-border/20 flex flex-col overflow-hidden">
       <div className="shrink-0 px-4 pt-4 pb-3 border-b border-border/20 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-primary" />
+          <Wand2 className="w-4 h-4 text-primary" />
           <span className="text-sm font-semibold">AI Context</span>
         </div>
         <button
@@ -151,26 +154,165 @@ function SummarySection({ currentChat, selectedTone, selectedModel }: any) {
 }
 
 function ActiveSettings({ context }: { context: { platform: string; language: string; length: string; formality: string; emojis: boolean; creativity: number; audience: string } }) {
-  const rows = [
-    { icon: Globe, label: "Platform", value: context.platform || "—" },
-    { icon: Languages, label: "Language", value: context.language || "—" },
-    { icon: Hash, label: "Length", value: context.length || "—" },
-    { icon: Smile, label: "Formality", value: context.formality || "—" },
-    { icon: Smile, label: "Emojis", value: context.emojis ? "On" : "Off" },
-    { icon: Zap, label: "Creativity", value: `${context.creativity}%` },
-    { icon: Target, label: "Audience", value: context.audience || "—" },
-  ];
+  const setContext = useChatStore((s) => s.setContext);
+
   return (
-    <div className="space-y-2">
-      {rows.map((row) => (
-        <InfoRow key={row.label} icon={row.icon} label={row.label} value={row.value} />
-      ))}
-      <p className="text-micro text-muted-foreground/40 pt-1">
-        These are applied to every message you send in this conversation.
+    <div className="space-y-3">
+      {/* Platform */}
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-1.5 text-micro text-muted-foreground/60">
+          <Globe className="w-3 h-3" />
+          <span>Platform</span>
+        </div>
+        <div className="flex flex-wrap gap-1">
+          {PLATFORMS.map((p) => (
+            <button
+              key={p.name}
+              onClick={() => setContext({ platform: p.name.toLowerCase() })}
+              className={cn(
+                "px-2 py-1 rounded-md text-nano font-medium border transition-all",
+                context.platform === p.name.toLowerCase()
+                  ? "bg-primary/10 border-primary/40 text-foreground"
+                  : "border-border/30 text-muted-foreground/60 hover:text-foreground hover:border-border/60"
+              )}
+            >
+              {p.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Language + Formality row */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-1.5 text-micro text-muted-foreground/60">
+            <Languages className="w-3 h-3" />
+            <span>Language</span>
+          </div>
+          <select
+            value={context.language}
+            onChange={(e) => setContext({ language: e.target.value })}
+            className="w-full h-8 rounded-lg bg-muted/30 border border-border/30 px-2 text-xs outline-none focus:ring-2 focus:ring-primary/30"
+            aria-label="Language"
+          >
+            {LANGUAGES.map((l) => (
+              <option key={l.code} value={l.code}>{l.label}</option>
+            ))}
+          </select>
+        </div>
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-1.5 text-micro text-muted-foreground/60">
+            <Smile className="w-3 h-3" />
+            <span>Formality</span>
+          </div>
+          <div className="flex gap-1">
+            {(["casual", "neutral", "formal"] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => setContext({ formality: f })}
+                className={cn(
+                  "flex-1 px-1 py-1.5 rounded-md text-nano font-medium border transition-all capitalize",
+                  context.formality === f
+                    ? "bg-primary/10 border-primary/40 text-foreground"
+                    : "border-border/30 text-muted-foreground/60 hover:text-foreground hover:border-border/60"
+                )}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Length */}
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-1.5 text-micro text-muted-foreground/60">
+          <Hash className="w-3 h-3" />
+          <span>Length</span>
+        </div>
+        <div className="flex gap-1">
+          {(["short", "medium", "long"] as const).map((l) => (
+            <button
+              key={l}
+              onClick={() => setContext({ length: l })}
+              className={cn(
+                "flex-1 px-2 py-1.5 rounded-md text-nano font-medium border transition-all capitalize",
+                context.length === l
+                  ? "bg-primary/10 border-primary/40 text-foreground"
+                  : "border-border/30 text-muted-foreground/60 hover:text-foreground hover:border-border/60"
+              )}
+            >
+              {l}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Creativity slider */}
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between text-micro text-muted-foreground/60">
+          <div className="flex items-center gap-1.5">
+            <Zap className="w-3 h-3" />
+            <span>Creativity</span>
+          </div>
+          <span className="font-medium text-foreground/70">{context.creativity}%</span>
+        </div>
+        <Slider
+          value={[context.creativity]}
+          onValueChange={(val) => setContext({ creativity: val[0] })}
+          max={100}
+          step={5}
+          className="w-full"
+        />
+      </div>
+
+      {/* Emojis toggle */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5 text-micro text-muted-foreground/60">
+          <Smile className="w-3 h-3" />
+          <span>Emojis</span>
+        </div>
+        <Switch
+          checked={context.emojis}
+          onCheckedChange={(checked) => setContext({ emojis: checked })}
+          aria-label="Toggle emojis"
+        />
+      </div>
+
+      {/* Audience */}
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-1.5 text-micro text-muted-foreground/60">
+          <Target className="w-3 h-3" />
+          <span>Audience</span>
+        </div>
+        <input
+          value={context.audience}
+          onChange={(e) => setContext({ audience: e.target.value })}
+          placeholder="Who is this for? e.g. founders"
+          className="w-full h-8 rounded-lg bg-muted/30 border border-border/30 px-2.5 text-xs outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground/40"
+        />
+      </div>
+
+      <p className="text-micro text-muted-foreground/40 pt-0.5 flex items-center gap-1">
+        <Check className="w-3 h-3 text-emerald-500/70" />
+        Applied to every message in this conversation.
       </p>
     </div>
   );
 }
+
+const LANGUAGES = [
+  { code: "en", label: "English" },
+  { code: "hi", label: "Hindi" },
+  { code: "es", label: "Spanish" },
+  { code: "fr", label: "French" },
+  { code: "de", label: "German" },
+  { code: "pt", label: "Portuguese" },
+  { code: "ar", label: "Arabic" },
+  { code: "ja", label: "Japanese" },
+  { code: "zh", label: "Chinese" },
+  { code: "ko", label: "Korean" },
+];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function StatsSection({ messages, wordCount, charCount, estTokens }: any) {
@@ -308,7 +450,7 @@ function UsageBadge({ wordCount, estTokens }: { wordCount: number; estTokens: nu
           initial={{ width: 0 }}
           animate={{ width: `${pct}%` }}
           transition={{ duration: 0.6, ease: ease.out }}
-          className="h-full rounded-full bg-gradient-to-r from-violet-500 to-indigo-500"
+          className="h-full rounded-full bg-brand"
         />
       </div>
       <p className="text-micro text-muted-foreground/40">{wordCount} words · ~{estTokens.toLocaleString()} tokens</p>

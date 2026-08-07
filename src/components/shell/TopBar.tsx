@@ -1,6 +1,8 @@
 "use client";
+import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
+import { motion } from "framer-motion";
 import { useUser, useClerk } from "@clerk/nextjs";
 import { useNavigationStore } from "@/stores/navigation-store";
 import { useCommandPalette } from "@/hooks/use-command-palette";
@@ -22,9 +24,7 @@ function getTitle(pathname: string): { title: string; crumb?: string } {
   if (pathname === "/notes" || pathname.startsWith("/notes")) return { title: "Notes" };
   if (pathname === "/tasks" || pathname.startsWith("/tasks")) return { title: "Tasks" };
   if (pathname === "/calendar" || pathname.startsWith("/calendar")) return { title: "Calendar" };
-  if (pathname === "/agents" || pathname.startsWith("/agents")) return { title: "Agents" };
   if (pathname === "/automations" || pathname.startsWith("/automations")) return { title: "Automations" };
-  if (pathname === "/integrations" || pathname.startsWith("/integrations")) return { title: "Integrations" };
   if (pathname === "/notifications" || pathname.startsWith("/notifications")) return { title: "Notifications" };
   if (pathname === "/analytics" || pathname.startsWith("/analytics")) return { title: "Analytics" };
   if (pathname === "/admin" || pathname.startsWith("/admin/")) return { title: "Workspace Admin" };
@@ -37,6 +37,10 @@ export function TopBar() {
   const pathname = usePathname();
   const router = useRouter();
   const { theme, setTheme } = useTheme();
+  // next-themes returns undefined until the client mounts; rendering the icon
+  // before that causes a server/client hydration mismatch (Sun vs Moon).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const { user } = useUser();
   const { signOut } = useClerk();
   const { subscription, model, loading: profileLoading } = useUserProfile();
@@ -57,60 +61,66 @@ export function TopBar() {
   };
 
   return (
-    <header className="shrink-0 h-12 flex items-center justify-between gap-2 px-3 md:px-4 border-b border-border/20 bg-background/60 backdrop-blur-sm">
-      <div className="flex items-center gap-2 min-w-0">
+    <header className="shrink-0 h-14 flex items-center justify-between gap-3 px-4 md:px-6 border-b border-border/40 bg-background/80 backdrop-blur-lg">
+      <div className="flex items-center gap-3 min-w-0">
         <button
           onClick={() => setMobileNavOpen(true)}
-          className="md:hidden h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all"
+          className="md:hidden h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-all border border-border/40"
           aria-label="Open navigation"
         >
           <PanelLeft className="w-4 h-4" />
         </button>
         <button
           onClick={toggleRailCollapsed}
-          className="hidden md:flex h-8 w-8 rounded-lg items-center justify-center text-muted-foreground/60 hover:text-foreground hover:bg-muted/30 transition-all"
+          className="hidden md:flex h-9 w-9 rounded-xl items-center justify-center text-muted-foreground/70 hover:text-foreground hover:bg-muted/40 transition-all border border-border/40"
           aria-label="Collapse navigation"
         >
           <PanelLeft className="w-4 h-4" />
         </button>
         <div className="flex items-baseline gap-2 min-w-0">
-          <h1 className="text-sm font-semibold truncate">{crumb ? "Account" : label}</h1>
+          <h1 className="text-base font-semibold truncate font-display tracking-tight text-foreground">{crumb ? "Account" : label}</h1>
           {crumb && (
             <>
-              <span className="text-muted-foreground/50">/</span>
+              <span className="text-muted-foreground/40">/</span>
               <span className="text-sm text-muted-foreground truncate">{crumb}</span>
             </>
           )}
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-2">
         <button
           onClick={handleNewChat}
-          className="hidden sm:flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-medium text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 shadow-glow transition-all active:scale-[0.98]"
+          className="hidden sm:flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-xs font-medium text-background bg-foreground hover:bg-foreground/90 shadow-editorial transition-all active:scale-[0.98]"
         >
           <Plus className="w-3.5 h-3.5" />
-          New Chat
+          New Workspace
         </button>
 
         <button
           onClick={toggle}
-          className="h-8 px-2.5 rounded-lg flex items-center gap-2 text-xs text-muted-foreground/60 hover:text-foreground hover:bg-muted/30 border border-border/30 transition-all"
+          className="h-9 px-3 rounded-xl flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/40 border border-border/40 transition-all"
           aria-label="Command palette"
         >
           <Command className="w-3.5 h-3.5" />
-          <kbd className="hidden sm:inline-flex text-micro font-mono text-muted-foreground/50">⌘K</kbd>
         </button>
 
-          <NotificationCenter />
+        <NotificationCenter />
 
-         <button
-           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-           className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground/60 hover:text-foreground hover:bg-muted/30 transition-all"
-           aria-label="Toggle theme"
-         >
-           {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-         </button>
+        <motion.button
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          whileHover={{ y: -1 }}
+          whileTap={{ scale: 0.95, rotate: 12 }}
+          transition={{ duration: 0.15 }}
+          className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/40 border border-border/40 transition-all"
+          aria-label="Toggle theme"
+        >
+          {mounted ? (
+            theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />
+          ) : (
+            <span className="w-4 h-4" aria-hidden="true" />
+          )}
+        </motion.button>
 
         <ProfileDropdown
           data={{

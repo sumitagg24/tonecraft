@@ -12,7 +12,8 @@ export type Tone =
 export type Platform =
   | "whatsapp" | "instagram" | "slack" | "discord" | "linkedin"
   | "twitter" | "telegram" | "email" | "messenger" | "facebook"
-  | "threads" | "youtube";
+  | "threads" | "youtube" | "reddit" | "medium" | "producthunt"
+  | "hackernews" | "github";
 
 export type WritingStyle = "standard" | "storytelling" | "persuasive" | "instructional" | "conversational";
 

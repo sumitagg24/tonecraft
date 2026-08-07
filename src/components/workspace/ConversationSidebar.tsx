@@ -1,6 +1,7 @@
 "use client";
 import { useState, useCallback, useMemo, useRef, useEffect, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useChatStore } from "@/stores/chat-store";
 import { useChat } from "@/hooks/use-chat";
@@ -9,8 +10,8 @@ import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
 import { ease, spring } from "@/styles/motion";
 import {
-  Plus, Search, MessageSquare, Star, Pin, Archive, Trash2,
-  MoreHorizontal, Pencil, Sparkles, X,
+  Search, MessageSquare, Heart, Pin, Archive, Trash2,
+  MoreHorizontal, Pencil, PenLine, X,
   PanelRightClose, Copy, Share2, ArchiveRestore,
 } from "lucide-react";
 
@@ -31,7 +32,7 @@ const groupLabels: Record<GroupLabel, string> = {
 };
 
 const AVATAR_GRADIENTS = [
-  "from-violet-500 to-indigo-600",
+  "from-[#f97316] to-[#f59e0b]",
   "from-fuchsia-500 to-purple-600",
   "from-sky-500 to-blue-600",
   "from-emerald-500 to-teal-600",
@@ -61,7 +62,6 @@ export function ConversationSidebar() {
   const chats = useChatStore((s) => s.chats);
   const searchQuery = useChatStore((s) => s.searchQuery);
   const setSearchQuery = useChatStore((s) => s.setSearchQuery);
-  const { createChat } = useChat();
   const { toggleSidebar, setMobileSidebarOpen } = useWorkspaceStore();
   const isMobile = useMediaQuery("(max-width: 767px)");
   const [view, setView] = useState<"all" | "archived">("all");
@@ -72,11 +72,6 @@ export function ConversationSidebar() {
     if (isMobile) setMobileSidebarOpen(false);
     else toggleSidebar();
   }, [isMobile, setMobileSidebarOpen, toggleSidebar]);
-
-  const handleNewChat = useCallback(async () => {
-    const chat = await createChat();
-    router.push(`/chat/${chat.id}`);
-  }, [createChat, router]);
 
   // Stable handler so memoized ChatItem rows skip re-render
   const handleSelectChat = useCallback((id: string) => {
@@ -112,28 +107,20 @@ export function ConversationSidebar() {
     <aside className="h-full bg-sidebar/40 backdrop-blur-2xl flex flex-col border-r border-border/30">
       <div className="shrink-0 px-3 pt-3 pb-2 border-b border-border/20">
         <div className="flex items-center justify-between mb-2 px-1">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-600 flex items-center justify-center shadow-glow shrink-0">
-              <Sparkles className="w-3.5 h-3.5 text-white" />
+          <Link href="/" aria-label="ToneCraft home" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
+            <div className="w-7 h-7 rounded-lg bg-foreground text-background flex items-center justify-center shrink-0 shadow-sm">
+              <PenLine className="w-3.5 h-3.5" />
             </div>
-            <span className="font-bold text-sm tracking-tight gradient-text">ToneCraft</span>
-          </div>
+            <span className="font-semibold text-sm tracking-tight text-foreground">ToneCraft</span>
+          </Link>
           <button
             onClick={handleClose}
-            className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all"
+            className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-all"
             aria-label="Close sidebar"
           >
             <PanelRightClose className="w-4 h-4" />
           </button>
         </div>
-
-        <button
-          onClick={handleNewChat}
-          className="w-full flex items-center justify-center gap-1.5 h-9 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-medium shadow-glow transition-all active:scale-[0.98]"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          New Chat
-        </button>
 
         <div className="relative mt-2">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
@@ -183,25 +170,18 @@ export function ConversationSidebar() {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin">
+      <nav aria-label="Conversations" className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin">
         {showNewEmpty && (
           <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
             <div className="relative mb-5">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500/10 to-indigo-600/10 border border-border/30 flex items-center justify-center">
+              <div className="w-14 h-14 rounded-2xl bg-brand/10 border border-border/30 flex items-center justify-center">
                 <MessageSquare className="w-6 h-6 text-muted-foreground/30" />
               </div>
             </div>
             <h3 className="text-sm font-semibold mb-1">No conversations yet</h3>
-            <p className="text-tiny text-muted-foreground/60 max-w-[200px] mb-4 leading-relaxed">
-              Start your first AI-powered conversation
+            <p className="text-tiny text-muted-foreground/60 max-w-[200px] leading-relaxed">
+              Use <span className="font-medium text-foreground/70">New Workspace</span> in the top bar to start a conversation
             </p>
-            <button
-              onClick={handleNewChat}
-              className="flex items-center gap-1.5 text-xs font-medium h-8 px-4 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-glow hover:from-violet-500 hover:to-indigo-500 transition-all active:scale-[0.98]"
-            >
-              <Plus className="w-3 h-3" />
-              New Chat
-            </button>
           </div>
         )}
 
@@ -271,7 +251,7 @@ export function ConversationSidebar() {
         )}
 
         <div className="h-4" />
-      </div>
+      </nav>
     </aside>
   );
 }
@@ -283,7 +263,7 @@ const ChatItem = memo(function ChatItem({
   chat: any; isActive: boolean; archived?: boolean; onSelect: (id: string) => void;
 }) {
   const router = useRouter();
-  const { deleteChat, renameChat, togglePin, toggleFavorite, archiveChat, createChat } = useChat();
+  const { deleteChat, renameChat, togglePin, toggleFavorite, archiveChat, createChatOptimistic } = useChat();
   const [menuOpen, setMenuOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(chat.title);
@@ -301,9 +281,9 @@ const ChatItem = memo(function ChatItem({
   }, [renameChat, renameValue, chat.id, chat.title]);
 
   const handleDuplicate = useCallback(async () => {
-    const newChat = await createChat({ title: `${chat.title} (copy)` });
-    router.push(`/chat/${newChat.id}`);
-  }, [createChat, router, chat.title]);
+    const tempId = await createChatOptimistic({ title: `${chat.title} (copy)` }, (real) => router.replace(`/chat/${real.id}`));
+    router.push(`/chat/${tempId}`);
+  }, [createChatOptimistic, router, chat.title]);
 
   const handleShare = useCallback(() => {
     navigator.clipboard.writeText(`${window.location.origin}/chat/${chat.id}`);
@@ -326,7 +306,7 @@ const ChatItem = memo(function ChatItem({
     : [
         { label: "Rename", icon: Pencil, onClick: () => { setRenameValue(chat.title); setRenaming(true); setMenuOpen(false); } },
         { label: "Duplicate", icon: Copy, onClick: handleDuplicate },
-        { label: chat.isFavorite ? "Remove Favorite" : "Favorite", icon: Star, onClick: () => toggleFavorite(chat.id, !chat.isFavorite) },
+        { label: chat.isFavorite ? "Remove Favorite" : "Favorite", icon: Heart, onClick: () => toggleFavorite(chat.id, !chat.isFavorite) },
         { label: chat.isPinned ? "Unpin" : "Pin", icon: Pin, onClick: () => togglePin(chat.id, !chat.isPinned) },
         { label: "Archive", icon: Archive, onClick: () => archiveChat(chat.id, true) },
         { label: "Share", icon: Share2, onClick: handleShare },
@@ -354,6 +334,7 @@ const ChatItem = memo(function ChatItem({
         role="button"
         tabIndex={0}
         aria-label={`Chat: ${chat.title}`}
+        aria-current={isActive ? "page" : undefined}
         onKeyDown={(e) => e.key === "Enter" && onSelect(chat.id)}
       >
         <div className={cn(
@@ -379,7 +360,7 @@ const ChatItem = memo(function ChatItem({
           ) : (
             <p className="text-sm font-medium truncate leading-tight">
               {chat.isPinned && <Pin className="w-2.5 h-2.5 text-yellow-500 inline-block mr-1 -mt-0.5 fill-yellow-500/60" />}
-              {chat.isFavorite && <Star className="w-2.5 h-2.5 text-amber-500 inline-block mr-1 -mt-0.5 fill-amber-500/60" />}
+              {chat.isFavorite && <Heart className="w-2.5 h-2.5 text-amber-500 inline-block mr-1 -mt-0.5 fill-amber-500/60" />}
               {chat.title}
             </p>
           )}

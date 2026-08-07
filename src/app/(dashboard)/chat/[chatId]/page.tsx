@@ -48,6 +48,15 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (!chatId) return;
+    // Optimistic temp chats are created locally — no server row yet. If the
+    // background creation failed and the store has no chat, fall back to the
+    // chat index instead of sitting on a skeleton forever.
+    if (chatId.startsWith("temp-")) {
+      if (!useChatStore.getState().currentChat) {
+        router.replace("/chat");
+      }
+      return;
+    }
     api<Chat>(`/api/chats/${chatId}`)
       .then((data) => {
         useChatStore.getState().setCurrentChat(data);
@@ -95,6 +104,7 @@ export default function ChatPage() {
   }, [messages, streamingContent, atBottom]);
 
   const handleRegenerate = useCallback(async (messageId: string) => {
+    if (chatId.startsWith("temp-")) return;
     try {
       await regenerateMessage(messageId);
       const chat = await api<Chat>(`/api/chats/${chatId}`);
@@ -105,6 +115,7 @@ export default function ChatPage() {
   }, [chatId, regenerateMessage]);
 
   const handleContinue = useCallback(async (messageId: string) => {
+    if (chatId.startsWith("temp-")) return;
     try {
       await continueMessage(messageId);
       const chat = await api<Chat>(`/api/chats/${chatId}`);
@@ -133,7 +144,7 @@ export default function ChatPage() {
       {/* Chat header */}
       <div className="shrink-0 h-12 flex items-center justify-between px-4 border-b border-border/20 bg-background/40 backdrop-blur-sm">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-sm font-semibold truncate">{currentChat.title || "Chat"}</span>
+          <span className="text-[15px] font-display tracking-tight truncate">{currentChat.title || "Chat"}</span>
         </div>
         <div className="flex items-center gap-2">
           <ExportMenu chatId={chatId} align="right" />

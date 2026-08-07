@@ -1,4 +1,4 @@
-import { ok, withApiHandler } from "@/lib/withApiHandler";
+import { fail, ok, withApiHandler } from "@/lib/withApiHandler";
 import { collaborationService } from "@/services/CollaborationService";
 import { z } from "zod";
 
@@ -16,9 +16,9 @@ export const POST = api.POST(async (ctx, body) => {
   return ok({ success: true });
 });
 
-export const GET = api.GET(async (ctx, body) => {
-  const typedBody = body as { chatId: string };
-  const { chatId } = typedBody;
+export const GET = api.GET(async (ctx) => {
+  const chatId = ctx.request.nextUrl.searchParams.get("chatId");
+  if (!chatId) return fail("VALIDATION_ERROR", "chatId is required", 400);
   const users = await collaborationService.getChatTypingUsers(chatId);
   return ok({ users });
 });

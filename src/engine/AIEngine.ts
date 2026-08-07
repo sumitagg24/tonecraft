@@ -1,9 +1,10 @@
-import type { EngineOptions, EngineResult, EngineStreamEvent, CapabilityContext } from "./types";
+import type { EngineOptions, EngineResult, EngineStreamEvent, CapabilityContext, ProviderResult } from "./types";
 import { ProviderRouter, providerRouter } from "./ProviderRouter";
 import { ResponseFormatter, responseFormatter } from "./ResponseFormatter";
 import { ContextBuilder, contextBuilder, type BuiltContext } from "./ContextBuilder";
 import { IntentEngine, intentEngine } from "./IntentEngine";
 import { WorkflowEngine } from "./WorkflowEngine";
+import { localToneEngine } from "./LocalToneEngine";
 import { buildPrompt } from "@/prompts";
 import { prisma } from "@/lib/prisma";
 import { usageGuard } from "@/services/UsageGuard";
@@ -84,24 +85,30 @@ export class AIEngine {
     }
 
     // Route to provider
-    const providerResult = await this.providerRouter.route({
-      system: built.systemMessage,
-      messages: built.messages,
-      modelId: options.modelId,
-      plan: options.plan,
-      intent: intentConfig.intent,
-      capabilityContext: this.buildCapabilityContext(options, built),
-      userId: options.userId,
-      signal: options.signal,
-      tools: options.tools,
-    });
+    let providerResult: ProviderResult;
+    try {
+      providerResult = await this.providerRouter.route({
+        system: built.systemMessage,
+        messages: built.messages,
+        modelId: options.modelId,
+        plan: options.plan,
+        intent: intentConfig.intent,
+        capabilityContext: this.buildCapabilityContext(options, built),
+        userId: options.userId,
+        signal: options.signal,
+        tools: options.tools,
+      });
+    } catch (routeErr) {
+      console.warn("[AIEngine] Cloud providers route failed, using ToneCraft Local Transformer Engine:", (routeErr as Error).message);
+      providerResult = await localToneEngine.transform(options);
+    }
 
     // Deduct credits after success
     if (options.userId && options.plan) {
-      const cost = modelRegistry.getCreditCost(providerResult.model);
-      if (cost === undefined) {
-        throw new Error(`Unknown credit cost for model: ${providerResult.model}`);
-      }
+      // Fallback engines (e.g. tonecraft-local-v1) aren't in the model registry
+      // — charge the default 1 credit rather than crashing the request (the
+      // stream() path below already uses the same ?? 1 convention).
+      const cost = modelRegistry.getCreditCost(providerResult.model) ?? 1;
       await usageGuard.record({
         userId: options.userId,
         modelId: providerResult.model,
@@ -209,10 +216,7 @@ export class AIEngine {
 
       // Deduct credits after successful stream completion
       if (options.userId && options.plan) {
-        const cost = modelRegistry.getCreditCost(finalModel);
-        if (cost === undefined) {
-          throw new Error(`Unknown credit cost for model: ${finalModel}`);
-        }
+        const cost = modelRegistry.getCreditCost(finalModel) ?? 1;
         await usageGuard.record({
           userId: options.userId,
           modelId: finalModel,
@@ -233,7 +237,15 @@ export class AIEngine {
 
       yield { type: "done", result };
     } catch (error) {
-      yield { type: "error", message: (error as Error).message };
+      console.warn("[AIEngine] Cloud providers unavailable, using ToneCraft Local Transformer Engine:", (error as Error).message);
+      try {
+        const localStream = localToneEngine.stream(options);
+        for await (const event of localStream) {
+          yield event;
+        }
+      } catch (fallbackErr) {
+        yield { type: "error", message: (fallbackErr as Error).message };
+      }
     }
   }
 

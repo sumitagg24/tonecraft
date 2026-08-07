@@ -1,9 +1,8 @@
 "use client";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { useWorkspaceStore, type WorkspaceMode } from "@/stores/workspace-store";
-import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { cn } from "@/lib/utils";
@@ -11,7 +10,8 @@ import { duration, ease } from "@/styles/motion";
 import { ConversationSidebar } from "./ConversationSidebar";
 import { ProjectSidebar } from "./ProjectSidebar";
 import { AIContextPanel } from "./AIContextPanel";
-import { PanelRightOpen, PanelRightClose, PanelLeftOpen, PanelLeftClose } from "lucide-react";
+import { useChatStore } from "@/stores/chat-store";
+import { PanelRightOpen, PanelRightClose, PanelLeftOpen, PanelLeftClose, Search, X } from "lucide-react";
 
 interface ComposeWorkspaceProps {
   children: React.ReactNode;
@@ -24,7 +24,7 @@ export function ComposeWorkspace({ children }: ComposeWorkspaceProps) {
   const pathname = usePathname();
   const {
     mode, sidebarOpen, contextPanelOpen, mobileSidebarOpen, mobileContextOpen,
-    toggleSidebar, toggleContextPanel, setMode,
+    toggleSidebar, toggleContextPanel,
     setSidebarOpen, setContextPanelOpen,
     setMobileSidebarOpen, setMobileContextOpen,
   } = useWorkspaceStore();
@@ -35,31 +35,26 @@ export function ComposeWorkspace({ children }: ComposeWorkspaceProps) {
   const t = (transition: { duration: number; ease?: unknown } | object) =>
     reduced ? { duration: 0 } : transition;
 
-  useKeyboardShortcuts([
-    { key: "b", meta: true, handler: () => (isMobile ? setMobileSidebarOpen(!mobileSidebarOpen) : toggleSidebar()) },
-    { key: "\\", meta: true, handler: () => (isMobile ? setMobileContextOpen(!mobileContextOpen) : toggleContextPanel()) },
-    { key: "Escape", handler: () => { setMobileSidebarOpen(false); setMobileContextOpen(false); } },
-  ]);
+  // Centered conversation search — toggled from the header search button.
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchQuery = useChatStore((s) => s.searchQuery);
+  const setSearchQuery = useChatStore((s) => s.setSearchQuery);
+  const searchRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (searchOpen) searchRef.current?.focus();
+  }, [searchOpen]);
+
+  const closeSearch = useCallback(() => {
+    setSearchOpen(false);
+    setSearchQuery("");
+  }, [setSearchQuery]);
 
   // Close mobile overlays on navigation
   useEffect(() => {
     setMobileSidebarOpen(false);
     setMobileContextOpen(false);
   }, [pathname, setMobileSidebarOpen, setMobileContextOpen]);
-
-  const handleModeChange = useCallback((newMode: WorkspaceMode) => {
-    setMode(newMode);
-    if (newMode === "focus" || newMode === "writer") {
-      setSidebarOpen(false);
-      setContextPanelOpen(false);
-    } else if (newMode === "compact") {
-      setSidebarOpen(false);
-      setContextPanelOpen(true);
-    } else {
-      setSidebarOpen(true);
-      setContextPanelOpen(true);
-    }
-  }, [setMode, setSidebarOpen, setContextPanelOpen]);
 
   const isFocus = mode === "focus" || mode === "writer";
   const sidebarActive = isMobile ? mobileSidebarOpen : sidebarOpen;
@@ -127,7 +122,7 @@ export function ComposeWorkspace({ children }: ComposeWorkspaceProps) {
             <button
               onClick={handleSidebarToggle}
               className={cn(
-                "h-8 w-8 rounded-lg flex items-center justify-center transition-all",
+                "h-8 w-8 rounded-lg flex items-center justify-center transition-all shrink-0",
                 sidebarActive ? "text-muted-foreground/50 hover:text-foreground" : "text-muted-foreground hover:text-foreground"
               )}
               aria-label={sidebarActive ? "Close conversation list" : "Open conversation list"}
@@ -135,22 +130,52 @@ export function ComposeWorkspace({ children }: ComposeWorkspaceProps) {
               {sidebarActive ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeftOpen className="w-4 h-4" />}
             </button>
 
-            <div className="flex items-center gap-1">
-              <div className="hidden sm:flex">
-                <ModeSwitcher current={mode} onChange={handleModeChange} />
-              </div>
-              <div className="hidden sm:block w-px h-4 bg-border/20 mx-1" />
-              <button
-                onClick={handleContextToggle}
-                className={cn(
-                  "h-8 w-8 rounded-lg flex items-center justify-center transition-all",
-                  contextActive ? "text-muted-foreground/50 hover:text-foreground" : "text-muted-foreground hover:text-foreground"
-                )}
-                aria-label={contextActive ? "Close context panel" : "Open context panel"}
-              >
-                {contextActive ? <PanelRightClose className="w-4 h-4" /> : <PanelRightOpen className="w-4 h-4" />}
-              </button>
+            {/* Centered conversation search */}
+            <div className="flex-1 flex items-center justify-center min-w-0">
+              {searchOpen ? (
+                <div className="relative w-full max-w-md">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50 pointer-events-none" />
+                  <input
+                    ref={searchRef}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") { e.preventDefault(); closeSearch(); }
+                    }}
+                    placeholder="Search conversations…"
+                    aria-label="Search conversations"
+                    className="w-full h-9 pl-9 pr-9 rounded-xl border border-border/40 bg-background text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/30 shadow-sm"
+                  />
+                  <button
+                    onClick={closeSearch}
+                    aria-label="Close search"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground/50 hover:text-foreground hover:bg-muted/40 transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setSearchOpen(true)}
+                  aria-label="Search conversations"
+                  title="Search conversations"
+                  className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-all"
+                >
+                  <Search className="w-4 h-4" />
+                </button>
+              )}
             </div>
+
+            <button
+              onClick={handleContextToggle}
+              className={cn(
+                "h-8 w-8 rounded-lg flex items-center justify-center transition-all shrink-0",
+                contextActive ? "text-muted-foreground/50 hover:text-foreground" : "text-muted-foreground hover:text-foreground"
+              )}
+              aria-label={contextActive ? "Close context panel" : "Open context panel"}
+            >
+              {contextActive ? <PanelRightClose className="w-4 h-4" /> : <PanelRightOpen className="w-4 h-4" />}
+            </button>
           </div>
         )}
 
@@ -160,23 +185,23 @@ export function ComposeWorkspace({ children }: ComposeWorkspaceProps) {
         )}>
           <div className={cn(
             "h-full overflow-y-auto scrollbar-thin",
-            isFocus ? "max-w-3xl w-full px-4" : ""
+            mode === "writer" ? "max-w-2xl mx-auto w-full px-4" : mode === "focus" ? "max-w-3xl mx-auto w-full px-4" : ""
           )}>
             {children}
           </div>
         </main>
 
         {isFocus && (
-          <div className="absolute top-3 left-1/2 -translate-x-1/2">
-            <span className="text-micro text-muted-foreground/30 uppercase tracking-[0.2em] font-medium">
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
+            <span className="text-micro text-muted-foreground/60 uppercase tracking-[0.2em] font-semibold px-3 py-1 rounded-full bg-muted/30 border border-border/20 backdrop-blur-sm">
               {mode === "focus" ? "Focus Mode" : "Writer Mode"}
             </span>
           </div>
         )}
 
-        {/* Desktop: context overlay drawer */}
+        {/* Desktop: context overlay drawer (for chat / standard mode) */}
         <AnimatePresence>
-          {contextPanelOpen && !isFocus && !isMobile && (
+          {contextPanelOpen && mode !== "compact" && !isFocus && !isMobile && (
             <>
               <motion.div
                 initial={{ opacity: 0 }}
@@ -225,37 +250,13 @@ export function ComposeWorkspace({ children }: ComposeWorkspaceProps) {
           )}
         </AnimatePresence>
       </div>
-    </div>
-  );
-}
 
-const modes: { id: WorkspaceMode; label: string; icon: string }[] = [
-  { id: "chat", label: "Chat", icon: "M" },
-  { id: "focus", label: "Focus", icon: "F" },
-  { id: "writer", label: "Writer", icon: "W" },
-  { id: "compact", label: "Compact", icon: "C" },
-  { id: "minimal", label: "Minimal", icon: "S" },
-];
-
-function ModeSwitcher({ current, onChange }: { current: WorkspaceMode; onChange: (mode: WorkspaceMode) => void }) {
-  return (
-    <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-muted/20 border border-border/20">
-      {modes.map((m) => (
-        <button
-          key={m.id}
-          data-mode={m.id}
-          onClick={() => onChange(m.id)}
-          className={cn(
-            "h-6 px-2 rounded-md text-nano font-medium transition-all uppercase tracking-wider",
-            current === m.id
-              ? "bg-background text-foreground shadow-sm border border-border/20"
-              : "text-muted-foreground/50 hover:text-foreground hover:bg-muted/20"
-          )}
-          title={m.label}
-        >
-          {m.icon}
-        </button>
-      ))}
+      {/* Desktop: context inline panel (for compact mode) */}
+      {contextPanelOpen && mode === "compact" && !isMobile && (
+        <aside className="hidden md:block w-[320px] shrink-0 border-l border-border/30 h-full">
+          <AIContextPanel />
+        </aside>
+      )}
     </div>
   );
 }

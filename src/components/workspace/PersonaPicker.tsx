@@ -3,7 +3,7 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import { PickerSurface } from "./PickerSurface";
 import { useChatStore } from "@/stores/chat-store";
 import { cn } from "@/lib/utils";
-import { Star, Pencil, User } from "lucide-react";
+import { Heart, Pencil, User } from "lucide-react";
 import { api } from "@/lib/api-client";
 import type { PersonaRecord } from "@/services/PersonaService";
 
@@ -106,7 +106,7 @@ export function PersonaPicker({
           className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground/40 hover:text-amber-500"
           aria-label={favorites.includes(p.id) ? "Remove favorite" : "Add favorite"}
         >
-          <Star className={cn("w-3.5 h-3.5", favorites.includes(p.id) && "text-amber-500 fill-amber-500")} />
+          <Heart className={cn("w-3.5 h-3.5", favorites.includes(p.id) && "text-amber-500 fill-amber-500")} />
         </span>
         {onEdit && (
           <span

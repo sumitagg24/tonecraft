@@ -3,9 +3,10 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { fadeInUp, duration, ease } from "@/styles/motion";
 import {
-  MessageSquare, Search, Star, Bookmark, Sparkles, Plus,
+  MessageSquare, Search, Heart, Bookmark, Plus,
   Pin, Archive,
 } from "lucide-react";
+import { Logo } from "@/components/shared/Logo";
 
 interface EmptyStateProps {
   icon?: React.ElementType;
@@ -63,7 +64,7 @@ export function NoChatsEmptyState({ onNewChat }: { onNewChat?: () => void }) {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={onNewChat}
-            className="flex items-center gap-2 h-10 px-5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-sm font-medium shadow-glow hover:from-violet-500 hover:to-indigo-500 transition-all"
+            className="flex items-center gap-2 h-10 px-5 rounded-xl bg-brand text-brand-foreground text-sm font-medium shadow-[0_8px_24px_-8px_hsl(var(--brand)/0.5)] hover:bg-brand/90 transition-all"
           >
             <Plus className="w-4 h-4" />
             New Chat
@@ -97,9 +98,9 @@ export function NoSearchResultsEmptyState({ query, onClear }: { query: string; o
 export function NoFavoritesEmptyState() {
   return (
     <WorkspaceEmptyState
-      icon={Star}
+      icon={Heart}
       title="No favorites yet"
-      description="Star your most-used prompts and conversations for quick access"
+      description="Heart your most-used prompts and conversations for quick access"
     />
   );
 }
@@ -118,31 +119,24 @@ export function NoConversationEmptyState() {
   return (
     <div className="flex flex-col items-center justify-center h-full px-6">
       <motion.div
-        initial={{ scale: 0.8, opacity: 0 }}
+        initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 200, damping: 20 }}
         className="relative mb-8"
       >
-        <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-glow-lg">
-          <Sparkles className="w-12 h-12 text-white" />
+        <div className="w-24 h-24 rounded-3xl border border-border/40 bg-card flex items-center justify-center shadow-premium">
+          <Logo iconOnly size="xl" />
         </div>
         <motion.div
-          animate={{ scale: [1, 1.15, 1], opacity: [0.2, 0.4, 0.2] }}
+          animate={{ scale: [1, 1.1, 1], opacity: [0.25, 0.45, 0.25] }}
           transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -inset-6 rounded-[40px] bg-gradient-to-br from-violet-500/10 via-transparent to-indigo-500/10 blur-2xl -z-10"
+          className="absolute -inset-6 rounded-[40px] bg-brand/10 blur-2xl -z-10"
         />
       </motion.div>
-      <h1 className="text-2xl font-bold tracking-tight mb-2">Welcome to ToneCraft</h1>
-      <p className="text-sm text-muted-foreground/60 max-w-md text-center mb-8 leading-relaxed">
+      <h1 className="font-display text-3xl md:text-4xl tracking-tight mb-3">Welcome to ToneCraft</h1>
+      <p className="text-sm md:text-base text-muted-foreground/70 max-w-md text-center leading-relaxed">
         Your premium AI communication studio. Select a conversation or start something new.
       </p>
-      <div className="flex items-center gap-2 text-xs text-muted-foreground/40">
-        <kbd className="px-2 py-1 rounded-md border border-border/30 bg-muted/30 text-micro font-mono">⌘K</kbd>
-        <span>Command palette</span>
-        <span className="w-px h-3 bg-border/30" />
-        <kbd className="px-2 py-1 rounded-md border border-border/30 bg-muted/30 text-micro font-mono">⌘B</kbd>
-        <span>Toggle sidebar</span>
-      </div>
     </div>
   );
 }

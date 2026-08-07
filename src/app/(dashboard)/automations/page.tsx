@@ -138,7 +138,7 @@ export default function AutomationsPage() {
         />
 
         {/* Workflow shape */}
-        <Card className="bg-gradient-to-r from-violet-500/5 to-indigo-500/5">
+        <Card className="bg-brand/5">
           <CardContent className="p-4 flex flex-wrap items-center gap-3 text-xs">
             <span className="flex items-center gap-1.5 font-medium"><Clock className="w-3.5 h-3.5 text-primary" /> Trigger</span>
             <span className="text-muted-foreground">→</span>

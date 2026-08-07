@@ -36,16 +36,51 @@ export const tools: ToolDefinition[] = [
   { id: "polite-reply", title: "Polite Reply", description: "Gracious and courteous", icon: "Shield", category: "reply", color: "#ec4899" },
   { id: "sarcastic-reply", title: "Sarcastic Reply", description: "Witty and clever", icon: "SmilePlus", category: "reply", color: "#f97316" },
 
-  // Social
+  // Social — LinkedIn family
   { id: "linkedin-post", title: "LinkedIn Post", description: "Engaging professional content", icon: "Network", category: "social", color: "#0a66c2" },
+  { id: "linkedin-hook", title: "LinkedIn Hook Generator", description: "Openers that stop the scroll", icon: "Zap", category: "social", color: "#0a66c2" },
+  { id: "linkedin-carousel", title: "LinkedIn Carousel", description: "Slide-by-slide post structure", icon: "Layers", category: "social", color: "#0a66c2" },
+  { id: "linkedin-thought-leadership", title: "Thought Leadership", description: "Opinion posts with authority", icon: "Crown", category: "social", color: "#0a66c2" },
+  { id: "linkedin-personal-story", title: "Personal Story", description: "Authentic storytelling posts", icon: "BookOpen", category: "social", color: "#0a66c2" },
+  { id: "linkedin-hiring", title: "Hiring Post", description: "Attract great candidates", icon: "Briefcase", category: "social", color: "#0a66c2" },
+  { id: "linkedin-announcement", title: "Company Announcement", description: "Launches and milestones", icon: "Megaphone", category: "social", color: "#0a66c2" },
+
+  // Social — X / Twitter family
   { id: "twitter-thread", title: "Twitter/X Thread", description: "Viral thread generator", icon: "Hash", category: "social", color: "#1da1f2" },
+  { id: "twitter-hook", title: "X Hook Optimizer", description: "First line that gets reads", icon: "Zap", category: "social", color: "#1da1f2" },
+  { id: "twitter-viral", title: "Viral Rewrite", description: "Rewrite for maximum reach", icon: "Flame", category: "social", color: "#1da1f2" },
+  { id: "twitter-quote-reply", title: "Quote Reply", description: "Add context with a reply", icon: "MessageCircle", category: "social", color: "#1da1f2" },
+  { id: "twitter-long-thread", title: "Long → Thread", description: "Split a post into a thread", icon: "AlignLeft", category: "social", color: "#1da1f2" },
+
+  // Social — Threads family
+  { id: "threads-post", title: "Threads Post", description: "Casual, conversational updates", icon: "Hash", category: "social", color: "#000000" },
+  { id: "threads-casual", title: "Threads Casual Rewrite", description: "Low-key, human voice", icon: "Smile", category: "social", color: "#000000" },
+  { id: "threads-storytelling", title: "Threads Storytelling", description: "Story-first engagement", icon: "BookOpen", category: "social", color: "#000000" },
+  { id: "threads-engagement", title: "Threads Engagement", description: "Conversation-starting posts", icon: "MessageSquare", category: "social", color: "#000000" },
+
+  // Social — Reddit family
+  { id: "reddit-helpful", title: "Reddit Helpful", description: "Value-first community replies", icon: "MessageSquare", category: "social", color: "#ff4500" },
+  { id: "reddit-community-safe", title: "Reddit Community-Safe", description: "On-tone, rule-friendly posts", icon: "Shield", category: "social", color: "#ff4500" },
+
+  // Social — Other platforms
   { id: "instagram-caption", title: "Instagram Caption", description: "Scroll-stopping captions", icon: "Camera", category: "social", color: "#e4405f" },
   { id: "facebook-post", title: "Facebook Post", description: "Engaging community content", icon: "ThumbsUp", category: "social", color: "#1877f2" },
   { id: "youtube-description", title: "YouTube Description", description: "SEO descriptions", icon: "Video", category: "social", color: "#ff0004" },
+  { id: "medium-post", title: "Medium Article", description: "Thoughtful long-form posts", icon: "FileText", category: "social", color: "#00ab6c" },
+  { id: "producthunt-launch", title: "Product Hunt Launch", description: "Launch-day posts that convert", icon: "Rocket", category: "social", color: "#da552f" },
+  { id: "hackernews-post", title: "Hacker News Post", description: "Technical, substantive titles", icon: "Terminal", category: "social", color: "#ff6600" },
+  { id: "github-readme", title: "GitHub README", description: "Clear project documentation", icon: "FileText", category: "social", color: "#181717" },
+  { id: "whatsapp-post", title: "WhatsApp Message", description: "Natural, personal messages", icon: "MessageCircle", category: "social", color: "#25d366" },
+  { id: "slack-post", title: "Slack Message", description: "Concise team communication", icon: "Hash", category: "social", color: "#4a154b" },
+  { id: "discord-post", title: "Discord Message", description: "Community-friendly notes", icon: "MessageSquare", category: "social", color: "#5865f2" },
 
   // Email
   { id: "email-writer", title: "Email Writer", description: "Professional email composition", icon: "Mail", category: "email", color: "#ea4335" },
   { id: "cold-email", title: "Cold Email", description: "Outreach that gets replies", icon: "Send", category: "email", color: "#2563eb" },
+  { id: "cold-email-followup", title: "Email Follow-up", description: "Gentle, effective nudges", icon: "Send", category: "email", color: "#2563eb" },
+  { id: "hr-email", title: "HR Email", description: "People operations messages", icon: "Briefcase", category: "email", color: "#7c3aed" },
+  { id: "apology-email", title: "Apology Email", description: "Sincere, professional apologies", icon: "Heart", category: "email", color: "#ec4899" },
+  { id: "negotiation-email", title: "Negotiation Email", description: "Firm, fair negotiation", icon: "Handshake", category: "email", color: "#f59e0b" },
   { id: "business-proposal", title: "Business Proposal", description: "Persuasive proposals", icon: "FileBarChart", category: "business", color: "#7c3aed" },
   { id: "meeting-request", title: "Meeting Request", description: "Polished invitations", icon: "Calendar", category: "business", color: "#0891b2" },
 
@@ -58,7 +93,7 @@ export const tools: ToolDefinition[] = [
   { id: "grammar-fix", title: "Grammar Fix", description: "Correct errors, keep meaning", icon: "CheckCircle", category: "utility", color: "#14b8a6" },
   { id: "translate", title: "Translation", description: "Translate preserving tone", icon: "Globe", category: "utility", color: "#8b5cf6" },
   { id: "summarize", title: "Summarize", description: "Condense to key points", icon: "AlignLeft", category: "utility", color: "#06b6d4" },
-  { id: "enhance", title: "Enhance", description: "Improve clarity and impact", icon: "Sparkles", category: "rewrite", color: "#a855f7" },
+  { id: "enhance", title: "Enhance", description: "Improve clarity and impact", icon: "Wand2", category: "rewrite", color: "#a855f7" },
   { id: "prompt-improver", title: "Prompt Improver", description: "Optimize AI prompts", icon: "Wand", category: "utility", color: "#a855f7" },
   { id: "simplify", title: "Simplify", description: "Make text easier to understand", icon: "Minimize", category: "utility", color: "#10b981" },
 ];

@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Sparkles, Loader2, Copy, Check } from "lucide-react";
+import { X, Wand2, Loader2, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
@@ -12,6 +12,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
 import { fadeInUp, expandCollapse, cardTransition } from "@/styles/motion";
+import { useRecentTools } from "@/hooks/use-recent-tools";
 
 interface ToolPanelProps {
   tool: ToolDefinition;
@@ -19,6 +20,7 @@ interface ToolPanelProps {
 }
 
 export function ToolPanel({ tool, onClose }: ToolPanelProps) {
+  const { record } = useRecentTools();
   const [input, setInput] = useState("");
   const [result, setResult] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -31,6 +33,7 @@ export function ToolPanel({ tool, onClose }: ToolPanelProps) {
 
   const handleExecute = async () => {
     if (!input.trim()) return;
+    record(tool.id);
     setLoading(true);
     setResult(null);
     setMetadata(null);
@@ -71,7 +74,7 @@ export function ToolPanel({ tool, onClose }: ToolPanelProps) {
       <div className="flex items-center justify-between p-4 border-b border-border/40">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${tool.color}15`, color: tool.color }}>
-            <Sparkles className="w-4 h-4" />
+            <Wand2 className="w-4 h-4" />
           </div>
           <div>
             <h3 className="font-semibold text-sm">{tool.title}</h3>
@@ -136,7 +139,7 @@ export function ToolPanel({ tool, onClose }: ToolPanelProps) {
           disabled={loading || !input.trim()}
           className="w-full gap-2"
         >
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
           {loading ? "Generating..." : "Generate"}
         </Button>
       </div>

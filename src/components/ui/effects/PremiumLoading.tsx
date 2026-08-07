@@ -2,7 +2,7 @@
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
-import { Sparkles } from "lucide-react";
+import { Feather } from "lucide-react";
 
 export function AIOrb({ size = "md", className }: { size?: "sm" | "md" | "lg"; className?: string }) {
   const reduced = useReducedMotion();
@@ -14,12 +14,12 @@ export function AIOrb({ size = "md", className }: { size?: "sm" | "md" | "lg"; c
       <motion.div
         animate={reduced ? {} : { scale: [1, 1.12, 1], opacity: [0.5, 0.8, 0.5] }}
         transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute inset-0 rounded-full bg-gradient-to-br from-violet-500/30 via-purple-500/20 to-indigo-500/30 blur-xl"
+        className="absolute inset-0 rounded-full bg-gradient-to-br from-brand/30 via-amber-500/20 to-brand/30 blur-xl"
       />
       <motion.div
         animate={reduced ? {} : { rotate: 360 }}
         transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-        className="absolute inset-1 rounded-full border-2 border-violet-500/20 border-t-violet-500/60"
+        className="absolute inset-1 rounded-full border-2 border-brand/20 border-t-brand/60"
       />
       <motion.div
         animate={reduced ? {} : { rotate: -360 }}
@@ -29,9 +29,9 @@ export function AIOrb({ size = "md", className }: { size?: "sm" | "md" | "lg"; c
       <motion.div
         animate={reduced ? {} : { scale: [1, 1.05, 1] }}
         transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-        className={cn("rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-glow", inner[size])}
+        className={cn("rounded-full bg-brand flex items-center justify-center shadow-[0_8px_24px_-8px_hsl(var(--brand)/0.5)]", inner[size])}
       >
-        <Sparkles className={cn("text-white", size === "lg" ? "w-5 h-5" : size === "md" ? "w-3.5 h-3.5" : "w-2.5 h-2.5")} />
+        <Feather className={cn("text-white", size === "lg" ? "w-5 h-5" : size === "md" ? "w-3.5 h-3.5" : "w-2.5 h-2.5")} />
       </motion.div>
     </div>
   );
@@ -43,7 +43,7 @@ export function GradientLoader({ className }: { className?: string }) {
       <motion.div
         animate={{ x: ["-100%", "200%"] }}
         transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute inset-0 w-1/2 rounded-full bg-gradient-to-r from-transparent via-violet-500/60 via-purple-500/40 to-transparent"
+        className="absolute inset-0 w-1/2 rounded-full bg-gradient-to-r from-transparent via-brand/60 via-amber-500/40 to-transparent"
       />
     </div>
   );

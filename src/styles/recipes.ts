@@ -44,7 +44,7 @@ export const recipe = {
     secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
     ghost: "hover:bg-muted hover:text-accent-foreground",
     glass: "bg-white/5 border border-white/10 backdrop-blur-md hover:bg-white/10 text-white shadow-dock",
-    gradient: "bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-500 hover:to-indigo-500 shadow-glow",
+    gradient: "bg-brand text-brand-foreground hover:bg-brand/90 shadow-[0_8px_24px_-8px_hsl(var(--brand)/0.5)]",
   },
   sidebar: {
     item: "flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-all duration-200",

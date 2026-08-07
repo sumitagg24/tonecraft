@@ -26,6 +26,18 @@ export function truncate(str: string, max: number): string {
   return str.length > max ? str.slice(0, max) + "..." : str;
 }
 
+/**
+ * Only allow internal, relative redirect targets — blocks open-redirect
+ * attempts such as `?redirect_url=https://evil.example` and the
+ * protocol-relative `//evil.example` / `/\evil.example` bypasses.
+ */
+export function safeRedirectUrl(u?: string | null): string | undefined {
+  if (!u) return undefined;
+  if (!u.startsWith("/")) return undefined;
+  if (u.startsWith("//") || u.startsWith("/\\")) return undefined;
+  return u;
+}
+
 export function timeAgo(date: Date | string, addSuffix = true): string {
   const d = typeof date === "string" ? new Date(date) : date;
   const seconds = Math.floor((Date.now() - d.getTime()) / 1000);

@@ -68,13 +68,23 @@ export async function POST(
 
   const { content, tone, platform, language, length, creativity, audience, formality, personaId } = parsed.data;
 
-  const chat = await chatRepository.findByIdAndUser(chatId, userId);
+  let chat = await chatRepository.findByIdAndUser(chatId, userId);
   if (!chat) {
-    return NextResponse.json(
-      { success: false, error: { code: "NOT_FOUND", message: "Chat not found" } },
-      { status: 404 }
-    );
+    if (chatId.startsWith("temp-")) {
+      chat = await chatRepository.create({
+        userId,
+        title: content.slice(0, 35) || "New Chat",
+        tone,
+      });
+    } else {
+      return NextResponse.json(
+        { success: false, error: { code: "NOT_FOUND", message: "Chat not found" } },
+        { status: 404 }
+      );
+    }
   }
+  // The server-generated chat owns its own id — never write under the temp id.
+  const effectiveChatId = chat.id;
 
   let persona: { name?: string; systemPrompt?: string; tone?: string; writingStyle?: string; emojiUsage?: string } | undefined;
   if (personaId) {
@@ -105,9 +115,9 @@ export async function POST(
     }
   }
 
-  await messageRepository.create({ chatId, role: "user", content, tone, platform, language });
+  await messageRepository.create({ chatId: effectiveChatId, role: "user", content, tone, platform, language });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await chatRepository.update(chatId, userId, { updatedAt: new Date() } as any);
+  await chatRepository.update(effectiveChatId, userId, { updatedAt: new Date() } as any);
 
   let knowledge: { systemBlock: string; sourceFiles: string[] } | undefined;
   const knowledgeFileIds = parsed.data.knowledgeFileIds;
@@ -128,7 +138,7 @@ export async function POST(
     id: m.id, role: m.role as "user" | "assistant" | "system", content: m.content, createdAt: m.createdAt,
   }));
 
-  const assistantMessage = await messageRepository.create({ chatId, role: "assistant", content: "", tone });
+  const assistantMessage = await messageRepository.create({ chatId: effectiveChatId, role: "assistant", content: "", tone });
 
   const encoder = new TextEncoder();
   const startTime = Date.now();

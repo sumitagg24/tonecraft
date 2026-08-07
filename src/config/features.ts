@@ -7,7 +7,6 @@ export type FeatureKey =
   | "file-uploads"
   | "export-pdf"
   | "model-selector"
-  | "api-access"
   | "team-workspace"
   | "advanced-analytics"
   | "agents"
@@ -17,7 +16,9 @@ export type FeatureKey =
   // Phase 12.8 — runtime-toggled platform features
   | "deep-research"
   | "automation"
-  | "marketplace";
+  | "marketplace"
+  // Phase 17 — memory system
+  | "memory";
 
 export interface FeatureFlag {
   key: FeatureKey;
@@ -63,12 +64,6 @@ const FEATURE_FLAGS: readonly FeatureFlag[] = [
     label: "Model selector",
     description: "Manually choose which AI model to use",
     enabledPlans: [PlanTier.PRO, PlanTier.ENTERPRISE],
-  },
-  {
-    key: "api-access",
-    label: "API access",
-    description: "Programmatic API access to the AI engine",
-    enabledPlans: [PlanTier.ENTERPRISE],
   },
   {
     key: "team-workspace",
@@ -123,6 +118,12 @@ const FEATURE_FLAGS: readonly FeatureFlag[] = [
     label: "Marketplace",
     description: "Community prompt/agent/persona marketplace",
     enabledPlans: [PlanTier.ENTERPRISE],
+  },
+  {
+    key: "memory",
+    label: "AI Memory",
+    description: "Long-term memory, semantic recall, and the AI context builder",
+    enabledPlans: [PlanTier.FREE, PlanTier.PRO, PlanTier.ENTERPRISE],
   },
 ];
 

@@ -131,7 +131,7 @@ export function ProjectPage({ projectId }: ProjectPageProps) {
             <t.icon className="w-3.5 h-3.5" />
             {t.label}
             {tab === t.id && (
-              <motion.div layoutId="project-tab" className="absolute inset-x-0 -bottom-px h-0.5 bg-gradient-to-r from-violet-500 to-indigo-500" />
+              <motion.div layoutId="project-tab" className="absolute inset-x-0 -bottom-px h-0.5 bg-brand" />
             )}
           </button>
         ))}
@@ -158,7 +158,7 @@ export function ProjectPage({ projectId }: ProjectPageProps) {
                     onClick={() => router.push(`/p/${projectId}/chats/${chat.id}`)}
                     className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-border/20 hover:bg-muted/20 transition-all text-left"
                   >
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500/20 to-indigo-600/20 flex items-center justify-center shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center shrink-0">
                       <MessageSquare className="w-4 h-4 text-muted-foreground/70" />
                     </div>
                     <div className="flex-1 min-w-0">
