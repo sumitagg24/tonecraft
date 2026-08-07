@@ -1,6 +1,4 @@
 "use client";
-import { useRouter } from "next/navigation";
-import { useChat } from "@/hooks/use-chat";
 import { NavigationRail, MobileRailDrawer } from "./NavigationRail";
 import { TopBar } from "./TopBar";
 import { MobileBottomBar } from "./MobileBottomBar";
@@ -13,14 +11,6 @@ interface AppShellProps {
 }
 
 export function AppShell({ children }: AppShellProps) {
-  const router = useRouter();
-  const { createChatOptimistic } = useChat();
-
-  const handleNewChat = async () => {
-    const tempId = await createChatOptimistic((real) => router.replace(`/chat/${real.id}`));
-    router.push(`/chat/${tempId}`);
-  };
-
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       <TooltipProvider>

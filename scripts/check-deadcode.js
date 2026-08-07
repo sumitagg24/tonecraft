@@ -2,15 +2,16 @@
 /**
  * check-deadcode.js
  *
- * Finds "dead" component files — files under `src/components` that are never
+ * Finds "dead" source files — files under the scanned directories (by default
+ * `src/components`, `src/hooks`, `src/stores`, `src/lib`) that are never
  * imported anywhere in the codebase (no static import, dynamic import,
  * require, or re-export). Exit code is non-zero when any are found so CI and
  * `npm run check:deadcode` fail automatically, catching regressions like the
  * old `ChatList.tsx` that sat unused for months.
  *
  * Usage:
- *   node scripts/check-deadcode.js            # scan src/components (default)
- *   node scripts/check-deadcode.js --dir src/hooks   # scan any directory
+ *   node scripts/check-deadcode.js            # scan components, hooks, stores, lib
+ *   node scripts/check-deadcode.js --dir src/hooks   # scan a single directory
  *   node scripts/check-deadcode.js --quiet    # only print a summary
  *
  * The check is intentionally *conservative* — it only flags a file when zero
@@ -23,6 +24,16 @@ const path = require("path");
 
 const ROOT = path.resolve(__dirname, "..");
 const SRC = path.join(ROOT, "src");
+
+// Directories scanned by default. Config/framework auto-loaded files
+// (next.config.ts, tailwind.config.ts, src/instrumentation.ts, src/proxy.ts)
+// live outside these, so they never produce false positives.
+const DEFAULT_DIRS = [
+  path.join("src", "components"),
+  path.join("src", "hooks"),
+  path.join("src", "stores"),
+  path.join("src", "lib"),
+];
 
 // Next.js convention files are auto-discovered by the framework and are never
 // (and should never be) imported, so they're not candidates for "dead code".
@@ -95,8 +106,6 @@ function collectSourceFiles() {
 function extractImportSpecifiers(filePath) {
   const specifiers = new Set();
   const source = fs.readFileSync(filePath, "utf8");
-  // Static + dynamic + re-export forms: import "x", import x from "y",
-  // import("y"), require("y"), export * from "y", export {a} from "y".
   // Quote chars: double, single, and backtick (template-literal dynamic
   // imports like import(`@/components/x`) are matched too).
   const patterns = [
@@ -111,25 +120,47 @@ function extractImportSpecifiers(filePath) {
       specifiers.add(m[2]);
     }
   }
-  for (const re of patterns) {
-    let m;
-    while ((m = re.exec(source)) !== null) {
-      specifiers.add(m[1]);
-    }
-  }
   return specifiers;
+}
+
+function collectCandidates(targetDir) {
+  const candidates = [];
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name.startsWith(".")) continue;
+        walk(full);
+      } else {
+        const ext = path.extname(entry.name);
+        if (!CANDIDATE_EXTENSIONS.has(ext)) continue;
+        if (NEXT_CONVENTION_FILES.has(entry.name)) continue;
+        if (/\.(test|spec)\./.test(entry.name)) continue;
+        if (entry.name.endsWith(".d.ts")) continue;
+        candidates.push(path.normalize(full));
+      }
+    }
+  };
+  walk(targetDir);
+  return candidates;
 }
 
 function main() {
   const args = process.argv.slice(2);
   const quiet = args.includes("--quiet");
   const dirFlagIndex = args.indexOf("--dir");
-  const targetDir = dirFlagIndex >= 0 && args[dirFlagIndex + 1]
-    ? path.resolve(ROOT, args[dirFlagIndex + 1])
-    : path.join(SRC, "components");
-  if (!fs.existsSync(targetDir)) {
-    console.error(`check-deadcode: directory not found: ${targetDir}`);
-    process.exit(2);
+
+  let targetDirs;
+  if (dirFlagIndex >= 0 && args[dirFlagIndex + 1]) {
+    targetDirs = [path.resolve(ROOT, args[dirFlagIndex + 1])];
+  } else {
+    targetDirs = DEFAULT_DIRS.map((d) => path.join(ROOT, d));
+  }
+  for (const dir of targetDirs) {
+    if (!fs.existsSync(dir)) {
+      console.error(`check-deadcode: directory not found: ${dir}`);
+      process.exit(2);
+    }
   }
 
   const allFiles = collectSourceFiles();
@@ -158,35 +189,22 @@ function main() {
     }
   }
 
-  // Candidates: source files under the target dir, excluding Next convention
+  // Candidates: source files under the target dirs, excluding Next convention
   // files, tests, and definition files.
   const candidates = [];
-  const walkCandidates = (dir) => {
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        if (entry.name.startsWith(".")) continue;
-        walkCandidates(full);
-      } else {
-        const ext = path.extname(entry.name);
-        if (!CANDIDATE_EXTENSIONS.has(ext)) continue;
-        if (NEXT_CONVENTION_FILES.has(entry.name)) continue;
-        if (/\.(test|spec)\./.test(entry.name)) continue;
-        if (entry.name.endsWith(".d.ts")) continue;
-        candidates.push(path.normalize(full));
-      }
-    }
-  };
-  walkCandidates(targetDir);
+  for (const dir of targetDirs) {
+    candidates.push(...collectCandidates(dir));
+  }
 
   const dead = candidates.filter((f) => !referenced.has(f));
 
   if (!quiet) {
-    console.log(`check-deadcode: scanned ${candidates.length} files under ${path.relative(ROOT, targetDir)}`);
+    const label = targetDirs.map((d) => path.relative(ROOT, d)).join(", ");
+    console.log(`check-deadcode: scanned ${candidates.length} files under ${label}`);
     if (dead.length === 0) {
-      console.log("✓ no dead component files found — every file is imported somewhere.");
+      console.log("✓ no dead source files found — every file is imported somewhere.");
     } else {
-      console.log(`✗ ${dead.length} dead component file(s) — never imported anywhere:`);
+      console.log(`✗ ${dead.length} dead source file(s) — never imported anywhere:`);
       for (const f of dead) console.log(`  - ${path.relative(ROOT, f)}`);
       console.log("\nDelete them (they're unused), or wire them up before committing.");
     }

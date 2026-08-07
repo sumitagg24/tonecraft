@@ -119,7 +119,6 @@ function renderIcon(size) {
 
   // Downsample S×S → size×size with box averaging.
   const out = Buffer.alloc(size * size * 4);
-  const scale = ss;
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
       let rSum = 0;

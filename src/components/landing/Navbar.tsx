@@ -237,14 +237,16 @@ export function Navbar() {
 
           {/* ── Desktop nav items ────────────────────────── */}
           <div className="hidden xl:flex items-center gap-0.5 pl-1">
-            {PRIMARY_LINKS.map((link) =>
-              link.mega ? (
-                <div key={link.id} className="relative" onMouseEnter={() => setOpenMenu(link.mega!)}>
+            {PRIMARY_LINKS.map((link) => {
+              const mega = link.mega;
+              return mega ? (
+                <div key={link.id} className="relative" onMouseEnter={() => setOpenMenu(mega)}>
                   <button
-                    onClick={() => toggleMenu(link.mega!)}
-                    aria-expanded={openMenu === link.mega}                      className={cn(
+                    onClick={() => toggleMenu(mega)}
+                    aria-expanded={openMenu === mega}
+                    className={cn(
                       "flex items-center gap-1 px-2.5 py-2 text-sm font-medium rounded-xl transition-all duration-200",
-                      openMenu === link.mega
+                      openMenu === mega
                         ? "text-foreground bg-muted/60"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                     )}
@@ -253,7 +255,7 @@ export function Navbar() {
                     <ChevronDown
                       className={cn(
                         "w-3.5 h-3.5 transition-transform duration-200",
-                        openMenu === link.mega && "rotate-180"
+                        openMenu === mega && "rotate-180"
                       )}
                     />
                   </button>
@@ -267,8 +269,8 @@ export function Navbar() {
                 >
                   {link.label}
                 </Link>
-              )
-            )}
+              );
+            })}
           </div>
         </div>
 

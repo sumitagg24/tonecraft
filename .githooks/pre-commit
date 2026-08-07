@@ -1,0 +1,27 @@
+#!/bin/sh
+# Pre-commit hook — runs the dead-code check so unused source files
+# (components, hooks, stores, lib) never reach CI.
+#
+# Installed automatically by `npm run install:hooks` (wired into `prepare`,
+# so `npm install` / `npm ci` sets it up). Skip with `git commit --no-verify`
+# only when you know what you're doing.
+#
+# Only runs when files under the scanned directories actually changed, so
+# unrelated commits stay fast.
+
+CHANGED_SRC=$(git diff --cached --name-only | grep -E '^src/(components|hooks|stores|lib)/' || true)
+
+if [ -z "$CHANGED_SRC" ]; then
+  exit 0
+fi
+
+echo "check-deadcode: verifying no unused source files…"
+if ! node scripts/check-deadcode.js; then
+  echo ""
+  echo "✗ Commit blocked: dead source file(s) detected."
+  echo "  Delete them (they are unused) or wire them up before committing."
+  echo "  (Override with git commit --no-verify if you are certain.)"
+  exit 1
+fi
+
+exit 0

@@ -187,18 +187,16 @@ async function syncSubscription(normalized: { type: string; data: Record<string,
 
 function planFromPriceId(priceId: string | null): string {
   if (!priceId) return "free";
-  // Monthly, annual, and INR price IDs all map to the same plan tier.
+  // Monthly and annual USD price IDs both map to the same plan tier.
   if (
     priceId === getPriceId("Pro", "month", "USD") ||
-    priceId === getPriceId("Pro", "year", "USD") ||
-    priceId === getPriceId("Pro", "month", "INR")
+    priceId === getPriceId("Pro", "year", "USD")
   ) {
     return "pro";
   }
   if (
     priceId === getPriceId("Enterprise", "month", "USD") ||
-    priceId === getPriceId("Enterprise", "year", "USD") ||
-    priceId === getPriceId("Enterprise", "month", "INR")
+    priceId === getPriceId("Enterprise", "year", "USD")
   ) {
     return "enterprise";
   }

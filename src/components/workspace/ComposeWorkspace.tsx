@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
-import { useWorkspaceStore, type WorkspaceMode } from "@/stores/workspace-store";
+import { useWorkspaceStore } from "@/stores/workspace-store";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { cn } from "@/lib/utils";
@@ -25,7 +25,6 @@ export function ComposeWorkspace({ children }: ComposeWorkspaceProps) {
   const {
     mode, sidebarOpen, contextPanelOpen, mobileSidebarOpen, mobileContextOpen,
     toggleSidebar, toggleContextPanel,
-    setSidebarOpen, setContextPanelOpen,
     setMobileSidebarOpen, setMobileContextOpen,
   } = useWorkspaceStore();
   const isMobile = useMediaQuery("(max-width: 767px)");

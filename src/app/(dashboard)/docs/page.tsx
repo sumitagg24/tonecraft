@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities -- prose-heavy docs page: apostrophes & quotes are intentional typography */
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, apiPost } from "@/lib/api-client";

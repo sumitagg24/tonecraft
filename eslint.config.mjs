@@ -29,6 +29,26 @@ const eslintConfig = defineConfig([
       "react-hooks/set-state-in-effect": "off",
     },
   },
+  // Plain-Node scripts (CJS) legitimately use `require()` and console output
+  // for CLI tooling — the app-level TS rules don't apply to them. Placed last
+  // so it wins over the shared rules block above (flat config precedence).
+  {
+    files: ["scripts/**/*.js", "scripts/**/*.cjs", "scripts/**/*.mjs"],
+    languageOptions: {
+      globals: {
+        require: "readonly",
+        module: "readonly",
+        process: "readonly",
+        console: "readonly",
+        __dirname: "readonly",
+        Buffer: "readonly",
+      },
+    },
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+      "no-console": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;

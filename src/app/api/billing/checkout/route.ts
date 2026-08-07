@@ -13,13 +13,14 @@ const VALID_PLANS = ["Pro", "Enterprise"] as const;
 export const POST = api.POST(async (ctx, body) => {
   try {
     const raw = (body ?? {}) as { plan?: string; interval?: string; currency?: string };
-    // Normalize: accept "pro"/"Pro"/"PRO", "month"/"year", "USD"/"INR".
+    // Normalize: accept "pro"/"Pro"/"PRO", "month"/"year". Currency is
+    // always USD — pricing is USD-only.
     const plan = VALID_PLANS.find(
       (p) => p.toLowerCase() === (raw.plan ?? "").toLowerCase()
     );
     const interval: BillingInterval =
       raw.interval === "year" ? "year" : "month";
-    const currency: BillingCurrency = raw.currency === "INR" ? "INR" : "USD";
+    const currency: BillingCurrency = "USD";
     if (!plan) {
       return fail("BAD_REQUEST", "Invalid request.", 400);
     }
@@ -27,11 +28,7 @@ export const POST = api.POST(async (ctx, body) => {
     // NOTE: checkout intentionally bypasses message/credit limits — a user who
     // hit their free daily cap must still be able to subscribe (fixes "payments
     // blocked by usage limit").
-    let priceId = getPriceId(plan, interval, currency);
-    // Indian customers get INR when configured; otherwise fall back to USD.
-    if (!priceId && currency === "INR") {
-      priceId = getPriceId(plan, interval, "USD");
-    }
+    const priceId = getPriceId(plan, interval, currency);
     if (!priceId) {
       const message =
         interval === "year"
