@@ -28,6 +28,9 @@ jobs:
       - name: TypeScript Check
         run: npx tsc --noEmit --incremental false
 
+      - name: Dead Code Check
+        run: node scripts/check-deadcode.js
+
       - name: Next.js Production Build
         run: npm run build
         env:
