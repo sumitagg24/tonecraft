@@ -28,8 +28,10 @@ const nextConfig: NextConfig = {
             value: "max-age=63072000; includeSubDomains; preload",
           },
           {
+            // microphone=(self) — voice dictation (composer MediaRecorder) needs it;
+            // camera/geolocation/payment stay fully blocked.
             key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=(), payment=()",
+            value: "camera=(), microphone=(self), geolocation=(), payment=()",
           },
           // CSP is applied only in production — dev tooling (HMR/eval) needs a looser policy.
           ...(process.env.NODE_ENV === "production"

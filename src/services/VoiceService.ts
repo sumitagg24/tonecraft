@@ -49,8 +49,12 @@ export class VoiceService {
       body: form,
     });
     if (!res.ok) {
-      logger.error(`[Voice] transcription failed: ${res.status} ${await res.text().catch(() => "")}`);
-      throw new Error("Transcription provider error");
+      const detail = await res.text().catch(() => "");
+      logger.error(`[Voice] transcription failed: ${res.status} ${detail}`);
+      if (res.status === 401) {
+        throw new Error("Transcription provider error (HTTP 401 — check OPENAI_API_KEY)");
+      }
+      throw new Error(`Transcription provider error (HTTP ${res.status})`);
     }
     const data = (await res.json()) as { text: string };
     return {

@@ -84,7 +84,14 @@ export function useChat() {
 
         if (!response.ok) {
           const err = await response.json();
-          throw new Error(err?.error?.message || "Failed to send message");
+          // Preserve the error code so isLimitError() can recognize RATE_LIMITED /
+          // INSUFFICIENT_CREDITS and surface the upgrade toast instead of a raw
+          // console.error + generic toast.
+          const code = err?.error?.code as string | undefined;
+          const message = err?.error?.message || "Failed to send message";
+          const e = new Error(message) as Error & { error?: { code?: string } };
+          if (code) e.error = { code };
+          throw e;
         }
 
         const reader = response.body?.getReader();

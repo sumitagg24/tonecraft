@@ -43,7 +43,18 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
+      use: {
+        ...devices["Desktop Chrome"],
+        // Fake media device so the voice-dictation test can exercise the real
+        // MediaRecorder/getUserMedia path headlessly (microphone permission is
+        // granted per-test via context.grantPermissions).
+        launchOptions: {
+          args: [
+            "--use-fake-device-for-media-stream",
+            "--use-fake-ui-for-media-stream",
+          ],
+        },
+      },
     },
   ],
 });
