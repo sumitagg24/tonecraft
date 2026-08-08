@@ -36,3 +36,27 @@ jobs:
         env:
           NEXT_PUBLIC_APP_URL: https://tonecraft.app
           DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
+          # Inlined at build time — only needed to render pages behind Clerk.
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+
+      # Browser regression guard: every public page must hydrate with zero
+      # console errors / hydration mismatches. Needs Clerk secrets to render
+      # pages at runtime — add these two repo secrets to enable the step:
+      #   CLERK_SECRET_KEY, NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+      - name: Warn when smoke test is disabled
+        if: ${{ secrets.CLERK_SECRET_KEY == '' }}
+        run: echo "::warning::Hydration smoke test is SKIPPED — add CLERK_SECRET_KEY and NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY repo secrets to enable it."
+
+      - name: Install Playwright browsers
+        if: ${{ secrets.CLERK_SECRET_KEY != '' }}
+        run: npx playwright install --with-deps chromium
+        timeout-minutes: 10
+
+      - name: Hydration & Console Smoke Test
+        if: ${{ secrets.CLERK_SECRET_KEY != '' }}
+        run: npm run test:e2e
+        env:
+          NEXT_PUBLIC_APP_URL: https://tonecraft.app
+          DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
+          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}

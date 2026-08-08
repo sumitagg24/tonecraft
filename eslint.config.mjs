@@ -13,6 +13,10 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     ".agents/**",
+    // Playwright-generated test artifacts (minified reporter/trace assets).
+    "playwright-report/**",
+    "test-results/**",
+    "blob-report/**",
   ]),
   {
     rules: {

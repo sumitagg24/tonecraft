@@ -40,8 +40,11 @@ const nextConfig: NextConfig = {
                     "default-src 'self'",
                     // Next.js injects inline bootstrap scripts; Clerk loads from its CDN.
                     "script-src 'self' 'unsafe-inline' https://*.clerk.accounts.dev",
+                    // Sentry Session Replay spawns its compression worker from a blob URL
+                    // (worker-src falls back to script-src when unset, which blocked it).
+                    "worker-src 'self' blob:",
                     "style-src 'self' 'unsafe-inline'",
-                    "img-src 'self' data: blob: https://lh3.googleusercontent.com https://avatars.githubusercontent.com https://img.clerk.com https://*.clerk.com https://*.clerk.accounts.dev https://*.r2.dev",
+                    "img-src 'self' data: blob: https://images.unsplash.com https://lh3.googleusercontent.com https://avatars.githubusercontent.com https://img.clerk.com https://*.clerk.com https://*.clerk.accounts.dev https://*.r2.dev",
                     "font-src 'self' data:",
                     "connect-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://*.sentry.io https://*.ingest.sentry.io",
                     "media-src 'self' blob: data: https://*.r2.dev",
