@@ -3,7 +3,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Send, Loader2, X, ChevronDown, Sliders,
-  Globe, Paperclip, Square, Check, Wand2, Users, BookOpenCheck,
+  Globe, Paperclip, Square, Check, Wand2, Users, BookOpenCheck, Mic,
 } from "lucide-react";
 import { useChatStore } from "@/stores/chat-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
@@ -48,6 +48,14 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
   const [uploading, setUploading] = useState(false);
   const [toolLoading, setToolLoading] = useState(false);
   const [knowledgeFileIds, setKnowledgeFileIds] = useState<string[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [recSeconds, setRecSeconds] = useState(0);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<number | null>(null);
+  const recSecondsRef = useRef(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const attachRef = useRef<HTMLInputElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
@@ -57,6 +65,17 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
   const setContext = useChatStore((s) => s.setContext);
   const { showAdvancedControls, toggleAdvancedControls, showSuggestions } = useWorkspaceStore();
   const { record } = useRecentTools();
+
+  // Tear down any active recording/stream on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current !== null) window.clearInterval(timerRef.current);
+      timerRef.current = null;
+      recorderRef.current = null; // ignore any deferred onstop after unmount
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    };
+  }, []);
 
   // Close tone/platform pickers when clicking outside the toolbar
   useEffect(() => {
@@ -176,6 +195,100 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
     }
   }, [input]);
 
+  // ── Voice input (browser MediaRecorder → /api/voice/transcribe) ──────────
+  const transcribeBlob = useCallback(async (blob: Blob, ext = "webm") => {
+    setIsTranscribing(true);
+    try {
+      const fd = new FormData();
+      fd.append("audio", blob, `dictation.${ext}`);
+      const res = await api<{ text: string; provider: string }>("/api/voice/transcribe", {
+        method: "POST",
+        body: fd,
+      });
+      if (res.provider === "unavailable" || !res.text) {
+        toast.error("Voice dictation isn't configured — set OPENAI_API_KEY to enable it");
+        return;
+      }
+      setInput((prev) => (prev ? `${prev.replace(/\s+$/, "")} ${res.text}` : res.text));
+      toast.success("Voice transcribed");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Transcription failed");
+    } finally {
+      setIsTranscribing(false);
+    }
+  }, []);
+
+  const resetRecording = useCallback(() => {
+    if (timerRef.current !== null) {
+      window.clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    setIsRecording(false);
+    setRecSeconds(0);
+  }, []);
+
+  const stopRecording = useCallback(() => {
+    const recorder = recorderRef.current;
+    if (!recorder || recorder.state === "inactive") {
+      resetRecording();
+      return;
+    }
+    recorder.stop(); // fires onstop → transcribeBlob
+  }, [resetRecording]);
+
+  const startRecording = useCallback(async () => {
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia || typeof window.MediaRecorder === "undefined") {
+      toast.error("Voice input isn't supported in this browser");
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      const recorder = new MediaRecorder(stream);
+      recorderRef.current = recorder;
+      chunksRef.current = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+      recorder.onerror = () => {
+        resetRecording();
+        toast.error("Recording failed — microphone unavailable");
+      };
+      recorder.onstop = () => {
+        if (!recorderRef.current) return; // unmounted — ignore
+        recorderRef.current = null;
+        resetRecording();
+        const mime = recorder.mimeType || "audio/webm";
+        const ext = mime.includes("mp4") ? "mp4" : "webm";
+        const blob = new Blob(chunksRef.current, { type: mime });
+        void transcribeBlob(blob, ext);
+      };
+      recorder.start(250);
+      recSecondsRef.current = 0;
+      setRecSeconds(0);
+      setIsRecording(true);
+      timerRef.current = window.setInterval(() => {
+        recSecondsRef.current += 1;
+        setRecSeconds(recSecondsRef.current);
+      }, 1000);
+    } catch (err) {
+      const name = err instanceof DOMException ? err.name : "";
+      toast.error(
+        name === "NotAllowedError"
+          ? "Microphone permission denied — allow access in your browser"
+          : "Couldn't access the microphone"
+      );
+    }
+  }, [transcribeBlob, resetRecording]);
+
+  const toggleRecording = useCallback(() => {
+    if (isTranscribing || isLoading || uploading) return;
+    if (isRecording) stopRecording();
+    else void startRecording();
+  }, [isRecording, isTranscribing, isLoading, uploading, startRecording, stopRecording]);
+
   return (
     <div className="px-3 sm:px-6 pb-3 sm:pb-4 pt-2 sm:pt-3">
       <div className="mx-auto max-w-4xl rounded-2xl border border-border/25 bg-background/70 backdrop-blur-2xl shadow-premium">
@@ -249,7 +362,7 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
               onKeyDown={handleKeyDown}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
-              placeholder={isLoading ? "Generating response..." : "Write your message…"}
+              placeholder={isLoading ? "Generating response..." : isRecording ? "Listening… speak now" : "Write your message…"}
               className="w-full bg-transparent border-0 focus-visible:ring-0 resize-none px-4 pt-3 pb-1 text-[15px] leading-[1.85] placeholder:text-muted-foreground/40 min-h-[44px] max-h-[240px] outline-none disabled:opacity-60"
               rows={1}
               disabled={isLoading || uploading}
@@ -274,6 +387,25 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
                   label="Attach files"
                 >
                   <Paperclip className="w-4 h-4" />
+                </ToolbarButton>
+
+                {/* Voice input */}
+                <ToolbarButton
+                  onClick={toggleRecording}
+                  active={isRecording}
+                  disabled={isLoading || uploading || isTranscribing}
+                  label={isRecording ? "Stop recording" : "Voice input"}
+                >
+                  {isTranscribing ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : isRecording ? (
+                    <>
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />
+                      <span className="text-micro tabular-nums font-semibold text-red-500">{recSeconds}s</span>
+                    </>
+                  ) : (
+                    <Mic className="w-4 h-4" />
+                  )}
                 </ToolbarButton>
 
                 {/* Tone picker */}
