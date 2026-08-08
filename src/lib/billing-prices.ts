@@ -16,8 +16,8 @@ export type BillingInterval = "month" | "year";
 export type BillingCurrency = "USD";
 
 const FALLBACK_PRICES: Record<string, string | undefined> = {
-  "Pro:month:USD": "pri_01kyn5577vywxh8z8b40h96ka5",
-  "Enterprise:month:USD": "pri_01kyn5rt66qd17jq4b67v85j6v",
+  "Pro:month:USD": "pri_01kzhetdtpjhtkw6k4x64cf1k5",
+  "Enterprise:month:USD": "pri_01kzhete3g386j4t48jja0gf7q",
 };
 
 const PRICE_ENV: Record<string, string | undefined> = {

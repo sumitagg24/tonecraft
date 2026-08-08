@@ -42,18 +42,31 @@ export async function POST(req: Request) {
   return NextResponse.json({ received: true });
 }
 
+// The Paddle SDK normalizes webhook payloads to camelCase (customData,
+// customerId, currentBillingPeriod…), so both shapes must be read here —
+// otherwise sync silently skips every event ("No userId in webhook data").
 interface PaddleData {
   id?: string;
   customer_id?: string;
+  customerId?: string;
   status?: string;
   items?: { price?: { id?: string } }[];
   current_billing_period?: { starts_at?: string; ends_at?: string };
+  currentBillingPeriod?: { startsAt?: string; endsAt?: string };
   canceled_at?: string | null;
+  canceledAt?: string | null;
   custom_data?: Record<string, string>;
+  customData?: Record<string, string>;
 }
 
 function extractUserId(data: PaddleData): string | null {
-  return data.custom_data?.userId ?? data.custom_data?.user_id ?? null;
+  return (
+    data.customData?.userId ??
+    data.customData?.user_id ??
+    data.custom_data?.userId ??
+    data.custom_data?.user_id ??
+    null
+  );
 }
 
 async function syncSubscription(normalized: { type: string; data: Record<string, unknown> }) {
@@ -70,14 +83,18 @@ async function syncSubscription(normalized: { type: string; data: Record<string,
 
   const subscriptionId = data.id;
   const priceId = data.items?.[0]?.price?.id ?? null;
-  const periodStart = data.current_billing_period?.starts_at
-    ? new Date(data.current_billing_period.starts_at)
-    : null;
-  const periodEnd = data.current_billing_period?.ends_at
-    ? new Date(data.current_billing_period.ends_at)
-    : null;
-  const customerId = data.customer_id ?? null;
-  const isCanceled = !!data.canceled_at;
+  const periodStart = data.currentBillingPeriod?.startsAt
+    ? new Date(data.currentBillingPeriod.startsAt)
+    : data.current_billing_period?.starts_at
+      ? new Date(data.current_billing_period.starts_at)
+      : null;
+  const periodEnd = data.currentBillingPeriod?.endsAt
+    ? new Date(data.currentBillingPeriod.endsAt)
+    : data.current_billing_period?.ends_at
+      ? new Date(data.current_billing_period.ends_at)
+      : null;
+  const customerId = data.customerId ?? data.customer_id ?? null;
+  const isCanceled = !!(data.canceledAt ?? data.canceled_at);
 
   switch (normalized.type) {
     case "subscription.created":
