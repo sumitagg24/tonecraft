@@ -1,5 +1,6 @@
 import { ok, withApiHandler } from "@/lib/withApiHandler";
 import { prisma } from "@/lib/prisma";
+import { modelTierLabel } from "@/lib/ai-labels";
 
 const api = withApiHandler();
 
@@ -31,7 +32,7 @@ export const GET = api.GET(async (ctx) => {
   }
 
   const modelUsage = [...byModel.entries()].map(([model, v]) => ({
-    model,
+    model: modelTierLabel(model),
     calls: v.calls,
     tokens: v.tokens,
     avgLatency: v.latency.length ? Math.round(v.latency.reduce((a, b) => a + b, 0) / v.latency.length) : 0,

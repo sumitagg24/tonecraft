@@ -10,7 +10,6 @@ interface ShareMessage {
   role: string;
   content: string;
   createdAt: string;
-  model: string | null;
 }
 
 interface ShareData {
@@ -73,7 +72,6 @@ export default function SharePage() {
                 >
                   <div className="text-micro text-muted-foreground/60 mb-1.5 uppercase tracking-wider">
                     {m.role === "user" ? "You" : "ToneCraft"}
-                    {m.model ? ` · ${m.model}` : ""}
                   </div>
                   <p className="text-sm leading-relaxed whitespace-pre-wrap">{m.content}</p>
                 </div>

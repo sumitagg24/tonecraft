@@ -159,7 +159,7 @@ export function ToolPanel({ tool, onClose }: ToolPanelProps) {
                 <div className="flex items-center gap-2">
                   {metadata && (
                     <span className="text-micro text-muted-foreground bg-muted/30 px-2 py-0.5 rounded-full">
-                      {metadata.model} · {metadata.tokens} tokens · {(metadata.latency / 1000).toFixed(1)}s
+                      {(metadata.tokens ?? 0).toLocaleString()} tokens · {((metadata.latency ?? 0) / 1000).toFixed(1)}s
                     </span>
                   )}
                   <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-xs" onClick={handleCopy}>

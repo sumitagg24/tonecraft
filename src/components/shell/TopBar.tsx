@@ -43,7 +43,7 @@ export function TopBar() {
   useEffect(() => setMounted(true), []);
   const { user } = useUser();
   const { signOut } = useClerk();
-  const { subscription, model, loading: profileLoading } = useUserProfile();
+  const { subscription, loading: profileLoading } = useUserProfile();
   const { toggleRailCollapsed, setMobileNavOpen } = useNavigationStore();
   const { toggle } = useCommandPalette();
   const { createChat } = useChat();
@@ -128,7 +128,6 @@ export function TopBar() {
             email: user?.primaryEmailAddress?.emailAddress || "",
             avatar: user?.imageUrl || "",
             subscription: profileLoading ? undefined : subscription,
-            model,
           }}
           onSignOut={() => signOut({ redirectUrl: "/" })}
         />

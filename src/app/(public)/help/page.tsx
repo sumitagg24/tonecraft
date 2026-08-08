@@ -48,11 +48,11 @@ const SECTIONS = [
   {
     id: "ai-providers",
     icon: Cpu,
-    title: "AI Providers",
+    title: "AI Engine",
     body: [
-      "ToneCraft routes requests across Groq (Llama), Google Gemini, OpenAI, and OpenRouter.",
-      "The free tier uses fast, low-cost models; Pro unlocks frontier models (GPT-4o, Claude).",
-      "If one provider is down, the engine automatically falls back to another.",
+      "ToneCraft routes every request through a resilient AI engine that automatically picks the right model for the job — no manual configuration needed.",
+      "The free tier uses fast, low-cost models; Pro unlocks our most capable frontier models.",
+      "If one backend is unavailable, the engine automatically fails over to another so your writing never stops.",
     ],
   },
   {

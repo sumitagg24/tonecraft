@@ -16,11 +16,11 @@ const ENTRIES: {
     version: "v1.4.0",
     date: "Aug 2026",
     type: "New",
-    title: "Groq-default routing & Gemini 3.6",
+    title: "Faster default routing & upgraded models",
     body: [
-      "Groq Llama 3.3 70B is now the default model for general writing — the fastest path from draft to send.",
-      "Google models upgraded to Gemini 3.6 Flash / 3.1 Pro; model IDs are env-overridable via GOOGLE_AI_MODEL.",
-      "Local fallback engine no longer errors on credit accounting when cloud providers are unavailable.",
+      "The writing engine now picks the fastest path from draft to send with automatic routing and failover.",
+      "Underlying AI models upgraded for sharper, more natural output — selection stays fully automatic.",
+      "Local fallback engine no longer errors on credit accounting when cloud backends are unavailable.",
     ],
   },
   {
@@ -41,7 +41,7 @@ const ENTRIES: {
     title: "AI Memory & voice/multimodal",
     body: [
       "Long-term memory scoped to users, workspaces, teams, and agents — with a lightweight knowledge graph.",
-      "Voice input (STT), text-to-speech output, and image understanding across OpenAI-compatible endpoints.",
+      "Voice input (STT), text-to-speech output, and image understanding across compatible AI endpoints.",
       "Semantic recall now grounds replies in remembered facts with importance tracking.",
     ],
   },

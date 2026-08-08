@@ -12,7 +12,8 @@ export const GET = api.GET(async (ctx) => {
         include: {
           messages: {
             orderBy: { createdAt: "asc" },
-            select: { id: true, role: true, content: true, createdAt: true, model: true },
+            // model/provider identifiers are deliberately not exposed on public share links
+            select: { id: true, role: true, content: true, createdAt: true },
           },
         },
       },

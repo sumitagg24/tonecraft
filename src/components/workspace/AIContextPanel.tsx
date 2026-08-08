@@ -21,7 +21,6 @@ export function AIContextPanel() {
   const currentChat = useChatStore((s) => s.currentChat);
   const messages = useChatStore((s) => s.messages);
   const selectedTone = useChatStore((s) => s.selectedTone);
-  const selectedModel = useChatStore((s) => s.selectedModel);
   const context = useChatStore((s) => s.context);
   const { setContextPanelOpen, setMobileContextOpen } = useWorkspaceStore();
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
@@ -68,7 +67,7 @@ export function AIContextPanel() {
 
       <div className="flex-1 overflow-y-auto scrollbar-thin px-3 py-3 space-y-2.5">
         <Section id="summary" label="Conversation" icon={MessageSquare} collapsed={collapsed} onToggle={toggleSection}>
-          <SummarySection currentChat={currentChat} selectedTone={selectedTone} selectedModel={selectedModel} />
+          <SummarySection currentChat={currentChat} selectedTone={selectedTone} />
         </Section>
 
         <Section id="settings" label="Active Settings" icon={Sliders} collapsed={collapsed} onToggle={toggleSection}>
@@ -140,13 +139,12 @@ function Section({
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function SummarySection({ currentChat, selectedTone, selectedModel }: any) {
+function SummarySection({ currentChat, selectedTone }: any) {
   const tone = TONES.find((t) => t.id === selectedTone);
   return (
     <div className="space-y-2.5">
       <InfoRow icon={MessageSquare} label="Title" value={currentChat?.title || "Untitled"} />
       <InfoRow icon={Palette} label="Tone" value={tone?.label || selectedTone} color={tone?.color} />
-      <InfoRow icon={Globe} label="Provider" value={selectedModel || "Auto"} />
       <InfoRow icon={Hash} label="Messages" value={currentChat?._count?.messages ?? 0} />
       <InfoRow icon={Clock} label="Created" value={currentChat?.createdAt ? new Date(currentChat.createdAt).toLocaleDateString() : "—"} />
     </div>

@@ -206,7 +206,7 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
         body: fd,
       });
       if (res.provider === "unavailable" || !res.text) {
-        toast.error("Voice dictation isn't configured — set OPENAI_API_KEY to enable it");
+        toast.error("Voice dictation isn't configured yet");
         return;
       }
       setInput((prev) => (prev ? `${prev.replace(/\s+$/, "")} ${res.text}` : res.text));

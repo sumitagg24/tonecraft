@@ -1,39 +1,25 @@
 # 🎙️ ToneCraft
 
-**AI-powered voice & tone transformation studio** — rewrite anything in 40+ intentional voices, run specialized AI agents, automate recurring writing tasks, and organize your work across documents, tasks, and calendars. Built for writers, marketers, creators, and teams who care about *how* things are said.
+**AI-powered voice & tone transformation studio** — rewrite anything in 40+ intentional voices, run specialized AI writing tools, and organize your work across documents, tasks, and calendars. Built for writers, marketers, creators, and teams who care about *how* things are said.
 
-> **v1.1.0** — Phase 10 "AI Productivity Platform" (AI Workspace, Agents, Automations, Productivity suite, OAuth integrations)
+> **v1.1.4** — premium editorial redesign, USD Paddle billing, voice dictation, and a full e2e QA suite.
 
 ---
 
 ## ✨ Features
 
-### Compose — the writing surface
-- Chat with tone-aware AI across multiple providers (Groq, OpenRouter, Google AI, OpenAI, Anthropic) with automatic provider routing
-- 40+ purpose-built writing tools (rewrite, reply, social, email, business, career, dating, utility) with a dedicated **Tools** catalog page
-- Tone & persona pickers, model selection, knowledge attachments, streaming responses
+### Compose — the writing studio
+- Tone-aware AI chat with automatic model routing and failover — one transparent engine, zero configuration
+- 40+ purpose-built writing tools (rewrite, reply, social, email, business, career, utility) with a dedicated **Tools** catalog page
+- Tone & persona pickers, knowledge attachments, streaming responses, inline edit, regenerate, copy, and feedback
+- **Voice dictation** in the composer (browser STT), plus text-to-speech and image understanding on compatible endpoints
 - Prompt Library with collections, tags, favorites, versioning, sharing, and ratings
 
 ### 🧠 AI Workspace
 - **Documents** (`/docs`) — markdown editor with live preview, GFM support, block-based editing, debounced autosave, and an AI-assisted editing bar (rewrite, summarize, expand, grammar, continue, plan, 6 tone rewrites)
 - **Notes** (`/notes`) — color-coded, pinnable quick notes
 - **Tasks** (`/tasks`) — list view + Kanban board with priority and due dates
-- **Calendar** (`/calendar`) — month grid, events, and AI meeting-notes generation (transcript → decisions/action items → push to calendar)
-
-### 🤖 AI Agents (`/agents`)
-- Create specialized agents (system prompt, role, icon, color) or use presets (Writer, Editor, Researcher, Summarizer, Planner)
-- Multi-agent **chaining** — output feeds the next agent, per-step results stored
-- Per-agent **memory** (last runs recalled), run history with status/duration/chain steps
-
-### ⏰ Automations (`/automations`)
-- Recurring AI tasks: daily / weekly / custom-cron triggers, run-now, enable toggle
-- **Background worker** (`/api/cron/automations`) executes due automations every 5 minutes with race-safe atomic claiming, rate-limit respect, and failure rescheduling
-- Workflow builder (Trigger → AI task → Output → Notify) with real in-app + realtime notifications
-- Daily maintenance worker (`/api/cron/daily`): usage counter resets + notification digests
-
-### 🔌 Integrations (`/integrations`)
-- Slack + GitHub with **real OAuth** (state-cookie protected, CSRF-safe code exchange); connect/disconnect state persisted
-- Drive, Notion, Discord, Gmail, Calendar cards with scopes (simulated flow when creds aren't configured)
+- **Calendar** (`/calendar`) — month grid, events, and AI meeting-notes generation
 
 ### 👥 Workspaces & collaboration
 - Multi-member workspaces with roles (member / manager / admin) and permission middleware
@@ -41,9 +27,11 @@
 - Real-time via Socket.IO + WebSocket (SSE fallback), version snapshots, conflict resolution
 
 ### 🛠️ Platform
-- Clerk auth (email + social), Paddle billing (Free / Pro / Enterprise) with webhooks
+- Clerk auth (email + social), Paddle billing (Free / Pro / Enterprise) with webhooks and annual plans
+- **USD pricing** — Pro at $6/mo, Enterprise at $15/mo (sandbox); invoices and payment health checks in-app
 - Enterprise audit logging + **admin dashboard** (metrics, permissions, audit, storage, credits, AI usage)
-- Rate limiting (Upstash), file uploads (Cloudflare R2), usage analytics
+- Rate limiting (Upstash Redis), file uploads (Cloudflare R2), usage analytics
+- AI provider identities are **never disclosed** in the product — users see one neutral writing engine
 
 ---
 
@@ -62,7 +50,7 @@
 ├────────────────────────────────────────────────────────────┤
 │  Services layer (business logic)                           │
 │  Repositories (data access)  →  Zustand stores (client)   │
-│  AI engine: provider router → Groq/OpenRouter/Google/...  │
+│  AI engine: provider router → cloud AI + local fallback   │
 ├────────────────────────────────────────────────────────────┤
 │  Prisma 7 + Neon PostgreSQL (pooled + direct endpoints)   │
 │  Upstash Redis (rate limits) · Cloudflare R2 (uploads)    │
@@ -75,15 +63,15 @@
 
 | Path | Purpose |
 |---|---|
-| `src/app/(dashboard)/` | Authenticated pages (`/chat`, `/tools`, `/docs`, `/agents`, `/automations`, `/tasks`, `/notes`, `/calendar`, `/integrations`, `/admin`, …) |
+| `src/app/(dashboard)/` | Authenticated pages (`/chat`, `/tools`, `/docs`, `/tasks`, `/notes`, `/calendar`, `/admin`, …) |
 | `src/app/api/` | Route handlers (auth-protected via `withApiHandler`) |
-| `src/services/` | Business logic (`AgentService`, `AutomationService`, `IntegrationService`, `NotificationService`, …) |
+| `src/services/` | Business logic (`ToolService`, `NotificationService`, `VoiceService`, …) |
 | `src/repositories/` | Data access (`PromptRepository`, `WorkspaceRepository`, …) |
 | `src/engine/` | AI provider router, model registry, tool calling |
-| `src/components/` | UI: `shell/` (rail, topbar, palette), `tools/`, `workspace/`, `collaboration/`, `ui/` |
-| `src/hooks/` | Client data hooks (`use-chat`, `use-documents`, `use-command-palette`, …) |
-| `src/lib/` | Shared utilities (`prisma`, `ratelimit`, `cron-guard`, `integrations/oauth`, `validators`) |
-| `prisma/schema.prisma` | 51 models: User, Chat, Persona, Knowledge, Prompt library, Workspaces, AuditLog, Document, Note, Task, CalendarEvent, Agent, AgentRun, Automation, Integration, … |
+| `src/components/` | UI: `shell/` (rail, topbar, palette), `tools/`, `workspace/`, `landing/`, `ui/` |
+| `src/hooks/` | Client data hooks (`use-chat`, `use-command-palette`, `use-user-profile`, …) |
+| `src/lib/` | Shared utilities (`prisma`, `ratelimit`, `ai-labels`, `validators`) |
+| `e2e/` | Playwright smoke tests (hydration, signed-in chat flow, composer controls) |
 
 ---
 
@@ -93,7 +81,7 @@
 - Node.js 20+
 - A Neon PostgreSQL database
 - Clerk account (auth)
-- At least one AI provider key (Groq is the fastest free tier)
+- At least one AI provider API key (see `.env.example`)
 
 ### Install
 
@@ -139,23 +127,20 @@ Sign in with Clerk, and you're on `/chat`. The shell rail + ⌘K palette navigat
 | `CLERK_SECRET_KEY` | ✅ | Clerk secret key |
 | `NEXT_PUBLIC_CLERK_SIGN_IN_URL` / `SIGN_UP_URL` | | `/sign-in`, `/sign-up` |
 | `NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL` / `AFTER_SIGN_UP_URL` | | Redirect after auth (`/chat`) |
-| `NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL` / `SIGN_UP_FALLBACK_REDIRECT_URL` | | Fallback redirects (`/chat`) |
 | `CLERK_WEBHOOK_SECRET` | | Clerk webhook verification |
-| `GROQ_API_KEY` | ⚠️ | Primary AI provider (at least one provider key needed) |
-| `OPENROUTER_API_KEY` | | Fallback provider, multi-model |
-| `GOOGLE_AI_API_KEY` | | Secondary provider |
-| `OPENAI_API_KEY` | | Pro-tier provider |
-| `ANTHROPIC_API_KEY` | | Pro-tier provider |
+| AI provider API keys | ⚠️ | At least one required — the exact list lives in `.env.example` |
 | `UPSTASH_REDIS_REST_URL` | ⚠️ | Rate limiting (fails closed in prod when unset) |
 | `UPSTASH_REDIS_REST_TOKEN` | ⚠️ | Rate limiting |
-| `CRON_SECRET` | ⚠️ | Bearer secret for `/api/cron/*` workers (Vercel sends automatically) |
+| `CRON_SECRET` | ⚠️ | Bearer secret for `/api/cron/*` workers |
 | `SLACK_CLIENT_ID` / `SLACK_CLIENT_SECRET` | | Real OAuth for Slack integration |
 | `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | | Real OAuth for GitHub integration |
 | `PADDLE_API_KEY` / `PADDLE_CLIENT_TOKEN` / `PADDLE_WEBHOOK_SECRET` | | Billing |
-| `PADDLE_PRICE_PRO` / `PADDLE_PRICE_ENTERPRISE` | | Price IDs |
+| `PADDLE_PRICE_PRO` / `PADDLE_PRICE_ENTERPRISE` | | Monthly price IDs |
+| `PADDLE_PRICE_PRO_ANNUAL` / `PADDLE_PRICE_ENTERPRISE_ANNUAL` | | Annual price IDs (20% off toggle) |
 | `R2_ACCOUNT_ID` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | | File storage |
 | `R2_BUCKET_NAME` / `R2_PUBLIC_URL` | | File storage |
 | `NEXT_PUBLIC_APP_URL` | | Canonical app URL |
+| `SENTRY_DSN` / `SENTRY_AUTH_TOKEN` / `SENTRY_ORG` / `SENTRY_PROJECT` | | Error monitoring + source maps |
 
 ⚠️ = required for the feature to work in production; the app fails closed (rate limits, workers) rather than running unguarded.
 
@@ -169,10 +154,13 @@ Sign in with Clerk, and you're on `/chat`. The shell rail + ⌘K palette navigat
 | `npm run build` | Production build |
 | `npm start` | Serve production build |
 | `npm run lint` | ESLint |
+| `npm run typecheck` | TypeScript check (`tsc --noEmit`) |
+| `npm run check:deadcode` | Fail on unused source modules (components/hooks/stores/lib) |
 | `npm test` | Jest unit tests |
 | `npm run db:push` | Push Prisma schema to DB |
 | `npm run db:studio` | Prisma Studio |
 | `npm run db:generate` | Regenerate Prisma client |
+| `npm run db:seed` | Seed the database (marketplace demo data) |
 
 ---
 
@@ -183,40 +171,46 @@ Sign in with Clerk, and you're on `/chat`. The shell rail + ⌘K palette navigat
 3. Deploy — `vercel.json` automatically registers the two cron jobs:
    - `*/5 * * * *` → `/api/cron/automations`
    - `0 9 * * *` → `/api/cron/daily`
-4. Verify post-deploy: sign-in flow, an AI chat, an automation run-now, and (if configured) a Slack/GitHub connect
+4. Verify post-deploy: sign-in flow, an AI chat, a Paddle checkout, and the in-app billing health check
 
 ---
 
 ## 🧪 Testing
 
 ```bash
-npm test            # Jest — 41 tests (validators + automation worker)
+npm test            # Jest — unit tests (validators, automation worker, stores)
+
+# Playwright e2e (production server on :3100)
+npm run build
+npx playwright test                       # hydration/console smoke on public routes
+E2E_STORAGE_STATE=./.auth/state.json npx playwright test e2e/chat-flow.spec.ts
 ```
 
-Worker unit tests cover the scheduled-automation paths: atomic claim race (concurrent workers run each automation exactly once), rate-limit skip + reschedule, and failure reschedule without a false `lastRunAt`.
+The e2e suite covers:
+- **Hydration smoke** — landing, sign-in, and sign-up render with zero console/hydration errors
+- **Signed-in smoke** — protected pages (docs, admin, calendar, settings) render clean
+- **Chat flow** — New Workspace → send → copy, asserting the clipboard contents
+- **Composer controls** — tone picker, tool picker, voice dictation (fake media stream), edit + `(edited)` marker, regenerate
+
+Clerk's dev instance requires a one-time email code for new devices; the signed-in specs use a captured session in `.auth/state.json` (gitignored) or skip gracefully when it's absent.
 
 ---
 
 ## 🗺️ Roadmap
 
 **Done**
-- Phase 5–6: Chat, prompts, personas, knowledge, workspaces, collaboration
-- Phase 7–8: Admin/audit, billing, production hardening, type-safety sweep
-- Phase 10: AI Workspace (docs), Agents, Automations + workers, Productivity suite, real OAuth, grouped nav + ⌘K-everywhere, tools page polish
+- Chat studio, tones, personas, prompt library, knowledge base, workspaces, collaboration
+- Tools catalog (40+ tools), docs/notes/tasks/calendar suite
+- Admin dashboard, audit logs, Paddle billing (USD monthly + annual), voice dictation
+- Provider-neutral engine — users never see which model produced their results
+- Playwright e2e + dead-code CI checks, Sentry monitoring
 
-**Next (Phase 11+)**
-- Token encryption at rest + GitHub OAuth refresh flow
-- Dead-code sweep & bundle-size optimization
-- Infinite canvas for the document workspace
+**Next**
+- Token encryption at rest + OAuth refresh flows
+- Marketplace release (publish/install prompts, agents, personas)
 - Deeper RAG (long-term memory, live web research mode)
 - More real OAuth providers (Notion, Google Drive, Discord, Gmail)
 - Performance: first-load budget, AI latency benchmarks, query tuning
-
----
-
-## 📸 Screenshots
-
-_Placeholders — add captures of the landing page, chat composer, tools grid, docs editor, agents, automations, and the admin dashboard._
 
 ---
 
@@ -224,7 +218,7 @@ _Placeholders — add captures of the landing page, chat composer, tools grid, d
 
 1. Fork & branch (`feat/your-feature`)
 2. Keep the layered architecture (routes → services → repositories)
-3. Run `npm run lint`, `npm test`, and `npm run build` before opening a PR
+3. Run `npm run lint`, `npm run typecheck`, `npm run check:deadcode`, and `npm run build` before opening a PR
 4. Match the existing design tokens (see `design-system/MASTER.md`)
 
 ---

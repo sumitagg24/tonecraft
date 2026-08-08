@@ -30,7 +30,7 @@ interface PremiumMessageCardProps {
 /**
  * Editorial note layout: assistant responses read like annotated manuscript
  * pages — generous vertical rhythm, a quiet hairline rule, and a byline row
- * (tone · model · platform) instead of a chat-bubble shell.
+ * (tone · platform) instead of a chat-bubble shell.
  */
 export const PremiumMessageCard = memo(function PremiumMessageCard({
   message, isStreaming, isLastMessage, onRegenerate, onContinue,
@@ -160,11 +160,6 @@ export const PremiumMessageCard = memo(function PremiumMessageCard({
                 {tone.label}
               </span>
             )}
-            {message.model && !isStreaming && (
-              <span className="hidden sm:inline-flex px-1.5 py-0.5 rounded-full border border-border/40 bg-muted/30 text-[10px] font-medium text-muted-foreground/60">
-                {message.model}
-              </span>
-            )}
             {message.platform && !isStreaming && (
               <span className="hidden md:inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border border-border/40 bg-muted/30 text-[10px] font-medium text-muted-foreground/60">
                 <Paperclip className="w-2.5 h-2.5" aria-hidden="true" />
@@ -190,7 +185,6 @@ export const PremiumMessageCard = memo(function PremiumMessageCard({
                   transition={{ duration: duration.fast }}
                   className="mb-3 p-2.5 rounded-xl bg-muted/40 border border-border/20 text-micro text-muted-foreground space-y-1 overflow-hidden"
                 >
-                  {message.model && <MetaRow label="Model" value={message.model} />}
                   {message.tokens && <MetaRow label="Tokens" value={message.tokens.toLocaleString()} />}
                   {message.latency && <MetaRow label="Latency" value={`${(message.latency / 1000).toFixed(1)}s`} />}
                   {message.platform && <MetaRow label="Platform" value={message.platform} />}

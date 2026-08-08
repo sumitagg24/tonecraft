@@ -43,12 +43,14 @@ export const POST = api.POST(async (ctx, body) => {
     userId: ctx.user.id,
   });
 
+  // The underlying model/provider identifiers are deliberately not returned —
+  // users must never learn which third-party model produced their result.
   return ok({
     content: result.content,
-    model: result.model,
-    provider: result.provider,
     tokens: result.tokens,
     latency: result.latency,
-    metadata: result.metadata,
+    metadata: result.metadata
+      ? { tokens: result.metadata.tokens, latency: result.metadata.latency }
+      : null,
   });
 });

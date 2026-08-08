@@ -1,5 +1,6 @@
 import { ok, fail, withApiHandler } from "@/lib/withApiHandler";
 import { prisma } from "@/lib/prisma";
+import { modelTierLabel } from "@/lib/ai-labels";
 
 const api = withApiHandler();
 
@@ -53,7 +54,7 @@ export const GET = api.GET(async (ctx) => {
     activeSubscriptions: activeSubscriptions.length,
     totalRevenue,
     modelUsage: modelUsage.map((m) => ({
-      model: m.model,
+      model: modelTierLabel(m.model),
       tokens: m._sum.tokens ?? 0,
       calls: m._count.id,
     })),

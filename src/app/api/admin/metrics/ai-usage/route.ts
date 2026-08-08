@@ -2,6 +2,7 @@ import { ok, fail, withApiHandler } from "@/lib/withApiHandler";
 import { prisma } from "@/lib/prisma";
 import { workspaceService } from "@/services/WorkspaceService";
 import { permissionMiddleware } from "@/middleware/permissionMiddleware";
+import { modelTierLabel, providerLabel } from "@/lib/ai-labels";
 
 const api = withApiHandler();
 
@@ -99,16 +100,20 @@ export const GET = api.GET(async (ctx) => {
       errorRate: totalRequests > 0 ? (errorCount / totalRequests) * 100 : 0,
     },
     byModel: byModel.map((m) => ({
-      model: m.model,
+      model: modelTierLabel(m.model),
       tokens: m._sum.tokens ?? 0,
       calls: m._count.id ?? 0,
     })),
     byProvider: byProvider.map((p) => ({
-      provider: p.provider,
+      provider: providerLabel(p.provider),
       calls: p._count.id ?? 0,
     })),
     dailyUsage,
     errorRate: totalRequests > 0 ? Math.round((errorCount / totalRequests) * 1000) / 10 : 0,
-    recentErrors: errorDetails,
+    recentErrors: errorDetails.map((e) => ({
+      ...e,
+      provider: providerLabel(e.provider),
+      model: modelTierLabel(e.model),
+    })),
   });
 });

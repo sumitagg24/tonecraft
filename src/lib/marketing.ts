@@ -228,9 +228,9 @@ export const RESOURCES_ITEMS: ResourceItem[] = [
 /** Shared FAQ — consumed by both the landing FAQ section and the /faq page. */
 export const FAQ_ITEMS: { question: string; answer: string }[] = [
   {
-    question: "What AI models does ToneCraft use?",
+    question: "How does the AI engine work?",
     answer:
-      "ToneCraft routes through Groq (Llama 3.3 70B — our default for speed) and Google Gemini 3.6 Flash on the free tier. Pro users get access to GPT-4o and Claude 3.7 Sonnet via OpenRouter. If one provider is down, the engine automatically falls back to another.",
+      "Every request is routed through a resilient AI engine that automatically picks the best model for the job — fast, low-cost models on the free tier and our most capable frontier models on Pro. If one backend is unavailable, the engine fails over automatically so your writing never stops.",
   },
   {
     question: "Is the free tier really free?",

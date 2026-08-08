@@ -35,21 +35,9 @@ export const GET = api.GET(async (ctx) => {
 
   const errorRate = records.length > 0 ? (errorRecords.length / records.length) * 100 : 0;
 
-  const modelUsage = records.reduce(
-    (acc, r) => {
-      acc[r.model] = (acc[r.model] ?? 0) + (r.tokens ?? 0);
-      return acc;
-    },
-    {} as Record<string, number>
-  );
-
-  const providerUsage = records.reduce(
-    (acc, r) => {
-      acc[r.provider] = (acc[r.provider] ?? 0) + 1;
-      return acc;
-    },
-    {} as Record<string, number>
-  );
+  // NOTE: model/provider identifiers are intentionally NOT exposed to the
+  // client — users should never learn which third-party model produced their
+  // results. Only aggregate metrics (tokens, latency, success) are returned.
 
   return ok({
     period,
@@ -59,8 +47,6 @@ export const GET = api.GET(async (ctx) => {
     totalStorage,
     avgLatency,
     errorRate: Math.round(errorRate * 10) / 10,
-    modelUsage,
-    providerUsage,
     subscription: subscription
       ? { plan: subscription.plan, status: subscription.status }
       : null,
@@ -71,7 +57,6 @@ export const GET = api.GET(async (ctx) => {
         tokens: r.tokens ?? 0,
         latency: r.latency ?? 0,
         success: r.success,
-        model: r.model,
       })),
   });
 });

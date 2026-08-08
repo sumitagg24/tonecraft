@@ -14,7 +14,6 @@ import {
   Wand2,
   CreditCard,
   RotateCcw,
-  ShieldCheck,
   Zap,
   Timer,
   Coins,
@@ -37,15 +36,12 @@ interface AnalyticsData {
   totalStorage: number;
   avgLatency: number;
   errorRate: number;
-  modelUsage: Record<string, number>;
-  providerUsage: Record<string, number>;
   subscription: { plan: string; status: string } | null;
   dailyBreakdown: Array<{
     date: string;
     tokens: number;
     latency: number;
     success: boolean;
-    model: string;
   }>;
 }
 
@@ -153,7 +149,7 @@ export default function AnalyticsPage() {
         {/* Page Header */}
         <PageHeader
           title="Analytics"
-          description="Centralized overview of message volume, tokens, models, and subscription health."
+          description="Centralized overview of message volume, tokens, files, latency, and subscription health."
           icon={<BarChart2 className="w-5 h-5 text-white" />}
           actions={
             <div className="flex items-center gap-2 flex-wrap">
@@ -289,73 +285,6 @@ export default function AnalyticsPage() {
               ))}
             </div>
 
-            {/* Charts Widgets (2-col grid) */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* Model Usage Chart Widget */}
-              <Card className="border-border/40 bg-card shadow-card rounded-xl">
-                <CardHeader className="p-5 pb-3">
-                  <CardTitle className="text-base font-semibold">Model Usage</CardTitle>
-                  <CardDescription className="text-xs">Token consumption grouped by AI model</CardDescription>
-                </CardHeader>
-                <CardContent className="p-5 pt-0 space-y-4">
-                  {Object.entries(data.modelUsage).length > 0 ? (
-                    Object.entries(data.modelUsage).map(([model, tokens]) => {
-                      const maxTokens = Math.max(...Object.values(data.modelUsage), 1);
-                      const pct = Math.min(100, Math.round((tokens / maxTokens) * 100));
-                      return (
-                        <div key={model} className="space-y-1.5">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="font-mono text-foreground font-medium">{model}</span>
-                            <span className="text-muted-foreground">{formatNumber(tokens)} tokens ({pct}%)</span>
-                          </div>
-                          <div className="h-2 w-full bg-muted/30 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-brand rounded-full transition-all duration-500"
-                              style={{ width: `${pct}%` }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <p className="text-xs text-muted-foreground py-4 text-center">No model usage recorded in this period.</p>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Provider Distribution Widget */}
-              <Card className="border-border/40 bg-card shadow-card rounded-xl">
-                <CardHeader className="p-5 pb-3">
-                  <CardTitle className="text-base font-semibold">Provider Distribution</CardTitle>
-                  <CardDescription className="text-xs">Inference requests by AI infrastructure provider</CardDescription>
-                </CardHeader>
-                <CardContent className="p-5 pt-0 space-y-4">
-                  {Object.entries(data.providerUsage).length > 0 ? (
-                    Object.entries(data.providerUsage).map(([provider, count]) => {
-                      const totalCalls = Object.values(data.providerUsage).reduce((a, b) => a + b, 0);
-                      const pct = Math.round((count / Math.max(totalCalls, 1)) * 100);
-                      return (
-                        <div key={provider} className="flex items-center justify-between p-3 rounded-lg border border-border/30 bg-surface/50">
-                          <div className="flex items-center gap-2.5">
-                            <ShieldCheck className="w-4 h-4 text-primary" />
-                            <span className="text-xs font-semibold capitalize text-foreground">{provider}</span>
-                          </div>
-                          <div className="flex items-center gap-3 text-xs">
-                            <span className="text-muted-foreground">{count} calls</span>
-                            <Badge variant="secondary" className="text-micro font-mono">
-                              {pct}%
-                            </Badge>
-                          </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <p className="text-xs text-muted-foreground py-4 text-center">No provider data available.</p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
             {/* Error Rate Widget (Full Width) */}
             <Card className="border-border/40 bg-card shadow-card rounded-xl">
               <CardHeader className="p-5 pb-3">
@@ -424,7 +353,6 @@ export default function AnalyticsPage() {
                     { label: "Messages", value: (workspace?.messages ?? 0).toLocaleString(), icon: MessageSquare },
                     { label: "Tasks", value: workspace?.tasks ?? 0, icon: ListChecks },
                     { label: "Knowledge", value: workspace?.knowledgeFiles ?? 0, icon: BookOpen },
-                    { label: "Members", value: workspace?.members ?? 0, icon: Users },
                   ].map((stat) => (
                     <div key={stat.label} className="rounded-xl border border-border/30 bg-surface/50 p-3 text-center space-y-1">
                       <stat.icon className="h-4 w-4 mx-auto text-primary" />

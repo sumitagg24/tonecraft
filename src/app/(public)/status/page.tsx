@@ -24,9 +24,6 @@ const ICONS: Record<string, React.ElementType> = {
   database: Database,
   redis: Server,
   storage: Server,
-  groq: Activity,
-  gemini: Activity,
-  openrouter: Activity,
   clerk: Activity,
   paddle: Activity,
 };
@@ -35,12 +32,14 @@ const LABELS: Record<string, string> = {
   database: "PostgreSQL",
   redis: "Redis (Upstash)",
   storage: "Storage (R2)",
-  groq: "Groq",
-  gemini: "Google AI",
-  openrouter: "OpenRouter",
   clerk: "Clerk Auth",
   paddle: "Paddle Billing",
 };
+
+// AI backends are intentionally aggregated — we never disclose which third-party
+// model infrastructure powers the writing engine.
+const AI_PROVIDER_KEYS = ["groq", "gemini", "openrouter"];
+const FALLBACK_NAMES = ["database", "redis", "storage", "ai", "clerk", "paddle"];
 
 function StatusPill({ status }: { status: ProviderStatus["status"] }) {
   const styles = {
@@ -82,9 +81,26 @@ export default function StatusPage() {
 
   const overall = data?.status ?? "offline";
   const providers = data?.providers ?? {};
-  const providerNames = Object.keys(providers).length
-    ? Object.keys(providers)
-    : ["database", "redis", "storage", "groq", "gemini", "openrouter", "clerk", "paddle"];
+
+  const knownKeys = Object.keys(providers).length ? Object.keys(providers) : FALLBACK_NAMES;
+  const aiNames = knownKeys.filter((k) => AI_PROVIDER_KEYS.includes(k));
+  const infraNames = knownKeys.filter((k) => !AI_PROVIDER_KEYS.includes(k) && k !== "ai");
+
+  // Aggregate the AI backends into one neutral "AI Services" row (worst status, avg latency).
+  const aiStatuses = aiNames.map((n) => providers[n]?.status).filter(Boolean) as ProviderStatus["status"][];
+  const aiStatus: ProviderStatus["status"] = aiStatuses.length === 0
+    ? "offline"
+    : aiStatuses.includes("offline")
+      ? "offline"
+      : aiStatuses.includes("degraded")
+        ? "degraded"
+        : "healthy";
+  const aiLatencies = aiNames
+    .map((n) => providers[n]?.latencyMs)
+    .filter((l): l is number => typeof l === "number");
+  const aiLatencyMs = aiLatencies.length
+    ? Math.round(aiLatencies.reduce((a, b) => a + b, 0) / aiLatencies.length)
+    : undefined;
 
   return (
     <main className="min-h-screen bg-background flex items-center justify-center p-6">
@@ -133,7 +149,7 @@ export default function StatusPage() {
             )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {providerNames.map((name) => {
+              {infraNames.map((name) => {
                 const p = providers[name];
                 const Icon = ICONS[name] ?? Server;
                 const status = p?.status ?? "offline";
@@ -155,6 +171,23 @@ export default function StatusPage() {
                   </div>
                 );
               })}
+
+              {/* AI Services — one neutral aggregated row */}
+              <div className="flex items-center gap-3 rounded-xl border border-border/30 px-3.5 py-3">
+                <div className={cn(
+                  "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+                  aiStatus === "healthy" ? "bg-success/10 text-success" : aiStatus === "degraded" ? "bg-warning/10 text-warning" : "bg-destructive/10 text-destructive"
+                )}>
+                  <Activity className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">AI Services</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {aiLatencyMs != null ? `${aiLatencyMs}ms` : "—"}
+                  </p>
+                </div>
+                <StatusPill status={aiStatus} />
+              </div>
             </div>
           </div>
         </div>

@@ -25,7 +25,7 @@ const COMPARISONS = [
   {
     category: "Speed",
     traditional: "Variable — depends on model load",
-    tonecraft: "Optimized via Groq — responses in under 2 seconds",
+    tonecraft: "Optimized for speed — responses in under 2 seconds",
     icon: Zap,
   },
   {

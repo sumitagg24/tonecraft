@@ -13,14 +13,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import Gemini from "../icons/gemini";
 
 interface Profile {
   name: string;
   email: string;
   avatar: string;
   subscription?: string;
-  model?: string;
 }
 
 interface MenuItem {
@@ -28,7 +26,7 @@ interface MenuItem {
   value?: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  badge?: "blue" | "purple";
+  badge?: "purple";
 }
 
 interface ProfileDropdownProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -51,7 +49,6 @@ export default function ProfileDropdown({
 
   const menuItems: MenuItem[] = [
     { label: "Profile", href: "/settings?tab=profile", icon: User },
-    { label: "Model", value: data.model, href: "/settings", icon: Gemini, badge: "blue" },
     { label: "Subscription", value: data.subscription, href: "/billing", icon: CreditCard, badge: "purple" },
     { label: "Settings", href: "/settings", icon: Settings },
     { label: "Terms & Policies", href: "/terms", icon: FileText },
