@@ -35,11 +35,28 @@ test.skip(
 // Manual session-capture helper: only runs when explicitly requested.
 if (storageState && capturing) {
   test("save a session (E2E_CAPTURE)", async ({ page, context }) => {
-    test.setTimeout(120_000);
+    test.setTimeout(300_000);
     await page.goto("/sign-in", { waitUntil: "networkidle" });
-    await page.getByPlaceholder(/enter your email/i).waitFor({ timeout: 20_000 });
-    // Pause so a human can complete sign-in (including email verification).
-    await page.waitForTimeout(90_000);
+    await page.getByPlaceholder(/enter your email/i).waitFor({ timeout: 30_000 });
+    // Let a human complete sign-in (including the emailed verification code).
+    // Poll instead of sleeping: the instant the session is active (URL leaves
+    // the sign-in flow, or the app shell appears) we save — no fixed time
+    // pressure on the person completing the verification.
+    const deadline = Date.now() + 240_000;
+    let signedIn = false;
+    while (Date.now() < deadline) {
+      await page.waitForTimeout(2_000);
+      const url = page.url();
+      if (!url.includes("/sign-in") && !url.includes("/client-trust")) {
+        signedIn = true;
+        break;
+      }
+      if ((await page.locator('[aria-label="Notifications"]').count()) > 0) {
+        signedIn = true;
+        break;
+      }
+    }
+    expect(signedIn, "sign-in must complete (incl. emailed code) before the session can be saved").toBe(true);
     await context.storageState({ path: storageState });
     // eslint-disable-next-line no-console
     console.log(`Session saved to ${storageState}`);

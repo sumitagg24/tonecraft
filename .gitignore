@@ -105,6 +105,9 @@ downloads/
 # clerk configuration
 /.clerk/
 
+# playwright captured session (contains real auth cookies — never commit)
+/.auth/
+
 # os files
 .DS_Store
 Thumbs.db

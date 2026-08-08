@@ -59,3 +59,30 @@ export async function expectCleanPage(page: Page, path: string): Promise<void> {
 
   assertNoClientErrors(errors, path);
 }
+
+/**
+ * Interactive Clerk sign-in (Mode B). Returns "chat" when the session lands on
+ * the app, or "verify" when the dev instance demands email verification
+ * (which cannot be automated — callers should test.skip with a hint).
+ */
+export async function interactiveLogin(
+  page: Page,
+  email: string,
+  password: string
+): Promise<"chat" | "verify"> {
+  await page.goto("/sign-in", { waitUntil: "networkidle" });
+  const emailField = page.getByPlaceholder(/enter your email/i);
+  await emailField.waitFor({ timeout: 20_000 });
+  await emailField.fill(email);
+  await page.getByPlaceholder(/enter your password/i).fill(password);
+  await page.getByRole("button", { name: /^continue$/i }).click();
+  // Either the session lands on /chat, or the dev instance demands email
+  // verification ("Check your email") — which cannot be automated.
+  return Promise.race([
+    page.waitForURL("**/chat**", { timeout: 45_000 }).then(() => "chat" as const),
+    page
+      .getByRole("heading", { name: /check your email/i })
+      .waitFor({ timeout: 45_000 })
+      .then(() => "verify" as const),
+  ]);
+}
