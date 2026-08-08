@@ -16,12 +16,20 @@ import type {
 } from "./types";
 
 export class BillingService {
-  private provider: PaymentProvider;
   private providerName: ProviderName;
 
   constructor(providerName: ProviderName = "noop") {
     this.providerName = providerName;
-    this.provider = getProvider(providerName);
+  }
+
+  /**
+   * Resolved lazily (and cached by getProvider) on first use so the module-
+   * scope `billingService` singleton never constructs the Paddle client at
+   * import/build time. PADDLE_API_KEY is still required the moment any billing
+   * method actually executes.
+   */
+  private get provider(): PaymentProvider {
+    return getProvider(this.providerName);
   }
 
   async createCustomer(input: CustomerInput): Promise<CustomerResult> {
