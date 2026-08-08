@@ -40,6 +40,9 @@ yarn-error.log*
 # env files
 .env
 .env.local
+# Sentry build plugin writes the auth token to this file during `next build`.
+.env.sentry-build-plugin
+.sentryclirc
 .env.development.local
 .env.production.local
 .env.test.local

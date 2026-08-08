@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono, Instrument_Serif } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { SentryUserProvider } from "@/components/providers/SentryUserProvider";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "@/components/ui/sonner";
 import { ReducedMotionProvider } from "@/hooks/use-reduced-motion";
@@ -102,19 +103,21 @@ export default function RootLayout({
           Skip to content
         </a>
         <ClerkProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="dark"
-            disableTransitionOnChange
-          >
-            <ReducedMotionProvider>
-              {children}
-              <GlobalEffects />
-              <ServiceWorkerRegistration />
-              <PaddleCheckoutAutoOpen />
-              <Toaster position="bottom-right" />
-            </ReducedMotionProvider>
-          </ThemeProvider>
+          <SentryUserProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="dark"
+              disableTransitionOnChange
+            >
+              <ReducedMotionProvider>
+                {children}
+                <GlobalEffects />
+                <ServiceWorkerRegistration />
+                <PaddleCheckoutAutoOpen />
+                <Toaster position="bottom-right" />
+              </ReducedMotionProvider>
+            </ThemeProvider>
+          </SentryUserProvider>
         </ClerkProvider>
       </body>
     </html>

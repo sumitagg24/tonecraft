@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { auth } from "@/lib/auth";
 import { logger } from "./logger";
 import { z, ZodError } from "zod";
@@ -134,6 +135,13 @@ function buildHandler(
           { success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized" } },
           { status: 401 }
         );
+      }
+
+      // Link this request's Sentry scope to the signed-in user so every error
+      // captured in the handler (logger.error → captureException) is attributed
+      // to them. Guarded — no-op when the SDK isn't initialized (no DSN).
+      if (Sentry.getClient()) {
+        Sentry.setUser({ id: session.user.id });
       }
     }
 

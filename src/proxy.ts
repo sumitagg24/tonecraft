@@ -29,6 +29,8 @@ const PUBLIC_PATHS: ReadonlyArray<string> = [
   // "simplify" this back into a protected path or unauthenticated API calls
   // will start redirecting to /sign-in.
   "/api",
+  // Sentry verification page (wizard artifact) — must be reachable signed-out
+  "/sentry-example-page",
   // Public status pages (12.3)
   "/status",
   "/health",

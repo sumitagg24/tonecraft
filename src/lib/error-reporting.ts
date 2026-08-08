@@ -1,3 +1,5 @@
+import * as Sentry from "@sentry/nextjs";
+
 /**
  * Error monitoring abstraction (audit 12 P0.6, Phase 13 server wiring).
  *
@@ -179,6 +181,29 @@ function buildEvent(error: unknown, context?: ReportContext): BuiltEvent | null 
 async function sendError(error: unknown, context?: ReportContext): Promise<void> {
   const built = buildEvent(error, context);
   if (!built) return; // not configured or malformed DSN — no-op
+
+  // The real @sentry/nextjs SDK is now the primary path: when it's initialized
+  // (sentry.server.config / instrumentation-client), delegate to it so events
+  // get request/tracing context and dedup. The envelope client below remains
+  // the fallback for environments where the SDK isn't loaded (unit tests only).
+  if (Sentry.getClient()) {
+    // Mirror the legacy path's rich context: user, digest, request metadata,
+    // and any remaining top-level keys swept into extra.
+    const extra: Record<string, unknown> = { ...(context?.extra ?? {}) };
+    if (context?.request) extra.request = context.request;
+    if (context) {
+      for (const [k, v] of Object.entries(context)) {
+        if (["request", "userId", "digest", "extra"].includes(k)) continue;
+        extra[k] = v;
+      }
+    }
+    Sentry.captureException(error, {
+      user: context?.userId ? { id: context.userId } : undefined,
+      tags: context?.digest ? { digest: context.digest } : undefined,
+      extra,
+    });
+    return;
+  }
 
   const { event, host, publicKey, projectId } = built;
 
