@@ -28,6 +28,12 @@ export default function CalendarPage() {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
+  // Hydration-safe "today": set after mount so the server and first client
+  // render agree (a raw new Date() in render can differ at a day boundary).
+  const [todayStr, setTodayStr] = useState("");
+  useEffect(() => {
+    setTodayStr(new Date().toDateString());
+  }, []);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [title, setTitle] = useState("");
@@ -167,7 +173,7 @@ export default function CalendarPage() {
                 {grid.map((day, i) => {
                   const dayEvents = eventsFor(day);
                   const isToday =
-                    day.toDateString() === new Date().toDateString();
+                    todayStr !== "" && day.toDateString() === todayStr;
                   const isOtherMonth = day.getMonth() !== month.getMonth();
                   return (
                     <button

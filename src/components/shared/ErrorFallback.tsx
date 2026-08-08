@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { AlertTriangle, Home, RefreshCw, RotateCcw } from "lucide-react";
 import Link from "next/link";
@@ -29,9 +29,17 @@ export function ErrorFallback({
   onRetry,
   className,
 }: ErrorFallbackProps) {
-  const [fallbackId] = useState(
-    () => `ERR-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`
-  );
+  // Generate the fallback ID after mount only — a random value in the useState
+  // initializer would differ between the server and client renders (hydration
+  // mismatch) whenever this boundary renders during SSR.
+  const [fallbackId, setFallbackId] = useState("");
+  useEffect(() => {
+    if (!fallbackId) {
+      setFallbackId(
+        `ERR-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`
+      );
+    }
+  }, [fallbackId]);
   const id = errorId ?? fallbackId;
 
   return (
@@ -97,7 +105,7 @@ export function ErrorFallback({
         </motion.div>
       )}
 
-      {process.env.NODE_ENV === "production" && (
+      {process.env.NODE_ENV === "production" && id && (
         <p className="mt-6 text-xs text-muted-foreground">Error ID: {id}</p>
       )}
     </motion.div>

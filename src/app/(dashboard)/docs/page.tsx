@@ -590,15 +590,18 @@ export default function DocumentsPage() {
   const [aiLoading, setAiLoading] = useState<string | null>(null);
   const [view, setView] = useState<"edit" | "preview">("edit");
   const [emojiOpen, setEmojiOpen] = useState(false);
-  const [guideId, setGuideId] = useState<string>(() => {
-    // Remember the last-opened guide per user across visits.
-    if (typeof window === "undefined") return "getting-started";
+  // Fixed initial value so the server and first client render agree (no
+  // hydration mismatch). The last-opened guide is restored from localStorage
+  // after mount instead of read during the useState initializer.
+  const [guideId, setGuideId] = useState<string>("getting-started");
+  useEffect(() => {
     try {
-      return localStorage.getItem("tc:docs:guide") ?? "getting-started";
+      const stored = localStorage.getItem("tc:docs:guide");
+      if (stored && GUIDES.some((g) => g.id === stored)) setGuideId(stored);
     } catch {
-      return "getting-started";
+      /* storage unavailable */
     }
-  });
+  }, []);
   const [guideQuery, setGuideQuery] = useState("");
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 

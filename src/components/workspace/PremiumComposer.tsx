@@ -2,7 +2,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Send, Mic, Loader2, X, ChevronDown, Sliders,
+  Send, Loader2, X, ChevronDown, Sliders,
   Globe, Paperclip, Square, Check, Wand2, Users, BookOpenCheck,
 } from "lucide-react";
 import { useChatStore } from "@/stores/chat-store";
@@ -249,7 +249,7 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
               onKeyDown={handleKeyDown}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
-              placeholder={isLoading ? "Generating response..." : "Write your message... (/) for commands"}
+              placeholder={isLoading ? "Generating response..." : "Write your message…"}
               className="w-full bg-transparent border-0 focus-visible:ring-0 resize-none px-4 pt-3 pb-1 text-[15px] leading-[1.85] placeholder:text-muted-foreground/40 min-h-[44px] max-h-[240px] outline-none disabled:opacity-60"
               rows={1}
               disabled={isLoading || uploading}
@@ -432,15 +432,6 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
                 )}
 
                 <div className="flex items-center gap-1">
-                  <button
-                    className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground/50 hover:text-foreground hover:bg-muted/30 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:opacity-40"
-                    title="Voice input — coming soon"
-                    aria-label="Voice input (coming soon)"
-                    disabled
-                  >
-                    <Mic className="w-4 h-4" />
-                  </button>
-
                   {isLoading ? (
                     <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
                       <button

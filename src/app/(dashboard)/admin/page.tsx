@@ -36,6 +36,11 @@ export default function AdminOverviewPage() {
   const [data, setData] = useState<OverviewData | null>(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState("30d");
+  // Hydration-safe "last updated" — rendered only after mount, deterministic locale.
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+  useEffect(() => {
+    setLastUpdated(new Date().toLocaleTimeString("en-US"));
+  }, []);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -242,7 +247,7 @@ export default function AdminOverviewPage() {
 
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <Clock className="w-3 h-3" />
-        <span>Last updated: {new Date().toLocaleTimeString()}</span>
+        <span>Last updated: {lastUpdated ?? "—"}</span>
       </div>
     </div>
   );
