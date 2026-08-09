@@ -56,7 +56,10 @@ export const useChatStore = create<ChatState>((set) => ({
   searchQuery: "",
   searchResults: { chats: [], messages: [], prompts: [], personas: [], knowledge: [] },
   context: {
-    platform: "email",
+    // "general" = neutral format (no platform-specific layout). Previously
+    // defaulted to "email", which made every reply come out as an email
+    // (Subject:, Best regards) even when the user never chose Email.
+    platform: "general",
     language: "en",
     recipient: "",
     length: "medium",

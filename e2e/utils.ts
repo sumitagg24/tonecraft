@@ -1,6 +1,28 @@
 import { expect, type Page } from "@playwright/test";
 
 /**
+ * Environmental errors the app triggers deliberately and handles gracefully
+ * (same convention as chat-flow.spec.ts):
+ *   429 — the free plan's rate limits under parallel test load.
+ *   502 — provider/transcription endpoints when keys are placeholders.
+ */
+export function isEnvironmentalError(message: string): boolean {
+  return /\b429\b/.test(message) || /\b502\b/.test(message);
+}
+
+/** Fail when the page scrolls horizontally instead of fitting the viewport. */
+export async function expectNoHorizontalOverflow(page: Page, context: string) {
+  const { scroll, client } = await page.evaluate(() => {
+    const doc = document.documentElement;
+    return { scroll: doc.scrollWidth, client: doc.clientWidth };
+  });
+  expect(
+    scroll - client,
+    `horizontal overflow on ${context}: scrollWidth=${scroll}, clientWidth=${client}`
+  ).toBeLessThanOrEqual(1);
+}
+
+/**
  * React hydration mismatches and related runtime failures are reported as
  * console errors in the browser. Keep this list in sync with React 18/19
  * messages:

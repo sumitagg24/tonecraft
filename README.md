@@ -180,17 +180,29 @@ Sign in with Clerk, and you're on `/chat`. The shell rail + ⌘K palette navigat
 ```bash
 npm test            # Jest — unit tests (validators, automation worker, stores)
 
-# Playwright e2e (production server on :3100)
-npm run build
-npx playwright test                       # hydration/console smoke on public routes
+# Playwright e2e against the PRODUCTION server on :3100
+npm run smoke       # build + full suite: desktop, Android (Pixel 7), iOS (iPhone 13), iPad (Pro 11)
+npm run smoke:mobile # build + phone/tablet viewport projects only (fast release check)
+
+# Run specific specs against the current build
+npx playwright test                       # hydration/console smoke on all viewports
 E2E_STORAGE_STATE=./.auth/state.json npx playwright test e2e/chat-flow.spec.ts
+
+# Re-mint the saved Clerk session when the __session JWT goes stale (clerk-js
+# refreshes it from the db session on page load) — requires a running server:
+npm run start -- -p 3100   # in another terminal
+node scripts/refresh-e2e-session.cjs
 ```
 
+**CI (pull requests):** Playwright runs as a **matrix job with one job per viewport** — `e2e (chromium)`, `e2e (mobile-android)`, `e2e (mobile-ios)`, `e2e (tablet-ios)` — so failures are reported per-project (a mobile-only regression shows up as exactly which phone/tablet form factor broke). `fail-fast` is disabled so one failing viewport never cancels the others. The production build is built **once** in the `build-and-test` job and shared with every matrix entry via `actions/cache` (keyed on the commit SHA) — no per-viewport rebuilds. The mobile/tablet jobs are a mandatory, separate gate: hydration on every phone/tablet viewport plus the auth-free responsive checks always execute. When an e2e job fails, its **browsable HTML report and traces** are uploaded as a `playwright-<viewport>` artifact on the run (download it from the failed job's Summary page — `playwright-report/index.html` for the report, `test-results/` for raw traces viewable with `npx playwright show-trace`). Enable the jobs with the `CLERK_SECRET_KEY` + `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` repo secrets (required to render pages). To also run the **signed-in** checks (touch composer, reply action bar, protected pages, chat flow) on every PR, add a password-verified test account as `E2E_EMAIL` + `E2E_PASSWORD` repo secrets — without them those specs skip with a hint.
+
 The e2e suite covers:
-- **Hydration smoke** — landing, sign-in, and sign-up render with zero console/hydration errors
+- **Hydration smoke** — landing, sign-in, and sign-up render with zero console/hydration errors (desktop, tablet, and both phone viewports)
 - **Signed-in smoke** — protected pages (docs, admin, calendar, settings) render clean
 - **Chat flow** — New Workspace → send → copy, asserting the clipboard contents
 - **Composer controls** — tone picker, tool picker, voice dictation (fake media stream), edit + `(edited)` marker, regenerate
+- **Responsive overflow** (all projects) — public pages must fit the viewport with no horizontal scroll; at tablet width (834px) this covers the md breakpoint between the phone and desktop layouts
+- **Mobile responsive** (`mobile-android` / `mobile-ios` projects) — composer send button stays on-screen, toolbar scrolls on small screens, tone picker opens as a touch bottom sheet, share menu opens on tap, reply action bar (Copy/Regenerate) visible and tappable without hover
 
 Clerk's dev instance requires a one-time email code for new devices; the signed-in specs use a captured session in `.auth/state.json` (gitignored) or skip gracefully when it's absent.
 

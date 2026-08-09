@@ -2,11 +2,20 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
+
+# Shared across every job/step. Secrets stay scoped to the steps that need
+# them (build steps only inline the publishable key; the e2e test steps also
+# receive CLERK_SECRET_KEY + the optional test-account credentials).
+env:
+  NEXT_PUBLIC_APP_URL: https://tonecraft.app
+  DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
 
 jobs:
+  # Gate: typecheck, dead-code check, and a production build. Always runs,
+  # even without Clerk secrets.
   build-and-test:
     runs-on: ubuntu-latest
 
@@ -17,7 +26,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
@@ -34,29 +43,117 @@ jobs:
       - name: Next.js Production Build
         run: npm run build
         env:
-          NEXT_PUBLIC_APP_URL: https://tonecraft.app
-          DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
           # Inlined at build time — only needed to render pages behind Clerk.
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
 
-      # Browser regression guard: every public page must hydrate with zero
-      # console errors / hydration mismatches. Needs Clerk secrets to render
-      # pages at runtime — add these two repo secrets to enable the step:
-      #   CLERK_SECRET_KEY, NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
-      - name: Warn when smoke test is disabled
+      # Share the production build with the e2e matrix jobs (below) instead of
+      # rebuilding per viewport: the cache is keyed on the commit SHA, so each
+      # run saves once and every matrix entry restores the same .next. The e2e
+      # job `needs` this job, so the save always completes before any restore
+      # runs. A cache-service hiccup must not fail the pipeline — if the save
+      # errors, e2e's restore misses and its fallback build covers it. Only
+      # save when e2e will actually run (same condition as the e2e job), so we
+      # never write dead entries that would sit in the repo's cache budget.
+      - name: Cache production build for e2e jobs
+        if: ${{ secrets.CLERK_SECRET_KEY != '' }}
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: .next
+          key: next-build-${{ github.sha }}
+
+      - name: Warn when e2e jobs are disabled
         if: ${{ secrets.CLERK_SECRET_KEY == '' }}
-        run: echo "::warning::Hydration smoke test is SKIPPED — add CLERK_SECRET_KEY and NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY repo secrets to enable it."
+        run: echo "::warning::Playwright e2e jobs are SKIPPED — add CLERK_SECRET_KEY and NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY repo secrets to enable them (one job per viewport then runs on every PR)."
+
+  # Browser regression guard — ONE JOB PER VIEWPORT so failures are reported
+  # per-project (e.g. "e2e (mobile-android)" vs "e2e (mobile-ios)" in the
+  # checks list). Each matrix entry shares the .next build from build-and-test
+  # (via actions/cache), boots its own production server, and runs its
+  # project's full collected suite:
+  #   - chromium:        hydration smoke + signed-in chat flow (chat-flow.spec)
+  #   - mobile-android:  Pixel 7 — hydration + mobile responsive checks
+  #   - mobile-ios:      iPhone 13 form factor — hydration + mobile responsive
+  #   - tablet-ios:      iPad Pro 11 (834px, md range) — hydration + overflow
+  #
+  # The mobile/tablet projects are a mandatory, separate gate: the auth-free
+  # responsive checks (no horizontal overflow on public pages) always run on
+  # every viewport, and the signed-in mobile checks (touch composer, reply
+  # action bar) run too when E2E_EMAIL/E2E_PASSWORD are configured. Needs
+  # Clerk secrets to render pages at runtime — add these repo secrets to
+  # enable the job:
+  #   CLERK_SECRET_KEY, NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+  # To also run the SIGNED-IN checks (mobile composer/action bar, protected
+  # pages, chat flow) on every PR, add a password-verified test account:
+  #   E2E_EMAIL, E2E_PASSWORD
+  e2e:
+    needs: build-and-test
+    if: ${{ secrets.CLERK_SECRET_KEY != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60 # insurance against slow AI-latency runs (retries × 300s tests)
+    strategy:
+      fail-fast: false # a failing viewport must not cancel the others
+      matrix:
+        project: [chromium, mobile-android, mobile-ios, tablet-ios]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Restore the .next build produced by build-and-test (keyed on the commit
+      # SHA). The fallback build only runs if the cache somehow missed — with
+      # `needs: build-and-test` above, the save is guaranteed to have completed
+      # first, so in practice this is always a cache hit.
+      - name: Restore production build
+        id: restore-build
+        uses: actions/cache/restore@v4
+        with:
+          path: .next
+          key: next-build-${{ github.sha }}
+
+      - name: Build (fallback if cache missed)
+        if: steps.restore-build.outputs.cache-hit != 'true'
+        run: npm run build
+        env:
+          # Inlined at build time — only needed to render pages behind Clerk.
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
 
       - name: Install Playwright browsers
-        if: ${{ secrets.CLERK_SECRET_KEY != '' }}
         run: npx playwright install --with-deps chromium
         timeout-minutes: 10
 
-      - name: Hydration & Console Smoke Test
-        if: ${{ secrets.CLERK_SECRET_KEY != '' }}
-        run: npm run test:e2e
+      - name: Playwright e2e (${{ matrix.project }})
+        run: npx playwright test --project=${{ matrix.project }}
         env:
-          NEXT_PUBLIC_APP_URL: https://tonecraft.app
-          DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
           CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          # Optional: a password-verified test account unlocks the signed-in
+          # checks on every PR (skip without them). NOTE: the signed-in specs
+          # hit the database — if you enable them, override DATABASE_URL above
+          # with a real (test) database secret; the dummy URL only serves the
+          # auth-free hydration/responsive checks.
+          E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
+          E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+
+      # On failure, make the failure debuggable from the PR: upload the
+      # browsable HTML report (playwright-report/) plus the raw traces,
+      # screenshots, and error contexts (test-results/). Each matrix entry
+      # uploads its own artifact so the failing viewport is identifiable.
+      - name: Upload Playwright report & traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-${{ matrix.project }}
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: warn
+          retention-days: 14

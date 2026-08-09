@@ -52,7 +52,7 @@ export class VoiceService {
       const detail = await res.text().catch(() => "");
       logger.error(`[Voice] transcription failed: ${res.status} ${detail}`);
       if (res.status === 401) {
-        throw new Error("Voice transcription failed (HTTP 401 — check your AI provider key)");
+        throw new Error("Voice transcription failed (HTTP 401 — check your OPENAI_API_KEY)");
       }
       throw new Error(`Transcription provider error (HTTP ${res.status})`);
     }

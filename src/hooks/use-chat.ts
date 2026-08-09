@@ -319,10 +319,6 @@ export function useChat() {
     return api<Message>(`/api/messages/${messageId}/regenerate`, { method: "POST" });
   }, []);
 
-  const continueMessage = useCallback(async (messageId: string) => {
-    return api<Message>(`/api/messages/${messageId}/continue`, { method: "POST" });
-  }, []);
-
   const editMessage = useCallback(async (messageId: string, content: string) => {
     try {
       await api(`/api/messages/${messageId}`, {
@@ -351,6 +347,6 @@ export function useChat() {
   return {
     sendMessage, stopStreaming, createChat, createChatOptimistic, fetchChats, deleteChat,
     renameChat, togglePin, toggleFavorite, archiveChat,
-    regenerateMessage, continueMessage, editMessage, setMessageFeedback,
+    regenerateMessage, editMessage, setMessageFeedback,
   };
 }

@@ -57,67 +57,61 @@ export class MessageService {
     return { stream, assistantMessage };
   }
 
+  /**
+   * Regenerate an assistant reply. Rather than re-rewriting the assistant's own
+   * previous output (which produced near-identical text and felt "broken"), it
+   * re-answers the user message that preceded it, keeping the same tone and
+   * platform, and updates the reply in place.
+   */
   async regenerateMessage(messageId: string, userId: string) {
     const [plan, original] = await Promise.all([
       planService.getPlan(userId),
-      messageRepository.findById(messageId),
+      messageRepository.findByIdAndUser(messageId, userId),
     ]);
     if (!original || original.role !== "assistant") throw new Error("Message not found or not an assistant message");
 
     const chat = await chatRepository.findByIdAndUser(original.chatId, userId);
     if (!chat) throw new Error("Chat not found");
 
-    const history = (chat.messages || [])
-      .filter(m => m.id !== messageId || m.role === "user")
-      .slice(0, -1)
-      .map(m => ({ id: m.id, role: m.role as "user" | "assistant" | "system", content: m.content, createdAt: m.createdAt }));
+    const all = chat.messages || [];
+    const idx = all.findIndex((m) => m.id === original.id);
+    const before = idx >= 0 ? all.slice(0, idx) : [];
+    const precedingUser = [...before].reverse().find((m) => m.role === "user");
+
+    // The prompt is the user's original message; keep history up to (but not
+    // including) the message being regenerated, minus the duplicated prompt.
+    const prompt = precedingUser?.content || original.content;
+    const history = before
+      .filter((m) => !precedingUser || m.id !== precedingUser.id)
+      .map((m) => ({
+        id: m.id,
+        role: m.role as "user" | "assistant" | "system",
+        content: m.content,
+        createdAt: m.createdAt,
+      }));
 
     const result = await aiEngine.generate({
       intent: "rewrite",
+      prompt,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tone: (original.tone || "professional") as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      platform: original.platform as any,
+      language: original.language || undefined,
       history,
-      prompt: original.content,
       userId,
       plan: plan.tier,
     });
 
-    const regenerated = await messageRepository.regenerate(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { ...original, content: result.content, model: result.model, tokens: result.tokens, latency: result.latency } as any,
-      result.content,
-      result.model,
-      result.tokens,
-      result.latency
-    );
-    return regenerated;
-  }
-
-  async continueMessage(messageId: string, userId: string) {
-    const [plan, original] = await Promise.all([
-      planService.getPlan(userId),
-      messageRepository.findByIdAndUser(messageId, userId),
-    ]);
-    if (!original) throw new Error("Message not found");
-
-    const result = await aiEngine.generate({
-      intent: "enhance",
-      prompt: `Continue the following:\n\n${original.content}`,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      tone: (original.tone || "professional") as any,
-      userId,
-      plan: plan.tier,
-    });
-
-    return messageRepository.create({
-      chatId: original.chatId,
-      role: "assistant",
+    const updated = await messageRepository.updateForUser(original.id, userId, {
       content: result.content,
-      tone: original.tone || undefined,
       model: result.model,
       tokens: result.tokens,
       latency: result.latency,
     });
+    if (!updated) throw new Error("Failed to update message");
+
+    return messageRepository.findById(original.id);
   }
   // NOTE: edit/delete/feedback live in the ownership-scoped API routes
   // (MessageRepository.updateForUser/deleteForUser/updateFeedbackForUser).

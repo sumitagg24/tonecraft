@@ -1,4 +1,5 @@
 import type { Tone, Platform, ResponseLength } from "@/engine/types";
+import { isNeutralPlatform } from "@/engine/types";
 import { contextBlock } from "./utils";
 
 export interface ReplyConfig {
@@ -34,8 +35,11 @@ export function buildReplyPrompt(input: string, config: ReplyConfig): string {
   });
 
   const contextStr = config.context ? `\n\nConversation context: ${config.context}` : "";
+  // Neutral platforms mean no specific format — omit the line so the model
+  // doesn't default to email-style replies.
+  const platformLine = isNeutralPlatform(config.platform) ? "" : `Platform: ${config.platform}\n`;
 
-  return `${toneInstruction}\n\nPlatform: ${config.platform}\n${guide}\n\nMessage to reply to:\n${input}${contextStr}${ctx}`;
+  return `${toneInstruction}\n\n${platformLine}${guide}\n\nMessage to reply to:\n${input}${contextStr}${ctx}`;
 }
 
 function getToneInstruction(tone: Tone): string {

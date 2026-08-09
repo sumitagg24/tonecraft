@@ -28,7 +28,7 @@ export default function ChatPage() {
   const messages = useChatStore((s) => s.messages);
   const isLoading = useChatStore((s) => s.isLoading);
   const streamingContent = useChatStore((s) => s.streamingContent);
-  const { sendMessage, stopStreaming, fetchChats, regenerateMessage, continueMessage } = useChat();
+  const { sendMessage, stopStreaming, fetchChats, regenerateMessage } = useChat();
   const scrollRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
@@ -109,21 +109,11 @@ export default function ChatPage() {
       await regenerateMessage(messageId);
       const chat = await api<Chat>(`/api/chats/${chatId}`);
       useChatStore.getState().setMessages(chat.messages ?? []);
-    } catch {
-      toast.error("Failed to regenerate");
+      toast.success("Regenerated");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to regenerate");
     }
   }, [chatId, regenerateMessage]);
-
-  const handleContinue = useCallback(async (messageId: string) => {
-    if (chatId.startsWith("temp-")) return;
-    try {
-      await continueMessage(messageId);
-      const chat = await api<Chat>(`/api/chats/${chatId}`);
-      useChatStore.getState().setMessages(chat.messages ?? []);
-    } catch {
-      toast.error("Failed to continue");
-    }
-  }, [chatId, continueMessage]);
 
   if (!currentChat) {
     return (
@@ -182,7 +172,6 @@ export default function ChatPage() {
                 message={message}
                 isLastMessage={index === messages.length - 1}
                 onRegenerate={message.role === "assistant" ? handleRegenerate : undefined}
-                onContinue={message.role === "assistant" ? handleContinue : undefined}
               />
             ))}
           </AnimatePresence>

@@ -1,3 +1,5 @@
+import { isNeutralPlatform } from "@/engine/types";
+
 export function contextBlock(ctx: {
   platform?: string;
   length?: string;
@@ -8,7 +10,9 @@ export function contextBlock(ctx: {
   language?: string;
 }): string {
   const parts: string[] = [];
-  if (ctx.platform) parts.push(`Platform: ${ctx.platform}`);
+  // Neutral platforms ("general"/"any"/…) mean no specific format — omitting
+  // the line prevents the model from defaulting to email/layout conventions.
+  if (ctx.platform && !isNeutralPlatform(ctx.platform)) parts.push(`Platform: ${ctx.platform}`);
   if (ctx.audience) parts.push(`Target Audience: ${ctx.audience}`);
   if (ctx.length) parts.push(`Desired Length: ${ctx.length}`);
   if (ctx.formality) parts.push(`Formality Level: ${ctx.formality}`);

@@ -144,6 +144,8 @@ export const FEATURES = [
 ];
 
 export const PLATFORMS = [
+  // Neutral default — no platform-specific format (no subject lines, etc.).
+  { name: "General", icon: "Sparkles", color: "#8b8b8b" },
   { name: "WhatsApp", icon: "MessageCircle", color: color.platform.whatsapp },
   { name: "Instagram", icon: "Camera", color: color.platform.instagram },
   { name: "Slack", icon: "Hash", color: color.platform.slack },

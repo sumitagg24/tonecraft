@@ -9,7 +9,7 @@ import { useChatStore } from "@/stores/chat-store";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { api } from "@/lib/api-client";
 import {
-  User, Bot, Copy, Check, RefreshCw, Play, ThumbsUp, ThumbsDown,
+  User, Bot, Copy, Check, RefreshCw, ThumbsUp, ThumbsDown,
   Bookmark, FileText, Pencil, Paperclip, Feather,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -24,7 +24,6 @@ interface PremiumMessageCardProps {
   isStreaming?: boolean;
   isLastMessage?: boolean;
   onRegenerate?: (messageId: string) => void;
-  onContinue?: (messageId: string) => void;
 }
 
 /**
@@ -33,7 +32,7 @@ interface PremiumMessageCardProps {
  * (tone · platform) instead of a chat-bubble shell.
  */
 export const PremiumMessageCard = memo(function PremiumMessageCard({
-  message, isStreaming, isLastMessage, onRegenerate, onContinue,
+  message, isStreaming, isLastMessage, onRegenerate,
 }: PremiumMessageCardProps) {
   const isUser = message.role === "user";
   const tone = message.tone ? TONES.find((t) => t.id === message.tone) : null;
@@ -160,7 +159,7 @@ export const PremiumMessageCard = memo(function PremiumMessageCard({
                 {tone.label}
               </span>
             )}
-            {message.platform && !isStreaming && (
+            {message.platform && message.platform !== "general" && !isStreaming && (
               <span className="hidden md:inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border border-border/40 bg-muted/30 text-[10px] font-medium text-muted-foreground/60">
                 <Paperclip className="w-2.5 h-2.5" aria-hidden="true" />
                 {message.platform}
@@ -187,7 +186,7 @@ export const PremiumMessageCard = memo(function PremiumMessageCard({
                 >
                   {message.tokens && <MetaRow label="Tokens" value={message.tokens.toLocaleString()} />}
                   {message.latency && <MetaRow label="Latency" value={`${(message.latency / 1000).toFixed(1)}s`} />}
-                  {message.platform && <MetaRow label="Platform" value={message.platform} />}
+                  {message.platform && message.platform !== "general" && <MetaRow label="Platform" value={message.platform} />}
                   <MetaRow label="Time" value={formatTime(message.createdAt)} />
                 </motion.div>
               )}
@@ -400,9 +399,6 @@ export const PremiumMessageCard = memo(function PremiumMessageCard({
               <ActionButton icon={copied ? Check : Copy} label="Copy" onClick={handleCopy} active={copied} />
               {!isUser && onRegenerate && (
                 <ActionButton icon={RefreshCw} label="Regenerate" onClick={() => onRegenerate(message.id)} />
-              )}
-              {!isUser && onContinue && (
-                <ActionButton icon={Play} label="Continue" onClick={() => onContinue(message.id)} />
               )}
               {!isUser && (
                 <>

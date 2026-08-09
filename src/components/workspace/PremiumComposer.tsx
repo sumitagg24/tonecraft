@@ -205,8 +205,12 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
         method: "POST",
         body: fd,
       });
-      if (res.provider === "unavailable" || !res.text) {
+      if (res.provider === "unavailable") {
         toast.error("Voice dictation isn't configured yet");
+        return;
+      }
+      if (!res.text) {
+        toast.error("No speech detected — try speaking again");
         return;
       }
       setInput((prev) => (prev ? `${prev.replace(/\s+$/, "")} ${res.text}` : res.text));
@@ -369,9 +373,12 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
               aria-label="Message input"
             />
 
-            {/* Toolbar */}
-            <div ref={toolbarRef} className="flex items-center justify-between px-2 pb-1.5 pt-0.5">
-              <div className="flex items-center gap-0.5">
+            {/* Toolbar — left side scrolls horizontally on small screens so the
+                send button is always visible on the right (no more off-screen tap). */}
+            <div ref={toolbarRef} className="flex items-center justify-between gap-2 px-2 pb-1.5 pt-0.5">
+              {/* Scroll only on small screens — on md+ the pickers are anchored
+                  dropdowns and must not be clipped by a scroll container. */}
+              <div className="flex items-center gap-0.5 flex-1 min-w-0 overflow-x-auto scrollbar-none overscroll-x-contain md:overflow-visible">
                 <input
                   ref={attachRef}
                   type="file"
@@ -553,9 +560,9 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
                 </ToolbarButton>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
                 {!isLoading && input && (
-                  <span className="text-micro text-muted-foreground/50 whitespace-nowrap">
+                  <span className="hidden min-[380px]:inline text-micro text-muted-foreground/50 whitespace-nowrap">
                     {charCount} chars · ~{estTokens} tokens
                   </span>
                 )}
@@ -619,7 +626,7 @@ function ToolbarButton({
       title={label}
       aria-expanded={ariaExpanded}
       className={cn(
-        "flex items-center gap-1.5 px-2 h-9 sm:h-8 rounded-lg text-muted-foreground/70 hover:text-foreground hover:bg-muted/30 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:opacity-40",
+        "flex items-center gap-1.5 px-2 h-10 sm:h-8 rounded-lg shrink-0 text-muted-foreground/70 hover:text-foreground hover:bg-muted/30 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:opacity-40",
         active && "text-primary bg-primary/10"
       )}
     >

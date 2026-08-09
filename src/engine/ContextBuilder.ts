@@ -1,4 +1,5 @@
 import type { ConversationMessage, IntentConfig, ModelMessage, Tone } from "./types";
+import { isNeutralPlatform } from "./types";
 
 export interface ContextSource {
   history?: ConversationMessage[];
@@ -71,9 +72,11 @@ export class ContextBuilder {
       systemParts.push(`Language: ${source.preferences.language}`);
     }
 
-    // Context config
+    // Context config. Neutral platforms ("general"/"any"/…) mean no
+    // platform-specific format — omitting the line avoids the model defaulting
+    // to email/layout conventions.
     const contextLines: string[] = [];
-    if (config.platform) contextLines.push(`Platform: ${config.platform}`);
+    if (config.platform && !isNeutralPlatform(config.platform)) contextLines.push(`Platform: ${config.platform}`);
     if (config.audience) contextLines.push(`Audience: ${config.audience}`);
     if (config.length) contextLines.push(`Length: ${config.length}`);
     if (config.formality) contextLines.push(`Formality: ${config.formality}`);

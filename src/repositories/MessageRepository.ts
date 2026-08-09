@@ -82,20 +82,6 @@ export class MessageRepository {
     }) as unknown as Message;
   }
 
-  async regenerate(originalMessage: Message, newContent: string, model: string, tokens: number, latency: number) {
-    return prisma.message.create({
-      data: {
-        chatId: originalMessage.chatId,
-        role: "assistant",
-        content: newContent,
-        tone: originalMessage.tone,
-        model, tokens, latency,
-        parentId: originalMessage.id,
-      },
-      include: { attachments: true },
-    }) as unknown as Message;
-  }
-
   async search(userId: string, query: string, limit = 20) {
     const messages = await prisma.message.findMany({
       where: {

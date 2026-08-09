@@ -21,6 +21,17 @@ export type ResponseLength = "short" | "medium" | "long";
 
 export type Formality = "casual" | "neutral" | "formal";
 
+/**
+ * Platform values that mean "no specific format" (neutral default). These are
+ * never injected into prompts — otherwise models default to email/layout
+ * conventions (subject lines, formal sign-offs) even when no platform is chosen.
+ */
+export const NEUTRAL_PLATFORMS: ReadonlySet<string> = new Set(["general", "any", "auto", ""]);
+
+export function isNeutralPlatform(platform?: string | null): boolean {
+  return platform == null || NEUTRAL_PLATFORMS.has(platform);
+}
+
 export interface IntentConfig {
   intent: Intent;
   tone?: Tone;
