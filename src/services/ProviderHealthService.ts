@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { Redis } from "@upstash/redis";
+import { ListObjectsV2Command } from "@aws-sdk/client-s3";
+import { getR2Client } from "@/lib/r2";
 import type { ProviderName } from "@/config/models";
 
 export type ProviderStatus = "healthy" | "degraded" | "offline";
@@ -244,20 +246,16 @@ class ProviderHealthService {
 
     const start = Date.now();
     try {
-      // Minimal S3 ListBuckets probe — no SDK required, works with any R2 bucket.
-      const url = `https://${accountId}.r2.cloudflarestorage.com/${bucket}?list-type=2&max-keys=1`;
-      const response = await fetchWithTimeout(url, {}, HEALTH_CHECK_TIMEOUT_MS);
+      // Signed S3 ListObjects probe via the app's R2 client (unsigned requests
+      // are rejected by R2 with 403, so a raw fetch could never be healthy).
+      await Promise.race([
+        getR2Client().send(new ListObjectsV2Command({ Bucket: bucket, MaxKeys: 1 })),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("timeout")), HEALTH_CHECK_TIMEOUT_MS)
+        ),
+      ]);
       const latency = Date.now() - start;
-      if (response.ok) {
-        return this.setCache({ name, status: "healthy", lastChecked: new Date(), latencyMs: latency });
-      }
-      return this.setCache({
-        name,
-        status: "degraded",
-        lastChecked: new Date(),
-        latencyMs: latency,
-        error: `HTTP ${response.status}`,
-      });
+      return this.setCache({ name, status: "healthy", lastChecked: new Date(), latencyMs: latency });
     } catch (error) {
       const latency = Date.now() - start;
       return this.setCache({
@@ -289,7 +287,16 @@ class ProviderHealthService {
       });
     }
 
-    const urlObj = new URL(config.url);
+    let url = config.url;
+    // Paddle has separate live/sandbox hosts — hit the one matching the key
+    // (sandbox keys start with `pdl_sdbx_`), otherwise the probe always fails.
+    if (config.name === "paddle") {
+      const isSandbox = apiKey.startsWith("pdl_sdbx_");
+      const base = isSandbox ? "https://sandbox-api.paddle.com" : "https://api.paddle.com";
+      // Paddle Billing API (v1 of the current API) — the legacy `/2.0/` paths 404.
+      url = `${base}/products`;
+    }
+    const urlObj = new URL(url);
     if (config.authType === "query" && config.queryKey) {
       urlObj.searchParams.set(config.queryKey, apiKey);
     }

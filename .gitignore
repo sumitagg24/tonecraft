@@ -132,3 +132,4 @@ plans/
 
 # Kilo agent runtime state
 .kilo/
+.env*
