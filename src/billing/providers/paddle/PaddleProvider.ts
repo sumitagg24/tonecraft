@@ -22,11 +22,14 @@ export class PaddleProvider implements PaymentProvider {
   constructor() {
     const apiKey = process.env.PADDLE_API_KEY;
     if (!apiKey) throw new Error("Missing PADDLE_API_KEY environment variable");
+    // Environment follows the KEY, not NODE_ENV: a sandbox key (pdl_sdbx_…)
+    // only authenticates against sandbox-api.paddle.com. Previously NODE_ENV
+    // drove this, so a production deploy with a sandbox key hit the live API
+    // and every checkout returned 401.
     this.paddle = new Paddle(apiKey, {
-      environment:
-        process.env.NODE_ENV === "production"
-          ? Environment.production
-          : Environment.sandbox,
+      environment: apiKey.startsWith("pdl_sdbx_")
+        ? Environment.sandbox
+        : Environment.production,
     });
   }
 
