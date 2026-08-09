@@ -38,12 +38,15 @@ export function loadPaddle(): Promise<any> {
       };
       document.head.appendChild(script);
     }).then(async (Paddle) => {
+      const token = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
       try {
-        Paddle.Environment.set(process.env.NODE_ENV === "production" ? "production" : "sandbox");
+        // Environment follows the CLIENT TOKEN, not NODE_ENV: sandbox tokens
+        // (test_…) only work against the sandbox environment, so a production
+        // deploy with a test token must still use "sandbox".
+        Paddle.Environment.set(token?.startsWith("test_") ? "sandbox" : "production");
       } catch {
         // environment already set — fine
       }
-      const token = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
       if (token) {
         // Paddle.Initialize() returns a Promise — Checkout.open() must wait
         // for it or the overlay may never render (observed on first load).
@@ -70,7 +73,10 @@ export async function openPaddleCheckout(
   const Paddle = await loadPaddle();
   Paddle.Checkout.open({
     transactionId,
-    settings: { displayMode: "overlay", allowCurrencyChange: false },
+    // NOTE: allowCurrencyChange must NOT be set — the checkout service returns
+    // a 400 (validation.no_validation_set) unless the account has currency
+    // change validation configured, which would blank the overlay.
+    settings: { displayMode: "overlay" },
     eventCallback: (event: any) => {
       if (event?.name === "checkout-completed") {
         opts?.onSuccess?.();
