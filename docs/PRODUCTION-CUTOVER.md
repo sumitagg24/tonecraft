@@ -19,10 +19,11 @@ Move ToneCraft from development/sandbox to production across **Clerk**, **Paddle
 | Clerk | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | `pk_test_…` | `pk_live_…` |
 | Clerk | `CLERK_SECRET_KEY` | `sk_test_…` | `sk_live_…` |
 | Clerk | `CLERK_WEBHOOK_SECRET` | dev/placeholder | `whsec_…` from PROD webhook |
-| Paddle | `PADDLE_API_KEY` | `pdl_sdbx_…` | `pdl_live_…` |
-| Paddle | `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` / `PADDLE_CLIENT_TOKEN` | `test_…` | live token (no `test_`) |
-| Paddle | `PADDLE_WEBHOOK_SECRET` | sandbox `pdl_ntfset_…` | live `pdl_ntfset_…` |
-| Paddle | `PADDLE_PRICE_*` (4) | sandbox `pri_…` | **live** `pri_…` |
+| Paddle | `PADDLE_API_KEY` | sandbox | **`pdl_live_…` ✅ (you provided; works)** |
+| Paddle | `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` / `PADDLE_CLIENT_TOKEN` | `test_…` | live token (no `test_`) — not yet provided |
+| Paddle | `PADDLE_WEBHOOK_SECRET` | sandbox | **live `pdl_ntfset_…` ✅ (setup script printed it)** |
+| Paddle | `PADDLE_PRICE_*` (4) | sandbox `pri_…` | **live `pri_…` ✅ created (see Step 2)** |
+| Paddle | Onboarding | — | **❌ checkouts not enabled — must finish onboarding (Step 2.1)** |
 | App | `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` | `https://tonecraft-psi.vercel.app` |
 | R2 | `R2_ACCOUNT_ID` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | `...` placeholders | real Cloudflare creds |
 | LLM | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` | placeholders | real keys (or delete — GROQ/OpenRouter/Google already set) |
@@ -52,29 +53,76 @@ Everything else (`DATABASE_URL`, `DIRECT_URL`, Upstash, `CRON_SECRET`, Sentry,
 
 ## Step 2 — Paddle (vendor.paddle.com)
 
-1. **Developer Tools → Authentication** → generate a **LIVE API key**
-   → `PADDLE_API_KEY` = `pdl_live_…`.
-2. **Developer Tools → Notifications** (or **Webhooks**):
-   - URL: `https://tonecraft-psi.vercel.app/api/billing/webhook`
-   - Events: `transaction.completed`, `transaction.payment_succeeded`,
-     `subscription.created`, `subscription.updated`, `subscription.canceled`,
-     `subscription.past_due` (existing set is fine).
-   - Copy the **secret key** → `PADDLE_WEBHOOK_SECRET` = `pdl_ntfset_…`.
-3. **Developer Tools → Paddle.js** → copy the **client-side token** (live token
-   does **not** start with `test_`) → both `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` and
-   `PADDLE_CLIENT_TOKEN`. Also add your production domain under **Allowed domains**.
-4. **Create live prices** (Catalog → Products):
-   - Products: `Pro`, `Enterprise` (create in live if missing).
-   - Prices (USD):
-     - Pro monthly `$6.00` → `PADDLE_PRICE_PRO`
-     - Pro annual `$57.60` → `PADDLE_PRICE_PRO_ANNUAL`
-     - Enterprise monthly `$15.00` → `PADDLE_PRICE_ENTERPRISE`
-     - Enterprise annual `$144.00` → `PADDLE_PRICE_ENTERPRISE_ANNUAL`
-   - **Script:** once `PADDLE_API_KEY=pdl_live_…` is available, run
-     `PADDLE_API_KEY=pdl_live_… node scripts/paddle-create-annual.js` to create
-     the two annual prices automatically (script now follows the key prefix:
-     sandbox key → sandbox, live key → live).
-5. **Checkout → Default payment link** → point at `https://tonecraft-psi.vercel.app`.
+> ✅ **Done Aug 10 2026** with the live key: products (`Pro`, `Enterprise`),
+> all 4 prices, and the production webhook are **already created** in the live
+> account by `scripts/setup-live-paddle.js`. You only need to:
+> 1. Paste the env values printed below into Vercel (Step 4).
+> 2. Finish **Paddle onboarding** (see step 2.1) — **this is the current blocker**.
+> 3. Swap the API-key permissions to least-privilege (see step 2.2).
+
+**Live account (provisioned):**
+
+| Env var | Live value |
+|---|---|
+| `PADDLE_PRICE_PRO` | `pri_01kznmkkfqz0xsmqyawck8pmmf` ($6.00/mo) |
+| `PADDLE_PRICE_PRO_ANNUAL` | `pri_01kznmkm31zrfgwnhwykdam8zq` ($57.60/yr) |
+| `PADDLE_PRICE_ENTERPRISE` | `pri_01kznmkms8yc74sw01gbb8scej` ($15.00/mo) |
+| `PADDLE_PRICE_ENTERPRISE_ANNUAL` | `pri_01kznmknc9j33qqms485ytq858` ($144.00/yr) |
+| `PADDLE_WEBHOOK_SECRET` | live `pdl_ntfset_…` (printed by the setup script — copy it into Vercel) |
+| `PADDLE_API_KEY` | `pdl_live_…` (the key you already have) |
+
+To re-run provisioning (idempotent — skips what exists):
+`PADDLE_API_KEY=pdl_live_… node scripts/setup-live-paddle.js`
+
+### 2.1 — Finish Paddle onboarding (BLOCKER: checkouts disabled)
+
+The live account currently returns `transaction_checkout_not_enabled`
+("Checkouts aren't enabled for this account… haven't fully completed the Paddle
+onboarding process"). Fix in the dashboard — vendor.paddle.com → **the onboarding
+checklist**:
+
+1. **Business details** — legal name, country, address, VAT/registration number.
+2. **Tax setup** — complete tax registration/rates. Until approved only the
+   `standard` tax category is usable (that's why products were created with it;
+   switch to `digital-goods` later — it doesn't change price IDs).
+3. **Payment methods** — Paddle enables card + wallets for live once review
+   passes.
+4. **Account review/approval** — Paddle reviews the account before checkouts
+   activate.
+
+Until this is done, checkout creation fails even with correct env vars.
+
+### 2.2 — API-key permissions (least privilege)
+
+Your key currently has **everything on**. The app only calls the endpoints
+listed below — switch **OFF** everything not listed (each group:
+*read*/*write* toggles, e.g. `product.read` / `product.write`):
+
+**KEEP ON:**
+
+| Permission | Used by |
+|---|---|
+| `product.read` | billing page lists products |
+| `price.read` | billing page lists prices |
+| `customer.write` | checkout creates the customer |
+| `transaction.read` + `transaction.write` | checkout + refund lookup |
+| `subscription.read` + `subscription.write` | cancel / upgrade / downgrade / status |
+| `adjustment.write` | refunds |
+| `customer_portal_session.write` | "Manage subscription" portal |
+
+**SWITCH OFF:** `discount.*`, `address.*`, `business.*`, `payment_method.*`,
+`checkout_domain.*`, `customer_auth_token.*`, `subscription_history.*`,
+`report.*`, `metrics.*`, `notification.*`, `notification_setting.*`,
+`notification_simulation.*`, `client_token.*` — none are called at runtime.
+(`notification_setting.write` is only needed if you re-run the setup script;
+`product.write`/`price.write` only if you create prices later.)
+
+### 2.3 — Client-side token + domain
+
+1. **Developer Tools → Paddle.js** → copy the **live client token** (does **not**
+   start with `test_`) → `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` and
+   `PADDLE_CLIENT_TOKEN`. Add your domain under **Allowed domains**.
+2. **Checkout → Default payment link** → point at `https://tonecraft-psi.vercel.app`.
 
 ## Step 3 — Cloudflare R2
 
