@@ -1,9 +1,22 @@
 // Creates annual (yearly) prices for Pro & Enterprise products at 20% off monthly.
 // Pro: $6/mo  -> $57.60/yr ; Enterprise: $15/mo -> $144/yr
+//
+// The Paddle environment follows the API key prefix (pdl_sdbx_ = sandbox,
+// pdl_live_ = production), matching the runtime SDK behavior — so the same
+// script creates sandbox prices with a sandbox key and LIVE prices with a
+// live key.
 const { Paddle, Environment } = require("@paddle/paddle-node-sdk");
 
-const paddle = new Paddle(process.env.PADDLE_API_KEY, {
-  environment: Environment.sandbox,
+const apiKey = process.env.PADDLE_API_KEY;
+if (!apiKey) {
+  console.error("PADDLE_API_KEY is required. Set it in the environment first.");
+  process.exit(1);
+}
+const isSandbox = apiKey.startsWith("pdl_sdbx_");
+console.log("Paddle environment:", isSandbox ? "SANDBOX" : "PRODUCTION (live)");
+
+const paddle = new Paddle(apiKey, {
+  environment: isSandbox ? Environment.sandbox : Environment.production,
 });
 
 async function findProduct(paddleInstance, name) {
