@@ -45,15 +45,24 @@ const PLAN_PRICES = [
 ];
 
 async function findProduct(name) {
+  let archived = null;
   for await (const p of paddle.products.list({ status: ["active", "archived"] })) {
-    if (p.name.toLowerCase() === name.toLowerCase()) return p;
+    if (p.name.toLowerCase() !== name.toLowerCase()) continue;
+    if (p.status === "active") return p; // prefer active
+    archived = archived ?? p;
   }
-  return null;
+  return archived;
 }
 
-async function findPrice(productId, interval) {
+// Only accept an existing price when it's ACTIVE and matches the expected
+// amount + currency + interval — otherwise the env var would silently point
+// at a stale/archived/wrong-amount price.
+async function findPrice(productId, interval, amount, currencyCode) {
   for await (const px of paddle.prices.list({ productId, status: ["active", "archived"] })) {
-    if (px.billingCycle?.interval === interval) return px;
+    if (px.billingCycle?.interval !== interval) continue;
+    if (px.status === "active" && px.unitPrice.amount === amount && px.unitPrice.currencyCode === currencyCode) {
+      return px;
+    }
   }
   return null;
 }
@@ -91,7 +100,7 @@ async function findWebhook() {
   // 2. Prices
   const priceIds = {};
   for (const p of PLAN_PRICES) {
-    const existing = await findPrice(products[p.product].id, p.interval);
+    const existing = await findPrice(products[p.product].id, p.interval, p.amount, "USD");
     if (existing) {
       console.log(`FOUND  price: ${p.name} -> ${existing.id} (${existing.unitPrice.amount} ${existing.unitPrice.currencyCode})`);
       priceIds[`${p.product}:${p.interval}`] = existing.id;
@@ -109,8 +118,12 @@ async function findWebhook() {
     priceIds[`${p.product}:${p.interval}`] = created.id;
   }
 
-  // 3. Webhook
+  // 3. Webhook (create if missing, reconcile events if stale)
   let webhook = await findWebhook();
+  const haveEvents = webhook ? webhook.subscribedEvents.map((e) => e.name) : [];
+  const eventsMatch =
+    haveEvents.length === WEBHOOK_EVENTS.length &&
+    WEBHOOK_EVENTS.every((e) => haveEvents.includes(e));
   if (!webhook) {
     webhook = await paddle.notificationSettings.create({
       description: "ToneCraft production webhook",
@@ -119,8 +132,13 @@ async function findWebhook() {
       subscribedEvents: WEBHOOK_EVENTS,
     });
     console.log(`CREATED webhook: ${webhook.id} -> ${webhook.destination}`);
+  } else if (!eventsMatch) {
+    webhook = await paddle.notificationSettings.update(webhook.id, {
+      subscribedEvents: WEBHOOK_EVENTS,
+    });
+    console.log(`UPDATED webhook: ${webhook.id} events -> ${WEBHOOK_EVENTS.length} (was ${haveEvents.length})`);
   } else {
-    console.log(`FOUND  webhook: ${webhook.id} -> ${webhook.destination}`);
+    console.log(`FOUND  webhook: ${webhook.id} -> ${webhook.destination} (events match)`);
   }
 
   // 4. Env-var output
