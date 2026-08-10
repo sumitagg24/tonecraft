@@ -221,6 +221,7 @@ function BillingContent() {
       if (transactionId) {
         try {
           await openPaddleCheckout(transactionId, {
+            fallbackUrl: url,
             onSuccess: () => {
               toast.success("Subscription activated!");
               fetchUsage();
@@ -291,6 +292,7 @@ function BillingContent() {
       if (transactionId) {
         try {
           await openPaddleCheckout(transactionId, {
+            fallbackUrl: url,
             onSuccess: () =>
               setCheckoutTest({
                 ok: true,

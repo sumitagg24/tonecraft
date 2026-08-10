@@ -63,12 +63,14 @@ export function loadPaddle(): Promise<any> {
 }
 
 /**
- * Open Paddle's hosted checkout overlay for a transaction. Falls back by
- * rejecting so callers can navigate to the raw checkout URL instead.
+ * Open Paddle's hosted checkout overlay for a transaction. If the overlay
+ * fails to load, `fallbackUrl` (the transaction's hosted checkout URL) is
+ * navigated to so the user still reaches a payment page instead of a dead
+ * "contact support" overlay.
  */
 export async function openPaddleCheckout(
   transactionId: string,
-  opts?: { onSuccess?: () => void; onError?: () => void }
+  opts?: { onSuccess?: () => void; onError?: () => void; fallbackUrl?: string }
 ): Promise<void> {
   const Paddle = await loadPaddle();
   Paddle.Checkout.open({
@@ -78,8 +80,17 @@ export async function openPaddleCheckout(
     // change validation configured, which would blank the overlay.
     settings: { displayMode: "overlay" },
     eventCallback: (event: any) => {
-      if (event?.name === "checkout-completed") {
+      // Event names are dotted ("checkout.completed", "checkout.error") per
+      // https://developer.paddle.com/paddle-js/events. A dashed name never
+      // matches, so the success callback silently never fired.
+      if (event?.name === "checkout.completed") {
         opts?.onSuccess?.();
+      } else if (event?.name === "checkout.error") {
+        // Overlay could not be opened (unapproved domain / missing default
+        // payment link / env mismatch). Send the user to Paddle's hosted
+        // checkout instead of leaving them on an error frame.
+        opts?.onError?.();
+        if (opts?.fallbackUrl) window.location.assign(opts.fallbackUrl);
       }
     },
   });
