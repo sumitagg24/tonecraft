@@ -10,6 +10,41 @@ Git tags match `package.json` versions exactly.
 
 _No changes yet._
 
+## [1.5.0] - 2026-08-13
+
+### 💳 Paddle payments are LIVE
+
+End-to-end live checkout verified: Paddle hosted checkout opens in **live mode** on `tonecraft-psi.vercel.app` (real Pro plan, $6.00 with GST), with a live client token (`live_…`) baked into the production bundle.
+
+- **Find-or-create Paddle customer by email** — repeated checkouts (the billing-page live probe, users whose DB row lost its provider customer ID) no longer hit `customer_already_exists`; parallel-race safe
+- **Case-insensitive customer lookup** — Paddle lowercases emails but Clerk temp-user emails are mixed-case in the DB; exact-match misses are gone
+- **Live client token deployed** — `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` regenerated via the Paddle API, pushed to Vercel, verified in the served bundle (no sandbox `test_` token leaks)
+- **Paddle environment follows the API key** (not `NODE_ENV`) — sandbox keys authenticate against sandbox-api, live keys against api.paddle.com
+- **Checkout overlay CSP fix** — `paddle.com` + hosted-checkout fallback whitelisted; ProfitWell analytics (`public.profitwell.com`) allowlisted so the overlay opens without console errors
+- **Webhook plan activation + fallback price IDs** — subscription.updated/completed webhooks activate the right plan even when the price mapping lags
+- **Live provisioning tooling** — `scripts/setup-live-paddle.js` (idempotent products/prices/webhook), `scripts/create-live-client-token.js`, `scripts/recheck-live-checkout.js` (onboarding + checkout probe)
+
+### 🔐 Clerk auth fixed in production
+
+- **Clerk `/__clerk` proxy through middleware** — clerk-js bundle now loads in production (the browser was 404ing the JS and refusing to execute HTML), so sign-in/sign-up actually mount
+- **Auth-mount e2e** — asserts the Clerk UI (identifier/password fields + Continue) mounts on `/sign-in` and `/sign-up` across all four viewports, plus an optional sign-in form-submission check
+
+### 📱 Mobile-first chat UI
+
+- Mobile-first chat interface + reply tone fixes (v1.4.0 follow-through): composer controls, tone/tool pickers, message actions usable on touch screens
+
+### 🧪 Viewport e2e suite (Android / iOS / tablet)
+
+- **Mobile viewport Playwright projects** — Pixel 7 + iPhone 13 form factors added to CI as mandatory per-viewport gates
+- **Tablet (iPad Pro 11, md range)** project covering the gap between phones and desktop
+- **Responsive overflow spec** — auth-free public-page horizontal-overflow checks on every viewport
+- **Billing/checkout spec** — `/billing` mount, bundle token↔build-config match, and the live checkout probe with a regression guard on duplicate-customer errors
+- **Billing secrets wired into CI** — the billing spec runs on every PR when sandbox secrets + a real test `DATABASE_URL` are configured
+
+### ✅ Validation
+
+`npm run lint` 0 · `tsc --noEmit` 0 · `npm run build` green · **Playwright 64 passed / 27 skipped / 0 failed** across 4 viewports · Live checkout opens in production (browser-verified)
+
 ## [1.4.0] - 2026-08-08
 
 ### 🔒 LLM provider info fully hidden from users

@@ -42,8 +42,9 @@ const nextConfig: NextConfig = {
                     "default-src 'self'",
                     // Next.js injects inline bootstrap scripts; Clerk loads from its CDN;
                     // Paddle.js loads from cdn.paddle.com and dynamically injects the
-                    // checkout overlay loader (https://*.paddle.com covers it).
-                    "script-src 'self' 'unsafe-inline' https://*.clerk.accounts.dev https://*.paddle.com",
+                    // checkout overlay loader (https://*.paddle.com covers it). Paddle also
+                    // injects its ProfitWell analytics script from public.profitwell.com.
+                    "script-src 'self' 'unsafe-inline' https://*.clerk.accounts.dev https://*.paddle.com https://public.profitwell.com",
                     // Sentry Session Replay spawns its compression worker from a blob URL
                     // (worker-src falls back to script-src when unset, which blocked it).
                     "worker-src 'self' blob:",
@@ -52,8 +53,9 @@ const nextConfig: NextConfig = {
                     "img-src 'self' data: blob: https://images.unsplash.com https://lh3.googleusercontent.com https://avatars.githubusercontent.com https://img.clerk.com https://*.clerk.com https://*.clerk.accounts.dev https://*.r2.dev https://*.paddle.com",
                     "font-src 'self' data:",
                     // Paddle.js talks to api.paddle.com (live) / sandbox-api.paddle.com
-                    // (sandbox) and sends telemetry — https://*.paddle.com covers both.
-                    "connect-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://*.sentry.io https://*.ingest.sentry.io https://*.paddle.com",
+                    // (sandbox) and sends telemetry — https://*.paddle.com covers both;
+                    // ProfitWell analytics also reports from public.profitwell.com.
+                    "connect-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://*.sentry.io https://*.ingest.sentry.io https://*.paddle.com https://public.profitwell.com",
                     "media-src 'self' blob: data: https://*.r2.dev",
                     // Paddle hosted checkout renders in an overlay iframe served from
                     // checkout.paddle.com (live) / sandbox-checkout.paddle.com (sandbox).
