@@ -45,6 +45,10 @@ jobs:
         env:
           # Inlined at build time — only needed to render pages behind Clerk.
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          # Inlined at build time — the billing e2e spec asserts the Paddle.js
+          # client token baked into the bundle matches the build config, so it
+          # must be present here (not only at test runtime).
+          NEXT_PUBLIC_PADDLE_CLIENT_TOKEN: ${{ secrets.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN }}
 
       # Share the production build with the e2e matrix jobs (below) instead of
       # rebuilding per viewport: the cache is keyed on the commit SHA, so each
@@ -86,6 +90,21 @@ jobs:
   # To also run the SIGNED-IN checks (mobile composer/action bar, protected
   # pages, chat flow) on every PR, add a password-verified test account:
   #   E2E_EMAIL, E2E_PASSWORD
+  #
+  # The billing spec (e2e/billing-checkout.spec.ts) runs on ALL projects once
+  # a session is available, and exercises the full Paddle path: /billing UI
+  # mount, bundle client-token match, and the live checkout probe. To enable
+  # it on every PR, add SANDBOX billing secrets (never live — the probe
+  # creates a real, unpaid transaction on each run):
+  #   PADDLE_API_KEY, PADDLE_PRICE_PRO[_ANNUAL], PADDLE_PRICE_ENTERPRISE[_ANNUAL],
+  #   PADDLE_WEBHOOK_SECRET, NEXT_PUBLIC_PADDLE_CLIENT_TOKEN
+  # WARNING: the /billing mount test queries the database (/api/usage,
+  # invoices, history). With E2E_EMAIL/E2E_PASSWORD set but DATABASE_URL still
+  # the dummy value, those routes 500 and the mount test FAILS (500s aren't in
+  # the spec's environmental-error filter) — so enabling billing requires a
+  # real test DATABASE_URL secret. Also keep PADDLE_PRICE_* and PADDLE_API_KEY
+  # from the SAME sandbox account, or the probe passes while silently testing
+  # nothing.
   e2e:
     needs: build-and-test
     if: ${{ secrets.CLERK_SECRET_KEY != '' }}
@@ -125,6 +144,9 @@ jobs:
         env:
           # Inlined at build time — only needed to render pages behind Clerk.
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          # Same build-time inlining as the main build job — the billing token
+          # spec needs this baked into the bundle to pass.
+          NEXT_PUBLIC_PADDLE_CLIENT_TOKEN: ${{ secrets.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN }}
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
@@ -135,11 +157,24 @@ jobs:
         env:
           CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          # Billing secrets — unlock e2e/billing-checkout.spec.ts on every PR:
+          #   PADDLE_API_KEY + PADDLE_PRICE_* run the live checkout probe (a
+          #   real, unpaid Paddle transaction against the sandbox account, so
+          #   use SANDBOX credentials here — never live, or every PR creates
+          #   real transactions). NEXT_PUBLIC_PADDLE_CLIENT_TOKEN also powers
+          #   the bundle-token check at test time.
+          PADDLE_API_KEY: ${{ secrets.PADDLE_API_KEY }}
+          PADDLE_PRICE_PRO: ${{ secrets.PADDLE_PRICE_PRO }}
+          PADDLE_PRICE_PRO_ANNUAL: ${{ secrets.PADDLE_PRICE_PRO_ANNUAL }}
+          PADDLE_PRICE_ENTERPRISE: ${{ secrets.PADDLE_PRICE_ENTERPRISE }}
+          PADDLE_PRICE_ENTERPRISE_ANNUAL: ${{ secrets.PADDLE_PRICE_ENTERPRISE_ANNUAL }}
+          PADDLE_WEBHOOK_SECRET: ${{ secrets.PADDLE_WEBHOOK_SECRET }}
+          NEXT_PUBLIC_PADDLE_CLIENT_TOKEN: ${{ secrets.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN }}
           # Optional: a password-verified test account unlocks the signed-in
           # checks on every PR (skip without them). NOTE: the signed-in specs
-          # hit the database — if you enable them, override DATABASE_URL above
-          # with a real (test) database secret; the dummy URL only serves the
-          # auth-free hydration/responsive checks.
+          # (including /billing mount) hit the database — if you enable them,
+          # override DATABASE_URL above with a real (test) database secret; the
+          # dummy URL only serves the auth-free hydration/responsive checks.
           E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
           E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
 
