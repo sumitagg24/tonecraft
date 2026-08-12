@@ -60,5 +60,12 @@ export const config = {
   // /sign-in and the browser loops forever (observed in dev logs).
   matcher: [
     "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    // Clerk's frontend API proxy lives at /__clerk/* and MUST always run
+    // through clerkMiddleware — including the .js clerk-js bundle at
+    // /__clerk/npm/... The static-asset exclusion above would otherwise
+    // skip it, Next.js would serve its own 404 HTML for it, and the browser
+    // would refuse to execute it ("MIME type text/html not executable"),
+    // leaving /sign-in and /sign-up completely blank in production.
+    "/__clerk(.*)",
   ],
 };
