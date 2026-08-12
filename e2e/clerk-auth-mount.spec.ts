@@ -81,7 +81,7 @@ const storageState = process.env.E2E_STORAGE_STATE;
 
 test.describe("sign-in form submission", () => {
   test.skip(
-    storageState || !testEmail || !testPassword,
+    Boolean(storageState) || !testEmail || !testPassword,
     "Set E2E_EMAIL and E2E_PASSWORD (a password-verified test account, no E2E_STORAGE_STATE) to run the sign-in submission check"
   );
 
