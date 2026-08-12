@@ -1,5 +1,10 @@
 import { test, expect } from "@playwright/test";
-import { captureErrors, assertNoClientErrors } from "./utils";
+import {
+  captureErrors,
+  assertNoClientErrors,
+  interactiveLogin,
+  isEnvironmentalError,
+} from "./utils";
 
 /**
  * Auth UI mount regression guard.
@@ -63,3 +68,48 @@ for (const { path, component, emailInput, passwordInput } of AUTH_PAGES) {
     assertNoClientErrors(errors, `${path} (Clerk mount)`);
   });
 }
+
+// ── Sign-in form submission ─────────────────────────────────────────────
+// Goes one step past mounting: fills the real form with a password-verified
+// test account (E2E_EMAIL/E2E_PASSWORD, same convention as
+// signed-in-smoke.spec.ts) and asserts the submit actually establishes a
+// session. Skipped with a hint when no test account is configured, or when
+// the Clerk instance demands email verification (cannot be automated).
+const testEmail = process.env.E2E_EMAIL;
+const testPassword = process.env.E2E_PASSWORD;
+const storageState = process.env.E2E_STORAGE_STATE;
+
+test.describe("sign-in form submission", () => {
+  test.skip(
+    storageState || !testEmail || !testPassword,
+    "Set E2E_EMAIL and E2E_PASSWORD (a password-verified test account, no E2E_STORAGE_STATE) to run the sign-in submission check"
+  );
+
+  test("/sign-in form submits and establishes a session", async ({ page }) => {
+    const errors = captureErrors(page);
+
+    const result = await interactiveLogin(page, testEmail as string, testPassword as string);
+    if (result === "verify") {
+      test.skip(
+        true,
+        "Clerk dev instance requires email verification — use E2E_STORAGE_STATE with an established session"
+      );
+    }
+
+    // Interactive login landed on /chat → the session is real. The app shell
+    // must render, then let hydration + effects settle (same convention as
+    // signed-in-smoke.spec.ts) before asserting no client errors — a freshly
+    // mounted chat workspace can otherwise emit transient console noise.
+    await expect(page).toHaveURL(/\/chat/, { timeout: 15_000 });
+    await expect(page.locator("body")).not.toBeEmpty();
+    await page.waitForTimeout(750);
+
+    // Filter the app's deliberate environmental errors (429 rate limits under
+    // parallel load, 502 placeholder-provider keys) from the client-error
+    // assertion, same as the other signed-in specs.
+    assertNoClientErrors(
+      errors.filter((e) => !isEnvironmentalError(e)),
+      "sign-in submission"
+    );
+  });
+});
