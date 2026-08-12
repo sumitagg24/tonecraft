@@ -1,4 +1,4 @@
-import { Paddle, Environment } from "@paddle/paddle-node-sdk";
+import { Paddle, Environment, ApiError } from "@paddle/paddle-node-sdk";
 import type { PaymentProvider } from "../../PaymentProvider";
 import type {
   CustomerInput,
@@ -34,11 +34,54 @@ export class PaddleProvider implements PaymentProvider {
   }
 
   async createCustomer(input: CustomerInput): Promise<CustomerResult> {
-    const customer = await this.paddle.customers.create({
-      email: input.email,
-      name: input.name,
-    });
-    return { customerId: customer.id };
+    // Find-or-create: Paddle customers are unique per email, and repeated
+    // checkouts (e.g. the billing-page live probe, or a user whose DB row lost
+    // its providerCustomerId) used to hit `customer_already_exists` on the
+    // second run because we always called customers.create. Looking up first
+    // and reusing the existing customer is idempotent — no junk customers, no
+    // duplicate-email errors.
+    const existing = await this.findCustomerByEmail(input.email);
+    if (existing) return { customerId: existing };
+
+    try {
+      const customer = await this.paddle.customers.create({
+        email: input.email,
+        name: input.name,
+      });
+      return { customerId: customer.id };
+    } catch (err) {
+      // Parallel checkouts with the same email (e.g. several e2e viewports
+      // probing at once) can race — another request may have created the
+      // customer between our lookup and create. Only in that specific case
+      // (customer_already_exists) reuse the winner; any other error is real
+      // and must surface (don't mask it with a re-lookup).
+      if (err instanceof ApiError && err.code === "customer_already_exists") {
+        const raced = await this.findCustomerByEmail(input.email);
+        if (raced) return { customerId: raced };
+      }
+      throw err;
+    }
+  }
+
+  /**
+   * Exact-match lookup by email. The `email` filter is immediate (the `search`
+   * param lags newly-created customers), so this reliably finds existing
+   * customers right after creation.
+   */
+  private async findCustomerByEmail(email: string): Promise<string | null> {
+    try {
+      const needle = email.toLowerCase();
+      for await (const customer of this.paddle.customers.list({ email: [email] })) {
+        // Paddle stores emails lowercased, but Clerk's temp-user emails are
+        // mixed-case in our DB — compare case-insensitively or the lookup
+        // misses and we fall through to create (customer_already_exists).
+        if (customer.email.toLowerCase() === needle) return customer.id;
+      }
+    } catch {
+      // Best-effort: if the lookup fails (e.g. permission), fall through to
+      // create and let Paddle surface the real error.
+    }
+    return null;
   }
 
   async createCheckout(input: CheckoutInput): Promise<CheckoutResult> {

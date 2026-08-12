@@ -51,13 +51,22 @@ const paddleApiKey = envOrLocal("PADDLE_API_KEY");
 const paddleToken = envOrLocal("NEXT_PUBLIC_PADDLE_CLIENT_TOKEN");
 
 /**
- * Billing-specific environmental console noise. A 503 from /api/billing/checkout
- * is the app DELIBERATELY surfacing the provider's "not configured" state (e.g.
- * missing default payment link) as a visible result — the browser logs it as a
- * console error, but it's not a client bug. Success (200) produces no error.
+ * Billing-specific environmental console noise:
+ *  - A 503 from /api/billing/checkout is the app DELIBERATELY surfacing the
+ *    provider's "not configured" state (e.g. missing default payment link) as
+ *    a visible result — the browser logs it as a console error, but it's not a
+ *    client bug.
+ *  - The Paddle.js checkout overlay embeds buy.paddle.com in an iframe; the
+ *    sandbox/live buy domain emits a REPORT-ONLY CSP `frame-ancestors` notice
+ *    when framed ("no further action has been taken"). Benign third-party
+ *    noise that appears precisely when the overlay successfully opens.
  */
 function isBillingEnvironmentalError(message: string): boolean {
-  return isEnvironmentalError(message) || /status of 503/.test(message);
+  return (
+    isEnvironmentalError(message) ||
+    /status of 503/.test(message) ||
+    /frame-ancestors.*no further action has been taken/.test(message)
+  );
 }
 
 test.describe("billing / Paddle checkout", () => {
@@ -197,6 +206,16 @@ test.describe("billing / Paddle checkout", () => {
     await expect(resultPanel).toBeVisible();
     const panelText = (await resultPanel.innerText()).trim();
     expect(panelText.length, "checkout probe should render a non-empty result").toBeGreaterThan(10);
+
+    // Regression guard for the find-or-create fix: the probe must NEVER surface
+    // a duplicate-customer error on repeated runs (it reuses the existing
+    // Paddle customer for the account's email). Without this, the test passes
+    // on both "Success" and any "Checkout failed" panel, so a regression back
+    // to customer_already_exists would go unnoticed.
+    expect(
+      panelText,
+      "repeated probe runs must not hit customer_already_exists (find-or-create should reuse the customer)"
+    ).not.toMatch(/conflicts with customer|already exists/i);
 
     assertNoClientErrors(
       errors.filter((e) => !isBillingEnvironmentalError(e)),
