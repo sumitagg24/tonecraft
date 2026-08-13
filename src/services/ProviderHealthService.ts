@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { Redis } from "@upstash/redis";
 import { ListObjectsV2Command } from "@aws-sdk/client-s3";
-import { getR2Client } from "@/lib/r2";
+import { getStorageClient, isStorageConfigured } from "@/lib/storage";
 import type { ProviderName } from "@/config/models";
 
 export type ProviderStatus = "healthy" | "degraded" | "offline";
@@ -114,13 +114,17 @@ class ProviderHealthService {
     const checks = [
       this.checkDatabase(force),
       this.checkRedis(force),
-      this.checkStorage(force),
       this.checkHttpProvider(HTTP_PROVIDERS[0], force),
       this.checkHttpProvider(HTTP_PROVIDERS[1], force),
       this.checkHttpProvider(HTTP_PROVIDERS[2], force),
       this.checkHttpProvider(HTTP_PROVIDERS[3], force),
       this.checkHttpProvider(HTTP_PROVIDERS[4], force),
     ];
+    // Storage (chat attachments) is optional — skip the probe entirely when
+    // no storage backend is configured so its absence never degrades the report.
+    if (isStorageConfigured()) {
+      checks.push(this.checkStorage(force));
+    }
 
     const results = await Promise.all(checks);
 
@@ -231,25 +235,23 @@ class ProviderHealthService {
     const detail = this.getCached(name);
     if (detail && this.isCacheFresh(name, force)) return detail;
 
-    const accountId = process.env.R2_ACCOUNT_ID;
-    const accessKey = process.env.R2_ACCESS_KEY_ID;
-    const secretKey = process.env.R2_SECRET_ACCESS_KEY;
-    const bucket = process.env.R2_BUCKET_NAME;
-    if (!accountId || !accessKey || !secretKey || !bucket) {
+    const bucket = process.env.STORAGE_BUCKET_NAME;
+    if (!isStorageConfigured() || !bucket) {
+      // Not reached via checkAll (gated there), but kept honest for direct calls.
       return this.setCache({
         name,
         status: "degraded",
         lastChecked: new Date(),
-        error: "R2_* env vars not configured",
+        error: "Storage is not configured",
       });
     }
 
     const start = Date.now();
     try {
-      // Signed S3 ListObjects probe via the app's R2 client (unsigned requests
-      // are rejected by R2 with 403, so a raw fetch could never be healthy).
+      // Signed S3 ListObjects probe via the app's storage client (unsigned
+      // requests are rejected with 403, so a raw fetch could never be healthy).
       await Promise.race([
-        getR2Client().send(new ListObjectsV2Command({ Bucket: bucket, MaxKeys: 1 })),
+        getStorageClient().send(new ListObjectsV2Command({ Bucket: bucket, MaxKeys: 1 })),
         new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error("timeout")), HEALTH_CHECK_TIMEOUT_MS)
         ),

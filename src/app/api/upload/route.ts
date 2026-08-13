@@ -1,6 +1,6 @@
 import { ok, fail, withApiHandler } from "@/lib/withApiHandler";
 import { prisma } from "@/lib/prisma";
-import { getR2Client } from "@/lib/r2";
+import { getStorageClient, isStorageConfigured } from "@/lib/storage";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { v4 as uuidv4 } from "uuid";
 import { capabilities } from "@/lib/capabilities";
@@ -66,9 +66,13 @@ export const POST = api.POST(async (ctx) => {
 
   const key = `uploads/${ctx.user.id}/${uuidv4()}-${safeName}`;
 
-  await getR2Client().send(
+  if (!isStorageConfigured()) {
+    return fail("SERVICE_UNAVAILABLE", "File storage is not configured", 503);
+  }
+
+  await getStorageClient().send(
     new PutObjectCommand({
-      Bucket: process.env.R2_BUCKET_NAME,
+      Bucket: process.env.STORAGE_BUCKET_NAME,
       Key: key,
       Body: Buffer.from(bytes),
       ContentType: safeMimeType,
@@ -76,7 +80,7 @@ export const POST = api.POST(async (ctx) => {
     })
   );
 
-  const publicUrl = `${process.env.R2_PUBLIC_URL}/${key}`;
+  const publicUrl = `${process.env.STORAGE_PUBLIC_URL}/${key}`;
 
   // Save attachment to DB if messageId provided
   if (messageId) {

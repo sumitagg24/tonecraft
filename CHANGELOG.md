@@ -8,7 +8,12 @@ Git tags match `package.json` versions exactly.
 
 ## [Unreleased]
 
-_No changes yet._
+### 📁 Storage made optional + Backblaze B2 support
+
+- **Storage (chat attachments) is now optional** — `startup-validation` no longer refuses to boot without storage, the health check skips the storage probe (no more `storage: degraded` on `/api/health` when unconfigured), and `/api/upload` returns a clean `503` instead of crashing
+- **Generic S3-compatible storage layer** — `src/lib/r2.ts` replaced by `src/lib/storage.ts` (`STORAGE_ENDPOINT` / `STORAGE_REGION` / `STORAGE_ACCESS_KEY_ID` / `STORAGE_SECRET_ACCESS_KEY` / `STORAGE_BUCKET_NAME` / `STORAGE_PUBLIC_URL`), `forcePathStyle` for Backblaze B2, region auto-derived from the B2 endpoint host
+- **Placeholder detection** — values like `...` / `your-…` / short strings are treated as unconfigured, so stale placeholders can't make the health check report degraded
+- Ops tooling updated (`scripts/probe-r2.cjs`, `scripts/production-cutover.js` — storage now validated as optional), docs + README + `.env.example` updated
 
 ## [1.5.0] - 2026-08-13
 

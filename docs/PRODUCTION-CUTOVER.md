@@ -25,11 +25,11 @@ Move ToneCraft from development/sandbox to production across **Clerk**, **Paddle
 | Paddle | `PADDLE_PRICE_*` (4) | sandbox `pri_…` | **live `pri_…` ✅ created (see Step 2)** |
 | Paddle | Onboarding | — | **❌ checkouts not enabled — must finish onboarding (Step 2.1)** |
 | App | `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` | `https://tonecraft-psi.vercel.app` |
-| R2 | `R2_ACCOUNT_ID` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | `...` placeholders | real Cloudflare creds |
+| Storage | `STORAGE_ENDPOINT` / `STORAGE_ACCESS_KEY_ID` / `STORAGE_SECRET_ACCESS_KEY` | `...` placeholders | real Backblaze B2 creds (or R2) |
 | LLM | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` | placeholders | real keys (or delete — GROQ/OpenRouter/Google already set) |
 
 Everything else (`DATABASE_URL`, `DIRECT_URL`, Upstash, `CRON_SECRET`, Sentry,
-`R2_BUCKET_NAME`, `R2_PUBLIC_URL`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`,
+`STORAGE_BUCKET_NAME`, `STORAGE_PUBLIC_URL`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`,
 `GOOGLE_AI_API_KEY`) is already set.
 
 ---
@@ -124,14 +124,17 @@ listed below — switch **OFF** everything not listed (each group:
    `PADDLE_CLIENT_TOKEN`. Add your domain under **Allowed domains**.
 2. **Checkout → Default payment link** → point at `https://tonecraft-psi.vercel.app`.
 
-## Step 3 — Cloudflare R2
+## Step 3 — File storage (Backblaze B2, optional)
 
-1. cloudflare.com → **R2 → Overview** → copy **Account ID** → `R2_ACCOUNT_ID`.
-2. **Manage R2 API Tokens** → create a token with **Object Read & Write** on the
-   `tonecraft-uploads` bucket → copy **Access Key ID** → `R2_ACCESS_KEY_ID` and
-   **Secret Access Key** → `R2_SECRET_ACCESS_KEY`.
-3. Confirm `R2_BUCKET_NAME` (`tonecraft-uploads`) and `R2_PUBLIC_URL`
-   (`https://pub-….r2.dev`) match the bucket.
+1. backblazeb2.com → create account → **B2 Cloud Storage** → create a bucket
+   (e.g. `tonecraft-uploads`), set **Files in this bucket are public**.
+2. **Application Keys** → *Add a New Application Key* → save the **keyID** and
+   **applicationKey** (shown once).
+3. Set `STORAGE_ENDPOINT=https://s3.<region>.backblazeb2.com`,
+   `STORAGE_REGION=<region>`, `STORAGE_ACCESS_KEY_ID=<keyID>`,
+   `STORAGE_SECRET_ACCESS_KEY=<applicationKey>`, `STORAGE_BUCKET_NAME=<bucket>`,
+   `STORAGE_PUBLIC_URL=https://<bucket>.s3.<region>.backblazeb2.com`.
+   (Cloudflare R2 also works — same vars, R2 endpoint + creds.)
 
 ## Step 4 — Vercel (vercel.com/dashboard → tonecraft-psi project)
 
@@ -142,7 +145,7 @@ listed below — switch **OFF** everything not listed (each group:
    set every variable from Steps 1–3 plus:
    - `NEXT_PUBLIC_APP_URL` = `https://tonecraft-psi.vercel.app`
    - `DATABASE_URL` / `DIRECT_URL` (Neon production DB, pooled + direct)
-   - Keep Upstash, Sentry, `CRON_SECRET`, `R2_BUCKET_NAME`, `R2_PUBLIC_URL`,
+   - Keep Upstash, Sentry, `CRON_SECRET`, `STORAGE_BUCKET_NAME`, `STORAGE_PUBLIC_URL`,
      and at least one LLM key (`GROQ_API_KEY` / `OPENROUTER_API_KEY` /
      `GOOGLE_AI_API_KEY`) — all already present.
    - `NEXT_PUBLIC_CLERK_*` URL/redirect vars are already set (`/sign-in`,

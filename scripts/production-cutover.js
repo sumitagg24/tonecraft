@@ -36,11 +36,6 @@ const prodRequired = [
   { key: "PADDLE_PRICE_ENTERPRISE", ok: (v) => /^pri_/.test(v), want: "pri_… (live price)" },
   { key: "PADDLE_PRICE_ENTERPRISE_ANNUAL", ok: (v) => /^pri_/.test(v), want: "pri_… (live price)" },
   { key: "NEXT_PUBLIC_APP_URL", ok: (v) => /^https:\/\//.test(v), want: "https://tonecraft-psi.vercel.app" },
-  { key: "R2_ACCOUNT_ID", ok: (v) => v.length > 10 && v !== "...", want: "Cloudflare account id (32 hex)" },
-  { key: "R2_ACCESS_KEY_ID", ok: (v) => v.length > 10 && v !== "...", want: "R2 access key id" },
-  { key: "R2_SECRET_ACCESS_KEY", ok: (v) => v.length > 10 && v !== "...", want: "R2 secret access key" },
-  { key: "R2_BUCKET_NAME", ok: (v) => v.length > 3 && v !== "...", want: "bucket name (e.g. tonecraft-uploads)" },
-  { key: "R2_PUBLIC_URL", ok: (v) => /^https:\/\//.test(v) && v !== "...", want: "https://pub-….r2.dev" },
   { key: "DATABASE_URL", ok: (v) => /postgres(ql)?:\/\//.test(v), want: "Neon pooled connection string" },
   { key: "DIRECT_URL", ok: (v) => /postgres(ql)?:\/\//.test(v), want: "Neon direct connection string" },
   { key: "CRON_SECRET", ok: (v) => v.length >= 32, want: "random secret (≥32 chars)" },
@@ -51,6 +46,15 @@ const prodRequired = [
 const optional = [
   "GROQ_API_KEY", "OPENROUTER_API_KEY", "GOOGLE_AI_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY",
   "SENTRY_DSN", "SENTRY_AUTH_TOKEN", "SENTRY_ORG", "SENTRY_PROJECT",
+];
+
+// File storage (chat attachments) is optional — validated when present, never a hard fail.
+const optionalStorage = [
+  { key: "STORAGE_ENDPOINT", ok: (v) => /^https:\/\//.test(v) && v !== "...", want: "https://s3.<region>.backblazeb2.com (or R2 endpoint)" },
+  { key: "STORAGE_ACCESS_KEY_ID", ok: (v) => v.length > 10 && v !== "...", want: "storage access key id" },
+  { key: "STORAGE_SECRET_ACCESS_KEY", ok: (v) => v.length > 10 && v !== "...", want: "storage secret access key" },
+  { key: "STORAGE_BUCKET_NAME", ok: (v) => v.length > 3 && v !== "...", want: "bucket name (e.g. tonecraft-uploads)" },
+  { key: "STORAGE_PUBLIC_URL", ok: (v) => /^https:\/\//.test(v) && v !== "...", want: "https://<bucket>.s3.<region>.backblazeb2.com" },
 ];
 
 function mask(v) {
@@ -75,6 +79,13 @@ for (const k of optional) {
   const placeholder = !v || /your-|placeholder|^\.\.\.$/.test(v);
   if (!placeholder) pass++;
   console.log((placeholder ? "⚠️" : "✅") + " " + k.padEnd(32) + (placeholder ? (v ? "PLACEHOLDER: " + mask(v) : "MISSING") : "set"));
+}
+console.log("\n=== OPTIONAL FILE STORAGE (chat attachments) ===");
+for (const c of optionalStorage) {
+  const v = env[c.key];
+  const ok = !!v && c.ok(v);
+  if (ok) pass++;
+  console.log((ok ? "✅" : "⚠️") + " " + c.key.padEnd(36) + (ok ? "OK" : (v ? "NEEDS: " + c.want : "MISSING — attachments disabled")));
 }
 console.log("\nRESULT: " + pass + " ok, " + fail + " need attention");
 
