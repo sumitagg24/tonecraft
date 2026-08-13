@@ -50,7 +50,7 @@ export const POST = api.POST(async (ctx) => {
 
   const created = await knowledgeService.create(ctx.user.id, file.name, buffer, projectId);
 
-  // Account for the upload against usage counters (same as /api/upload).
+  // Account for the upload against usage counters (knowledge files live in Postgres).
   await prisma.usage.upsert({
     where: { userId: ctx.user.id },
     create: {

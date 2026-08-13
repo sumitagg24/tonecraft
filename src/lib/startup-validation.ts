@@ -4,7 +4,7 @@ import { getAllModels } from "@/config/models";
  * Startup configuration validation (audit 12 P0.8).
  *
  * - Production runtime (server): MISSING critical env vars throw at boot
- *   (fail fast). Critical = database, auth, rate limiting, storage.
+ *   (fail fast). Critical = database, auth, rate limiting.
  * - Development / client bundle / `next build`: warnings only, never throws.
  *
  * Guards:
@@ -20,14 +20,6 @@ const CRITICAL_ENV_KEYS = [
   "CLERK_SECRET_KEY",
   "UPSTASH_REDIS_REST_URL",
   "UPSTASH_REDIS_REST_TOKEN",
-] as const;
-
-/** Optional storage (any S3-compatible endpoint: Backblaze B2, Cloudflare R2) — powers chat attachments only. */
-const STORAGE_ENV_KEYS = [
-  "STORAGE_ENDPOINT",
-  "STORAGE_ACCESS_KEY_ID",
-  "STORAGE_SECRET_ACCESS_KEY",
-  "STORAGE_BUCKET_NAME",
 ] as const;
 
 function getMissingCritical(): string[] {
@@ -50,11 +42,6 @@ function isRateLimitConfigured(): boolean {
 
 export function validateConfig(): string[] {
   const warnings: string[] = [];
-
-  const missingStorage = STORAGE_ENV_KEYS.filter((k) => !process.env[k]);
-  if (missingStorage.length > 0) {
-    warnings.push("File storage is not configured — chat file attachments will be unavailable.");
-  }
 
   const missingLLM = getMissingLLMKeys();
   if (missingLLM.length === 5) {

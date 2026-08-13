@@ -8,12 +8,16 @@ Git tags match `package.json` versions exactly.
 
 ## [Unreleased]
 
-### 📁 Storage made optional + Backblaze B2 support
+### 🗑️ File storage (R2 / Backblaze B2) fully removed
 
-- **Storage (chat attachments) is now optional** — `startup-validation` no longer refuses to boot without storage, the health check skips the storage probe (no more `storage: degraded` on `/api/health` when unconfigured), and `/api/upload` returns a clean `503` instead of crashing
-- **Generic S3-compatible storage layer** — `src/lib/r2.ts` replaced by `src/lib/storage.ts` (`STORAGE_ENDPOINT` / `STORAGE_REGION` / `STORAGE_ACCESS_KEY_ID` / `STORAGE_SECRET_ACCESS_KEY` / `STORAGE_BUCKET_NAME` / `STORAGE_PUBLIC_URL`), `forcePathStyle` for Backblaze B2, region auto-derived from the B2 endpoint host
-- **Placeholder detection** — values like `...` / `your-…` / short strings are treated as unconfigured, so stale placeholders can't make the health check report degraded
-- Ops tooling updated (`scripts/probe-r2.cjs`, `scripts/production-cutover.js` — storage now validated as optional), docs + README + `.env.example` updated
+- **Storage layer deleted** — `src/lib/storage.ts`, `src/app/api/upload/route.ts`, and `scripts/probe-r2.cjs` are gone; `@aws-sdk/client-s3` uninstalled. Chat attachments were the only consumer, and they're not needed for launch — knowledge-base files already live in Postgres
+- **Paperclip attachment UI removed from the composer** — no dead button, no broken uploads (matches the "every button must work or be removed" UX rule)
+- **Health check simplified** — `checkStorage` dropped; `/api/health` reports exactly the real providers (DB, Redis, AI, Clerk, Paddle)
+- **Boot + env hygiene** — `startup-validation` no longer mentions storage; `STORAGE_*` vars removed from `.env.example`, README, `docs/PRODUCTION-CUTOVER.md`, `scripts/production-cutover.js`, and `.env.local`
+
+### 🔒 Subscription access helper hardened (Paddle fulfillment)
+
+- `PlanService.getPlan` now keeps **`past_due`** subscribers on their paid tier — Paddle retries payment for a grace period, so customers keep features mid-retry. Access is revoked only on actual cancellation/pause (`scheduled_change` never revokes). Matches the fulfillment spec's "only revoke when status is actually canceled"
 
 ## [1.5.0] - 2026-08-13
 

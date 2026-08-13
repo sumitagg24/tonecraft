@@ -157,6 +157,51 @@ async function syncSubscription(normalized: { type: string; data: Record<string,
       });
       break;
     }
+    case "subscription.paused": {
+      // Explicit pause = not paying = no paid access (PlanService only grants
+      // active/trialing/past_due). A scheduled pause (effective next period)
+      // never sends this event — status stays "active" until it actually pauses.
+      await prisma.subscription.upsert({
+        where: { userId },
+        create: {
+          userId,
+          paymentProvider: "paddle",
+          providerSubscriptionId: subscriptionId,
+          providerPriceId: priceId,
+          providerCustomerId: customerId,
+          plan: planFromPriceId(priceId),
+          status: "paused",
+          currentPeriodStart: periodStart,
+          currentPeriodEnd: periodEnd,
+          cancelAtPeriodEnd: isCanceled,
+        },
+        update: {
+          status: "paused",
+          providerSubscriptionId: subscriptionId,
+          providerPriceId: priceId,
+          providerCustomerId: customerId,
+          currentPeriodStart: periodStart,
+          currentPeriodEnd: periodEnd,
+          cancelAtPeriodEnd: isCanceled,
+        },
+      });
+
+      void auditLogService.record("billing.subscribe", "subscription", {
+        actorId: userId,
+        resourceId: subscriptionId,
+        metadata: { eventType: normalized.type, status: "paused" },
+      });
+      break;
+    }
+    case "subscription.payment_succeeded": {
+
+      void auditLogService.record("billing.unsubscribe", "subscription", {
+        actorId: userId,
+        resourceId: subscriptionId,
+        metadata: { eventType: normalized.type },
+      });
+      break;
+    }
     case "subscription.payment_succeeded": {
       await prisma.subscription.upsert({
         where: { userId },
@@ -178,12 +223,25 @@ async function syncSubscription(normalized: { type: string; data: Record<string,
       break;
     }
     case "subscription.payment_failed": {
+      // Create-branch mirrors the created/updated fields so an out-of-order
+      // delivery (payment_failed arriving before subscription.created/updated)
+      // still lands a correct row — plan from the price so a past_due paying
+      // customer keeps their tier instead of silently dropping to "free".
+      // Update only flips status; never touches plan/periods (payment_failed
+      // events may omit items, and a null price must not downgrade a real tier).
       await prisma.subscription.upsert({
         where: { userId },
         create: {
           userId,
           paymentProvider: "paddle",
+          providerSubscriptionId: subscriptionId,
+          providerPriceId: priceId,
+          providerCustomerId: customerId,
+          plan: planFromPriceId(priceId),
           status: "past_due",
+          currentPeriodStart: periodStart,
+          currentPeriodEnd: periodEnd,
+          cancelAtPeriodEnd: isCanceled,
         },
         update: {
           status: "past_due",

@@ -48,15 +48,6 @@ const optional = [
   "SENTRY_DSN", "SENTRY_AUTH_TOKEN", "SENTRY_ORG", "SENTRY_PROJECT",
 ];
 
-// File storage (chat attachments) is optional — validated when present, never a hard fail.
-const optionalStorage = [
-  { key: "STORAGE_ENDPOINT", ok: (v) => /^https:\/\//.test(v) && v !== "...", want: "https://s3.<region>.backblazeb2.com (or R2 endpoint)" },
-  { key: "STORAGE_ACCESS_KEY_ID", ok: (v) => v.length > 10 && v !== "...", want: "storage access key id" },
-  { key: "STORAGE_SECRET_ACCESS_KEY", ok: (v) => v.length > 10 && v !== "...", want: "storage secret access key" },
-  { key: "STORAGE_BUCKET_NAME", ok: (v) => v.length > 3 && v !== "...", want: "bucket name (e.g. tonecraft-uploads)" },
-  { key: "STORAGE_PUBLIC_URL", ok: (v) => /^https:\/\//.test(v) && v !== "...", want: "https://<bucket>.s3.<region>.backblazeb2.com" },
-];
-
 function mask(v) {
   // print only the class prefix (e.g. pdl_sdbx_, pk_test_, test_) + length —
   // never any actual key material
@@ -79,13 +70,6 @@ for (const k of optional) {
   const placeholder = !v || /your-|placeholder|^\.\.\.$/.test(v);
   if (!placeholder) pass++;
   console.log((placeholder ? "⚠️" : "✅") + " " + k.padEnd(32) + (placeholder ? (v ? "PLACEHOLDER: " + mask(v) : "MISSING") : "set"));
-}
-console.log("\n=== OPTIONAL FILE STORAGE (chat attachments) ===");
-for (const c of optionalStorage) {
-  const v = env[c.key];
-  const ok = !!v && c.ok(v);
-  if (ok) pass++;
-  console.log((ok ? "✅" : "⚠️") + " " + c.key.padEnd(36) + (ok ? "OK" : (v ? "NEEDS: " + c.want : "MISSING — attachments disabled")));
 }
 console.log("\nRESULT: " + pass + " ok, " + fail + " need attention");
 
@@ -113,7 +97,7 @@ async function verifyLivePaddle() {
               const p = j.data;
               if (p) console.log("✅ " + k.padEnd(32) + id + "  " + p.name + "  " + (p.unit_price ? p.unit_price.amount + " " + p.unit_price.currency_code : "") + "  [" + p.status + "]");
               else console.log("❌ " + k.padEnd(32) + id + "  NOT FOUND in live account");
-            } catch (e) {
+            } catch {
               console.log("❌ " + k.padEnd(32) + " error: " + d.slice(0, 120));
             }
             resolve();

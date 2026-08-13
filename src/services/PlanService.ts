@@ -44,8 +44,14 @@ export class PlanService {
       select: { plan: true, status: true },
     });
 
+    // Access helper: a subscription grants paid access while `active` or
+    // `trialing` — and also while `past_due`, because Paddle keeps retrying
+    // payment for a grace period and the customer shouldn't lose features
+    // mid-retry. Access is revoked only when the subscription is actually
+    // canceled (or explicitly paused). A scheduled_change (cancel/pause at
+    // period end) does NOT revoke access.
     const tier =
-      sub && (sub.status === "active" || sub.status === "trialing")
+      sub && isAccessGrantingStatus(sub.status)
         ? tierFromString(sub.plan)
         : PlanTier.FREE;
 
@@ -58,6 +64,10 @@ export class PlanService {
     cache.delete(userId);
     await cacheDel(`plan:${userId}`);
   }
+}
+
+function isAccessGrantingStatus(status: string | null): boolean {
+  return status === "active" || status === "trialing" || status === "past_due";
 }
 
 export const planService = new PlanService();

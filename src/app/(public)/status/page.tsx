@@ -23,7 +23,6 @@ interface HealthPayload {
 const ICONS: Record<string, React.ElementType> = {
   database: Database,
   redis: Server,
-  storage: Server,
   clerk: Activity,
   paddle: Activity,
 };
@@ -31,7 +30,6 @@ const ICONS: Record<string, React.ElementType> = {
 const LABELS: Record<string, string> = {
   database: "PostgreSQL",
   redis: "Redis (Upstash)",
-  storage: "Storage (R2)",
   clerk: "Clerk Auth",
   paddle: "Paddle Billing",
 };
@@ -39,7 +37,7 @@ const LABELS: Record<string, string> = {
 // AI backends are intentionally aggregated — we never disclose which third-party
 // model infrastructure powers the writing engine.
 const AI_PROVIDER_KEYS = ["groq", "gemini", "openrouter"];
-const FALLBACK_NAMES = ["database", "redis", "storage", "ai", "clerk", "paddle"];
+const FALLBACK_NAMES = ["database", "redis", "ai", "clerk", "paddle"];
 
 function StatusPill({ status }: { status: ProviderStatus["status"] }) {
   const styles = {

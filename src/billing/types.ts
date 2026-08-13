@@ -32,6 +32,7 @@ export type WebhookEventType =
   | "subscription.created"
   | "subscription.updated"
   | "subscription.cancelled"
+  | "subscription.paused"
   | "subscription.payment_succeeded"
   | "subscription.payment_failed"
   | "ignored";

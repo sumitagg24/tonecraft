@@ -227,6 +227,8 @@ export class PaddleProvider implements PaymentProvider {
         return "subscription.updated";
       case "subscription.canceled":
         return "subscription.cancelled";
+      case "subscription.paused":
+        return "subscription.paused";
       case "transaction.completed":
       case "transaction.paid":
         return "subscription.payment_succeeded";

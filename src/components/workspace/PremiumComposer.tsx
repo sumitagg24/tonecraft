@@ -3,7 +3,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Send, Loader2, X, ChevronDown, Sliders,
-  Globe, Paperclip, Square, Check, Wand2, Users, BookOpenCheck, Mic,
+  Globe, Square, Check, Wand2, Users, BookOpenCheck, Mic,
 } from "lucide-react";
 import { useChatStore } from "@/stores/chat-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
@@ -21,31 +21,16 @@ import { duration, ease } from "@/styles/motion";
 import { toast } from "sonner";
 import { useRecentTools } from "@/hooks/use-recent-tools";
 
-const ALLOWED_MIME_TYPES = new Set([
-  "image/jpeg", "image/png", "image/gif", "image/webp",
-  "application/pdf", "text/plain", "text/html", "text/css",
-  "text/javascript", "application/json", "application/xml",
-  "audio/mpeg", "audio/wav",
-]);
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
-
 interface PremiumComposerProps {
   chatId: string;
   onSend: (content: string, chatId: string, opts?: { knowledgeFileIds?: string[] }) => Promise<void>;
   onStop?: () => void;
 }
 
-interface PendingAttachment {
-  id: string;
-  file: File;
-}
-
 export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps) {
   const [input, setInput] = useState("");
   const [isFocused, setIsFocused] = useState(false);
-  const [attachments, setAttachments] = useState<PendingAttachment[]>([]);
   const [openPicker, setOpenPicker] = useState<"tone" | "platform" | "tool" | "persona" | "knowledge" | null>(null);
-  const [uploading, setUploading] = useState(false);
   const [toolLoading, setToolLoading] = useState(false);
   const [knowledgeFileIds, setKnowledgeFileIds] = useState<string[]>([]);
   const [isRecording, setIsRecording] = useState(false);
@@ -57,7 +42,6 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
   const timerRef = useRef<number | null>(null);
   const recSecondsRef = useRef(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const attachRef = useRef<HTMLInputElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const isLoading = useChatStore((s) => s.isLoading);
   const selectedTone = useChatStore((s) => s.selectedTone);
@@ -101,27 +85,14 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
   }, [onStop]);
 
   const handleSubmit = useCallback(async () => {
-    if (!input.trim() || isLoading || uploading) return;
+    if (!input.trim() || isLoading) return;
     const content = input.trim();
-    const files = attachments.map((a) => a.file);
     setInput("");
-    setAttachments([]);
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
-    if (files.length) {
-      setUploading(true);
-      try {
-        await Promise.all(files.map(uploadFile));
-        toast.success(`${files.length} file${files.length > 1 ? "s" : ""} attached`);
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Upload failed");
-      } finally {
-        setUploading(false);
-      }
-    }
     await onSend(content, chatId, knowledgeFileIds.length ? { knowledgeFileIds } : undefined);
-  }, [input, isLoading, uploading, attachments, chatId, onSend, knowledgeFileIds]);
+  }, [input, isLoading, chatId, onSend, knowledgeFileIds]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -132,26 +103,6 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
     },
     [handleSubmit]
   );
-
-  const handleFiles = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    const accepted: PendingAttachment[] = [];
-    const rejected: string[] = [];
-    for (const file of files) {
-      if (!ALLOWED_MIME_TYPES.has(file.type)) {
-        rejected.push(file.name);
-        continue;
-      }
-      if (file.size > MAX_FILE_SIZE) {
-        rejected.push(`${file.name} (>5MB)`);
-        continue;
-      }
-      accepted.push({ id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, file });
-    }
-    if (accepted.length) setAttachments((prev) => [...prev, ...accepted]);
-    if (rejected.length) toast.error(`Skipped: ${rejected.join(", ")} — unsupported type or >5MB`);
-    e.target.value = "";
-  }, []);
 
   const applyTool = useCallback(async (tool: ToolDefinition) => {
     setOpenPicker(null);
@@ -288,10 +239,10 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
   }, [transcribeBlob, resetRecording]);
 
   const toggleRecording = useCallback(() => {
-    if (isTranscribing || isLoading || uploading) return;
+    if (isTranscribing || isLoading) return;
     if (isRecording) stopRecording();
     else void startRecording();
-  }, [isRecording, isTranscribing, isLoading, uploading, startRecording, stopRecording]);
+  }, [isRecording, isTranscribing, isLoading, startRecording, stopRecording]);
 
   return (
     <div className="px-3 sm:px-6 pb-3 sm:pb-4 pt-2 sm:pt-3">
@@ -335,29 +286,6 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
                 : "border-border/20 hover:border-border/40"
             )}
           >
-            {/* Attachment chips */}
-            {attachments.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 px-3 pt-2.5">
-                {attachments.map((a) => (
-                  <span
-                    key={a.id}
-                    className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/30 border border-border/30 text-micro"
-                  >
-                    <Paperclip className="w-3 h-3 text-muted-foreground/60 shrink-0" />
-                    <span className="max-w-[140px] truncate">{a.file.name}</span>
-                    <span className="text-muted-foreground/50 shrink-0">{(a.file.size / 1024).toFixed(0)}KB</span>
-                    <button
-                      onClick={() => setAttachments((prev) => prev.filter((x) => x.id !== a.id))}
-                      className="text-muted-foreground/50 hover:text-foreground transition-colors shrink-0"
-                      aria-label={`Remove ${a.file.name}`}
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-
             {/* Textarea */}
             <textarea
               ref={textareaRef}
@@ -369,7 +297,7 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
               placeholder={isLoading ? "Generating response..." : isRecording ? "Listening… speak now" : "Write your message…"}
               className="w-full bg-transparent border-0 focus-visible:ring-0 resize-none px-4 pt-3 pb-1 text-[15px] leading-[1.85] placeholder:text-muted-foreground/40 min-h-[44px] max-h-[240px] outline-none disabled:opacity-60"
               rows={1}
-              disabled={isLoading || uploading}
+              disabled={isLoading}
               aria-label="Message input"
             />
 
@@ -379,28 +307,11 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
               {/* Scroll only on small screens — on md+ the pickers are anchored
                   dropdowns and must not be clipped by a scroll container. */}
               <div className="flex items-center gap-0.5 flex-1 min-w-0 overflow-x-auto scrollbar-none overscroll-x-contain md:overflow-visible">
-                <input
-                  ref={attachRef}
-                  type="file"
-                  multiple
-                  onChange={handleFiles}
-                  className="hidden"
-                  aria-hidden="true"
-                  tabIndex={-1}
-                />
-                <ToolbarButton
-                  onClick={() => attachRef.current?.click()}
-                  disabled={isLoading}
-                  label="Attach files"
-                >
-                  <Paperclip className="w-4 h-4" />
-                </ToolbarButton>
-
                 {/* Voice input */}
                 <ToolbarButton
                   onClick={toggleRecording}
                   active={isRecording}
-                  disabled={isLoading || uploading || isTranscribing}
+                  disabled={isLoading || isTranscribing}
                   label={isRecording ? "Stop recording" : "Voice input"}
                 >
                   {isTranscribing ? (
@@ -582,20 +493,20 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
                       </button>
                     </motion.div>
                   ) : (
-                    <motion.button
+                  <motion.button
                       whileTap={{ scale: 0.85 }}
                       transition={{ type: "spring", stiffness: 500, damping: 20 }}
                       onClick={handleSubmit}
-                      disabled={!input.trim() || uploading}
+                      disabled={!input.trim()}
                       className={cn(
                         "h-10 w-10 sm:h-9 sm:w-9 rounded-xl flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-50",
-                        input.trim() && !uploading
+                        input.trim()
                           ? "bg-brand text-brand-foreground shadow-[0_8px_24px_-8px_hsl(var(--brand)/0.5)] hover:bg-brand/90"
                           : "bg-muted/30 text-muted-foreground/50"
                       )}
                       aria-label="Send message"
                     >
-                      {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                      <Send className="w-4 h-4" />
                     </motion.button>
                   )}
                 </div>
@@ -633,12 +544,6 @@ function ToolbarButton({
       {children}
     </button>
   );
-}
-
-async function uploadFile(file: File) {
-  const fd = new FormData();
-  fd.append("file", file);
-  await api("/api/upload", { method: "POST", body: fd });
 }
 
 function AdvancedControlsPanel() {

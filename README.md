@@ -137,8 +137,6 @@ Sign in with Clerk, and you're on `/chat`. The shell rail + ⌘K palette navigat
 | `PADDLE_API_KEY` / `PADDLE_CLIENT_TOKEN` / `PADDLE_WEBHOOK_SECRET` | | Billing |
 | `PADDLE_PRICE_PRO` / `PADDLE_PRICE_ENTERPRISE` | | Monthly price IDs |
 | `PADDLE_PRICE_PRO_ANNUAL` / `PADDLE_PRICE_ENTERPRISE_ANNUAL` | | Annual price IDs (20% off toggle) |
-| `STORAGE_ENDPOINT` / `STORAGE_REGION` / `STORAGE_ACCESS_KEY_ID` / `STORAGE_SECRET_ACCESS_KEY` | | File storage (Backblaze B2 / R2) — optional |
-| `STORAGE_BUCKET_NAME` / `STORAGE_PUBLIC_URL` | | File storage — optional |
 | `NEXT_PUBLIC_APP_URL` | | Canonical app URL |
 | `SENTRY_DSN` / `SENTRY_AUTH_TOKEN` / `SENTRY_ORG` / `SENTRY_PROJECT` | | Error monitoring + source maps |
 
