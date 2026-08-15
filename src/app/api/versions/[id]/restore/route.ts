@@ -1,13 +1,17 @@
-import { ok, withApiHandler } from "@/lib/withApiHandler";
+import { forbidden, notFound, ok, withApiHandler } from "@/lib/withApiHandler";
 import { versionHistoryService } from "@/services/VersionHistoryService";
+import { canAccessResource } from "@/lib/resource-access";
 
 const api = withApiHandler();
 
-export const POST = api.POST(async (ctx, body) => {
-  const { id } = body as { id: string };
-  const result = await versionHistoryService.restore(id);
-  if (!result) {
-    return { success: false, error: { code: "NOT_FOUND", message: "Snapshot not found" }, status: 404 };
+export const POST = api.POST(async (ctx) => {
+  const snapshot = await versionHistoryService.getById(ctx.params.id);
+  if (!snapshot) return notFound();
+  if (!(await canAccessResource(snapshot.resourceType, snapshot.resourceId, ctx.user.id))) {
+    return forbidden();
   }
+
+  const result = await versionHistoryService.restore(snapshot.id);
+  if (!result) return notFound();
   return ok(result);
 });

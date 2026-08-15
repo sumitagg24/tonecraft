@@ -53,6 +53,10 @@ export class VersionHistoryService {
     return versionSnapshotRepository.create({ ...rest, version, sizeBytes, isAuto });
   }
 
+  async getById(id: string): Promise<VersionSnapshot | null> {
+    return versionSnapshotRepository.findById(id);
+  }
+
   async getLatest(resourceType: string, resourceId: string): Promise<VersionSnapshot | null> {
     return versionSnapshotRepository.findLatest(resourceType, resourceId);
   }

@@ -1,5 +1,6 @@
-import { ok, fail, withApiHandler } from "@/lib/withApiHandler";
+import { ok, fail, forbidden, withApiHandler } from "@/lib/withApiHandler";
 import { memoryService } from "@/services/MemoryService";
+import { resolveMemoryOwner } from "@/lib/resource-access";
 import { z } from "zod";
 
 const recallSchema = z.object({
@@ -17,7 +18,8 @@ export const POST = api.POST(async (ctx, body) => {
   if (!parsed.success) {
     return fail("VALIDATION_ERROR", parsed.error.issues.map((i) => i.message).join("; "), 400);
   }
-  const ownerId = parsed.data.ownerId === "me" ? ctx.user.id : parsed.data.ownerId;
+  const ownerId = await resolveMemoryOwner(parsed.data.ownerType, parsed.data.ownerId, ctx.user.id);
+  if (!ownerId) return forbidden();
   const results = await memoryService.recall({ ...parsed.data, ownerId });
   return ok(results);
 });

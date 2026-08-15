@@ -1,5 +1,6 @@
-import { ok, fail, withApiHandler } from "@/lib/withApiHandler";
+import { ok, fail, forbidden, withApiHandler } from "@/lib/withApiHandler";
 import { memoryService } from "@/services/MemoryService";
+import { canAccessProject, canAccessWorkspace } from "@/lib/resource-access";
 import { z } from "zod";
 
 const contextSchema = z.object({
@@ -17,6 +18,10 @@ export const POST = api.POST(async (ctx, body) => {
   if (!parsed.success) {
     return fail("VALIDATION_ERROR", parsed.error.issues.map((i) => i.message).join("; "), 400);
   }
+  const { workspaceId, projectId } = parsed.data;
+  if (workspaceId && !(await canAccessWorkspace(workspaceId, ctx.user.id))) return forbidden();
+  if (projectId && !(await canAccessProject(projectId, ctx.user.id))) return forbidden();
+
   const bundle = await memoryService.buildContext({ userId: ctx.user.id, ...parsed.data });
   return ok(bundle);
 });

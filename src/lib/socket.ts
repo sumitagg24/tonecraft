@@ -1,7 +1,10 @@
 import { Server as SocketIOServer } from "socket.io";
 import { Server as HTTPServer } from "http";
 import { Prisma } from "@prisma/client";
+import { verifyToken } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
+import { canAccessChat, canAccessProject } from "@/lib/resource-access";
+import { logger } from "@/lib/logger";
 
 interface SocketData {
   userId: string;
@@ -26,25 +29,39 @@ export function initSocket(server: HTTPServer) {
     transports: ["websocket", "polling"],
   });
 
+  // Identity is derived from the verified Clerk session token; the handshake
+  // payload is never trusted for user identity.
   ioInstance.use(async (socket, next) => {
+    const token = socket.handshake.auth.token;
+    if (typeof token !== "string" || !token) {
+      return next(new Error("Authentication required"));
+    }
+
     try {
-      const token = socket.handshake.auth.token;
-      if (!token) {
-        return next(new Error("Authentication required"));
-      }
+      const payload = await verifyToken(token, { secretKey: process.env.CLERK_SECRET_KEY });
+      const user = payload.sub
+        ? await prisma.user.findUnique({
+            where: { clerkId: payload.sub },
+            select: { id: true, name: true, image: true },
+          })
+        : null;
+      if (!user) return next(new Error("Authentication required"));
+
+      socket.data.userId = user.id;
+      socket.data.name = user.name;
+      socket.data.image = user.image;
       next();
     } catch (error) {
-      next(error as Error);
+      logger.warn("[Socket] Token verification failed", { error: String(error) });
+      next(new Error("Authentication required"));
     }
   });
 
   ioInstance.on("connection", (socket) => {
-    const userData = socket.handshake.auth as SocketData;
-    socket.data.userId = userData.userId;
-    socket.data.name = userData.name;
-    socket.data.image = userData.image;
+    const userData = socket.data as SocketData;
 
     socket.on("join-project", async (data: { projectId: string }) => {
+      if (!(await canAccessProject(data.projectId, userData.userId))) return;
       socket.join(`project:${data.projectId}`);
       const existingPresence = await prisma.presence.findFirst({
         where: { userId: userData.userId, projectId: data.projectId, chatId: null },
@@ -67,6 +84,7 @@ export function initSocket(server: HTTPServer) {
     });
 
     socket.on("join-chat", async (data: { chatId: string }) => {
+      if (!(await canAccessChat(data.chatId, userData.userId))) return;
       socket.join(`chat:${data.chatId}`);
       const existingPresence = await prisma.presence.findFirst({
         where: { userId: userData.userId, projectId: null, chatId: data.chatId },
@@ -89,6 +107,7 @@ export function initSocket(server: HTTPServer) {
     });
 
     socket.on("typing-start", async (data: { chatId: string }) => {
+      if (!(await canAccessChat(data.chatId, userData.userId))) return;
       socket.to(`chat:${data.chatId}`).emit("user-typing", {
         userId: userData.userId,
         chatId: data.chatId,
@@ -130,6 +149,14 @@ export function initSocket(server: HTTPServer) {
       baseVersion: number;
       version: number;
     }) => {
+      const allowed =
+        data.resourceType === "chat"
+          ? await canAccessChat(data.resourceId, userData.userId)
+          : data.resourceType === "project"
+            ? await canAccessProject(data.resourceId, userData.userId)
+            : false;
+      if (!allowed) return;
+
       const pending = await prisma.documentOperation.findMany({
         where: {
           resourceType: data.resourceType,

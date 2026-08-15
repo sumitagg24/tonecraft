@@ -1,9 +1,9 @@
-import { ok, withApiHandler } from "@/lib/withApiHandler";
+import { forbidden, ok, withApiHandler } from "@/lib/withApiHandler";
 import { collaborationService } from "@/services/CollaborationService";
+import { canAccessChat, canAccessProject } from "@/lib/resource-access";
 import { z } from "zod";
 
 const updateSchema = z.object({
-  userId: z.string(),
   projectId: z.string().optional(),
   chatId: z.string().optional(),
   status: z.string().optional(),
@@ -17,7 +17,13 @@ const updateSchema = z.object({
 const api = withApiHandler({ schema: updateSchema });
 
 export const POST = api.POST(async (ctx, body) => {
-  const presence = await collaborationService.updatePresence(body as Parameters<typeof collaborationService.updatePresence>[0]);
+  const input = body as z.infer<typeof updateSchema>;
+  // Presence is always recorded for the caller — the userId is never taken from
+  // the request body, otherwise anyone could impersonate another user's cursor.
+  if (input.projectId && !(await canAccessProject(input.projectId, ctx.user.id))) return forbidden();
+  if (input.chatId && !(await canAccessChat(input.chatId, ctx.user.id))) return forbidden();
+
+  const presence = await collaborationService.updatePresence({ ...input, userId: ctx.user.id });
   return ok(presence);
 });
 
@@ -26,10 +32,12 @@ export const GET = api.GET(async (ctx) => {
   const projectId = sp.get("projectId") ?? undefined;
   const chatId = sp.get("chatId") ?? undefined;
   if (projectId) {
+    if (!(await canAccessProject(projectId, ctx.user.id))) return forbidden();
     const presences = await collaborationService.getProjectPresences(projectId);
     return ok({ presences });
   }
   if (chatId) {
+    if (!(await canAccessChat(chatId, ctx.user.id))) return forbidden();
     const presences = await collaborationService.getChatPresences(chatId);
     return ok({ presences });
   }

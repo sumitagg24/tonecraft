@@ -74,6 +74,7 @@ export type AuditAction =
   | "marketplace.delete"
   | "marketplace.download"
   | "marketplace.review"
+  | "marketing.referral_redeem"
   // Phase 19 — Developer platform
   | "api_key.create"
   | "api_key.revoke"

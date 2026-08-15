@@ -146,13 +146,12 @@ export class MemoryService {
     });
   }
 
-  async remove(id: string): Promise<boolean> {
-    try {
-      await prisma.memoryItem.delete({ where: { id } });
-      return true;
-    } catch {
-      return false;
-    }
+  /** Deletes a memory. `ownerId` scopes the delete to that user's own memories. */
+  async remove(id: string, ownerId?: string): Promise<boolean> {
+    const { count } = await prisma.memoryItem.deleteMany({
+      where: { id, ...(ownerId ? { ownerType: "user", ownerId } : {}) },
+    });
+    return count > 0;
   }
 
   async clear(ownerType: MemoryOwnerType, ownerId: string) {

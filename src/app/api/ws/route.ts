@@ -2,6 +2,8 @@ import { NextRequest } from "next/server";
 import { WebSocketServer, WebSocket } from "ws";
 import type { IncomingMessage } from "http";
 import type { Duplex } from "stream";
+import { auth } from "@/lib/auth";
+import { canAccessWorkspace } from "@/lib/resource-access";
 
 interface WSMessage {
   type: string;
@@ -63,7 +65,7 @@ function handleMessage(conn: WSConnection, message: WSMessage) {
 }
 
 export const GET = async (req: NextRequest) => {
-  const session = await import("@/lib/auth").then(m => m.auth());
+  const session = await auth();
   if (!session?.user?.id) {
     return new Response("Unauthorized", { status: 401 });
   }
@@ -72,6 +74,11 @@ export const GET = async (req: NextRequest) => {
   const workspaceId = new URL(req.url).searchParams.get("workspaceId");
   if (!workspaceId) {
     return new Response("Missing workspaceId", { status: 400 });
+  }
+
+  // Rooms broadcast presence and project updates, so membership is required.
+  if (!(await canAccessWorkspace(workspaceId, userId))) {
+    return new Response("Forbidden", { status: 403 });
   }
 
   const wss = new WebSocketServer({ noServer: true });

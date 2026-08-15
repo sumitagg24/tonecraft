@@ -1,27 +1,49 @@
-import { NextResponse } from "next/server";
+import { z } from "zod";
+import { fail, ok, withApiHandler } from "@/lib/withApiHandler";
 import { prisma } from "@/lib/prisma";
+import { auditLogService } from "@/services/AuditLogService";
 import { logger } from "@/lib/logger";
 
-export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-    const { referralCode, userId } = body;
+const REFERRAL_BONUS = 50;
 
-    if (!referralCode || !userId) {
-      return NextResponse.json({ error: "referralCode and userId required" }, { status: 400 });
-    }
+const schema = z.object({
+  referralCode: z.string().min(4).max(64),
+});
 
-    logger.info(`[Referral] User ${userId} used code ${referralCode}`);
+const api = withApiHandler({ schema });
 
-    // Award bonus credits or record affiliate attribution
-    await prisma.usage.updateMany({
-      where: { userId },
-      data: { creditsUsed: { decrement: 50 } }, // 50 credit referral bonus
+/**
+ * Redeems a referral code for the authenticated user. The bonus is granted at
+ * most once per user (tracked via the audit log) and never pushes credit usage
+ * below zero.
+ */
+export const POST = api.POST(async (ctx, body) => {
+  const { referralCode } = body as z.infer<typeof schema>;
+
+  const alreadyRedeemed = await prisma.auditLog.findFirst({
+    where: { actorId: ctx.user.id, action: "marketing.referral_redeem" },
+    select: { id: true },
+  });
+  if (alreadyRedeemed) return fail("ALREADY_REDEEMED", "Referral bonus already granted", 409);
+
+  const usage = await prisma.usage.findUnique({
+    where: { userId: ctx.user.id },
+    select: { creditsUsed: true },
+  });
+  const bonusCredits = Math.min(REFERRAL_BONUS, usage?.creditsUsed ?? 0);
+
+  if (bonusCredits > 0) {
+    await prisma.usage.update({
+      where: { userId: ctx.user.id },
+      data: { creditsUsed: { decrement: bonusCredits } },
     });
-
-    return NextResponse.json({ success: true, bonusCredits: 50 });
-  } catch (error) {
-    logger.error("[Referral] Failed to record referral", { error: String(error) });
-    return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
-}
+
+  await auditLogService.record("marketing.referral_redeem", "referral", {
+    actorId: ctx.user.id,
+    metadata: { referralCode, bonusCredits },
+  });
+  logger.info("[Referral] Code redeemed", { userId: ctx.user.id, bonusCredits });
+
+  return ok({ success: true, bonusCredits });
+});

@@ -42,6 +42,11 @@ export const GET = api.GET(async (ctx) => {
 
 export const DELETE = api.DELETE(async (ctx) => {
   const { token } = ctx.params;
-  await prisma.shareLink.updateMany({ where: { token }, data: { revoked: true } });
+  // Only the link's creator may revoke it.
+  const { count } = await prisma.shareLink.updateMany({
+    where: { token, userId: ctx.user.id },
+    data: { revoked: true },
+  });
+  if (count === 0) return fail("NOT_FOUND", "Link not found", 404);
   return ok({ ok: true });
 });

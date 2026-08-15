@@ -1,5 +1,6 @@
-import { ok, withApiHandler } from "@/lib/withApiHandler";
+import { forbidden, ok, withApiHandler } from "@/lib/withApiHandler";
 import { collaborationService } from "@/services/CollaborationService";
+import { canAccessChat, canAccessProject, canAccessResource } from "@/lib/resource-access";
 import { z } from "zod";
 
 const createSchema = z.object({
@@ -13,7 +14,12 @@ const createSchema = z.object({
 const api = withApiHandler({ schema: createSchema });
 
 export const POST = api.POST(async (ctx, body) => {
-  const session = await collaborationService.createSession(body as Parameters<typeof collaborationService.createSession>[0]);
+  const input = body as z.infer<typeof createSchema>;
+  if (!(await canAccessResource(input.resourceType, input.resourceId, ctx.user.id))) return forbidden();
+  if (input.projectId && !(await canAccessProject(input.projectId, ctx.user.id))) return forbidden();
+  if (input.chatId && !(await canAccessChat(input.chatId, ctx.user.id))) return forbidden();
+
+  const session = await collaborationService.createSession(input);
   return ok(session, 201);
 });
 
@@ -22,6 +28,7 @@ export const GET = api.GET(async (ctx) => {
   const resourceType = sp.get("resourceType") ?? undefined;
   const resourceId = sp.get("resourceId") ?? undefined;
   if (resourceType && resourceId) {
+    if (!(await canAccessResource(resourceType, resourceId, ctx.user.id))) return forbidden();
     const session = await collaborationService.getActiveSession(resourceType, resourceId);
     return ok({ session });
   }

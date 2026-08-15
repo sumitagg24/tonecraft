@@ -1,5 +1,6 @@
-import { ok, withApiHandler } from "@/lib/withApiHandler";
+import { forbidden, ok, withApiHandler } from "@/lib/withApiHandler";
 import { collaborationService } from "@/services/CollaborationService";
+import { canAccessResource } from "@/lib/resource-access";
 import { z } from "zod";
 
 const resolveSchema = z.object({
@@ -13,6 +14,8 @@ const resolveSchema = z.object({
 const api = withApiHandler({ schema: resolveSchema });
 
 export const POST = api.POST(async (ctx, body) => {
-  const result = await collaborationService.resolveConflict(body as Parameters<typeof collaborationService.resolveConflict>[0]);
+  const input = body as z.infer<typeof resolveSchema>;
+  if (!(await canAccessResource(input.resourceType, input.resourceId, ctx.user.id))) return forbidden();
+  const result = await collaborationService.resolveConflict(input);
   return ok(result);
 });
