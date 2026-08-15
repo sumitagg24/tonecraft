@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api-client";
+import { logger } from "@/lib/logger";
 
 export interface UserProfileData {
   subscription: string;
@@ -17,7 +18,14 @@ export function useUserProfile(): UserProfileData {
         if (cancelled) return;
         if (res?.label) setSubscription(res.label.toUpperCase());
       })
-      .catch(() => {})
+      .catch((error: unknown) => {
+        // Non-fatal: the UI keeps the FREE default, but the failure must be visible.
+        logger.error(
+          "[profile] failed to load subscription",
+          undefined,
+          error instanceof Error ? error : new Error(String(error))
+        );
+      })
       .finally(() => {
         if (!cancelled) setLoading(false);
       });

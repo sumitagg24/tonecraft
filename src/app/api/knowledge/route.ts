@@ -2,6 +2,7 @@ import { ok, fail, withApiHandler } from "@/lib/withApiHandler";
 import { knowledgeService } from "@/services/KnowledgeService";
 import { notificationService } from "@/services/NotificationService";
 import { auditLogService } from "@/services/AuditLogService";
+import { fireAndForget } from "@/lib/fire-and-forget";
 import { capabilities } from "@/lib/capabilities";
 import { prisma } from "@/lib/prisma";
 import { validateFile, KNOWLEDGE_ALLOWED_EXTENSIONS } from "@/lib/file-validation";
@@ -64,13 +65,17 @@ export const POST = api.POST(async (ctx) => {
       storageUsed: { increment: file.size },
     },
   });
-  void notificationService.create({
-    userId: ctx.user.id,
-    type: "knowledge_indexed",
-    title: "Document indexed",
-    body: `"${created.name}" is ready to ground your responses.`,
-    link: "/library",
-  });
+  fireAndForget(
+    notificationService.create({
+      userId: ctx.user.id,
+      type: "knowledge_indexed",
+      title: "Document indexed",
+      body: `"${created.name}" is ready to ground your responses.`,
+      link: "/library",
+    }),
+    "notification.knowledgeIndexed",
+    { userId: ctx.user.id, knowledgeFileId: created.id }
+  );
 
   void auditLogService.record("knowledge.upload", "knowledge_file", {
     actorId: ctx.user.id,

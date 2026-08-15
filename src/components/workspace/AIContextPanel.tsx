@@ -7,6 +7,7 @@ import { TONES, PLATFORMS } from "@/lib/constants";
 import { ease } from "@/styles/motion";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { api } from "@/lib/api-client";
+import { logger } from "@/lib/logger";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
@@ -345,7 +346,13 @@ function PersonasSection() {
         setPersonas(data.personas ?? []);
         setDefaultPersonaId(data.defaultPersonaId ?? null);
       })
-      .catch(() => {});
+      .catch((error: unknown) => {
+        logger.error(
+          "[personas] failed to load personas",
+          undefined,
+          error instanceof Error ? error : new Error(String(error))
+        );
+      });
     return () => {
       cancelled = true;
     };

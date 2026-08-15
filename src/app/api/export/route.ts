@@ -3,6 +3,7 @@ import { chatRepository } from "@/repositories/ChatRepository";
 import { serializeChat, MIME_BY_FORMAT } from "@/lib/export/serialize";
 import { notificationService } from "@/services/NotificationService";
 import { auditLogService } from "@/services/AuditLogService";
+import { fireAndForget } from "@/lib/fire-and-forget";
 
 const api = withApiHandler();
 
@@ -22,13 +23,17 @@ export const POST = api.POST(async (ctx, body) => {
   const content = serializeChat(fmt, chat, messages);
   const filename = `${chat.title || "chat"}-${new Date().toISOString().slice(0, 10)}.${fmt}`;
 
-  void notificationService.create({
-    userId: ctx.user.id,
-    type: "export_completed",
-    title: "Export ready",
-    body: `"${chat.title || "Chat"}" exported as .${fmt}`,
-    link: `/chat/${chatId}`,
-  });
+  fireAndForget(
+    notificationService.create({
+      userId: ctx.user.id,
+      type: "export_completed",
+      title: "Export ready",
+      body: `"${chat.title || "Chat"}" exported as .${fmt}`,
+      link: `/chat/${chatId}`,
+    }),
+    "notification.exportCompleted",
+    { userId: ctx.user.id, chatId }
+  );
 
   void auditLogService.record("export.create", "export", {
     actorId: ctx.user.id,

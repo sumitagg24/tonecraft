@@ -13,6 +13,8 @@
 // is the pure comparison used by MemoryService and KnowledgeService.
 // ═══════════════════════════════════════════════════════════════════════
 
+import { logger } from "./logger";
+
 const EMBED_DIM = 384;
 
 const CONFIGURED = Boolean(
@@ -68,11 +70,23 @@ async function fetchEmbedding(text: string): Promise<number[] | null> {
       body: JSON.stringify({ model, input: text.slice(0, 8_000) }),
       signal: controller.signal,
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      logger.warn(`[embeddings] provider returned HTTP ${res.status} — using hash fallback`);
+      return null;
+    }
     const data = (await res.json()) as { data?: Array<{ embedding: number[] }> };
     const embedding = data.data?.[0]?.embedding;
-    return Array.isArray(embedding) && embedding.length > 0 ? embedding : null;
-  } catch {
+    if (!Array.isArray(embedding) || embedding.length === 0) {
+      logger.warn("[embeddings] provider returned no vector — using hash fallback");
+      return null;
+    }
+    return embedding;
+  } catch (error) {
+    // Degrading to the hash fallback silently makes semantic recall quietly
+    // worse — always leave a trace of why.
+    logger.warn("[embeddings] provider request failed — using hash fallback", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return null;
   } finally {
     clearTimeout(timeout);

@@ -34,14 +34,12 @@ export const POST = api.POST(async (ctx, body) => {
   const isMember = await permissionMiddleware.isWorkspaceMember(id, ctx.user.id);
   if (!isMember) return fail("FORBIDDEN", "You are not a member of this workspace", 403);
   
-  try {
-    const usage = await usageService.trackUsage(
-      usageData.userId || ctx.user.id,
-      usageData.type,
-      usageData.amount
-    );
-    return ok(usage, 201);
-  } catch (e) {
-    return fail("ERROR", e instanceof Error ? e.message : "Failed to record usage", 500);
-  }
+  // Failures propagate to withApiHandler, which logs/reports them and returns a
+  // sanitized INTERNAL_ERROR instead of echoing internal messages to clients.
+  const usage = await usageService.trackUsage(
+    usageData.userId || ctx.user.id,
+    usageData.type,
+    usageData.amount
+  );
+  return ok(usage, 201);
 });

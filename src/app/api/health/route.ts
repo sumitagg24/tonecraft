@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { providerHealthService, type HealthReport } from "@/services/ProviderHealthService";
+import { logger } from "@/lib/logger";
 
 const PROVIDER_NAMES = ["database", "groq", "gemini", "openrouter", "clerk", "paddle"] as const;
 
@@ -12,7 +13,12 @@ export async function GET() {
   let report: HealthReport;
   try {
     report = await providerHealthService.checkAll(false);
-  } catch {
+  } catch (error) {
+    logger.error(
+      "[health] provider health check failed — reporting offline",
+      undefined,
+      error instanceof Error ? error : new Error(String(error))
+    );
     report = {
       status: "offline",
       providers: {},

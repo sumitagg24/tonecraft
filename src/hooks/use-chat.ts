@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { useChatStore } from "@/stores/chat-store";
 import type { Chat, Message } from "@/types";
 import { api } from "@/lib/api-client";
+import { logger } from "@/lib/logger";
 import { toast } from "sonner";
 
 let activeController: AbortController | null = null;
@@ -107,15 +108,20 @@ export function useChat() {
           buffer = lines.pop() || "";
 
           for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              try {
-                const data = JSON.parse(line.slice(6));
-                if (data.type === "token") {
-                  appendStreamingContent(data.content);
-                } else if (data.type === "error") {
-                  throw new Error(data.message);
-                }
-              } catch { /* ignore parse errors */ }
+            if (!line.startsWith("data: ")) continue;
+            // Parse and dispatch are separate: a `catch` around both swallowed
+            // the server's own `error` events along with parse failures.
+            let data: { type?: string; content?: string; message?: string };
+            try {
+              data = JSON.parse(line.slice(6));
+            } catch {
+              logger.warn("[chat] skipped malformed SSE frame");
+              continue;
+            }
+            if (data.type === "token") {
+              appendStreamingContent(data.content ?? "");
+            } else if (data.type === "error") {
+              throw new Error(data.message || "Failed to generate response");
             }
           }
         }
@@ -136,8 +142,12 @@ export function useChat() {
                 setMessages(chat.messages ?? []);
                 break;
               }
-            } catch {
-              /* ignore */
+            } catch (refetchError) {
+              logger.warn("[chat] partial-response refetch failed", {
+                chatId: targetChatId,
+                attempt,
+                error: refetchError instanceof Error ? refetchError.message : String(refetchError),
+              });
             }
           }
           clearStreamingContent();
@@ -239,8 +249,13 @@ export function useChat() {
     try {
       const chats = await api<Chat[]>("/api/chats");
       useChatStore.getState().setChats(chats);
-    } catch {
-      // keep current behavior: sidebar stays empty on failure
+    } catch (error) {
+      logger.error(
+        "[chat] failed to load chat list",
+        undefined,
+        error instanceof Error ? error : new Error(String(error))
+      );
+      toast.error("Failed to load your chats");
     }
   }, []);
 

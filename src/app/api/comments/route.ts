@@ -2,6 +2,7 @@ import { ok, fail, notFound, withApiHandler } from "@/lib/withApiHandler";
 import { prisma } from "@/lib/prisma";
 import { notificationService } from "@/services/NotificationService";
 import { auditLogService } from "@/services/AuditLogService";
+import { fireAndForget } from "@/lib/fire-and-forget";
 
 const api = withApiHandler();
 
@@ -55,13 +56,17 @@ export const POST = api.POST(async (ctx, body) => {
 
   // Notify message owner if commenter is not the owner
   if (message.chat.userId !== ctx.user.id) {
-    void notificationService.createComment(
-      ctx.user.id,
-      message.chat.userId,
-      "comment",
-      messageId,
-      content.trim(),
-      `/chat/${message.chat.id}`
+    fireAndForget(
+      notificationService.createComment(
+        ctx.user.id,
+        message.chat.userId,
+        "comment",
+        messageId,
+        content.trim(),
+        `/chat/${message.chat.id}`
+      ),
+      "notification.createComment",
+      { messageId }
     );
   }
 
@@ -84,13 +89,17 @@ export const POST = api.POST(async (ctx, body) => {
   }
 
   for (const mentionedUserId of mentioned) {
-    void notificationService.createMention(
-      ctx.user.id,
-      mentionedUserId,
-      "comment",
-      comment.id,
-      content.trim(),
-      `/chat/${message.chat.id}`
+    fireAndForget(
+      notificationService.createMention(
+        ctx.user.id,
+        mentionedUserId,
+        "comment",
+        comment.id,
+        content.trim(),
+        `/chat/${message.chat.id}`
+      ),
+      "notification.createMention",
+      { commentId: comment.id, mentionedUserId }
     );
   }
 

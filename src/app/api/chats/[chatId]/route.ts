@@ -29,7 +29,12 @@ export const PATCH = api.PATCH(async (ctx, body) => {
     try {
       await projectService.moveChat(chatId, ctx.user.id, projectId ?? null);
     } catch (e) {
-      return fail("NOT_FOUND", e instanceof Error ? e.message : "Failed", 404);
+      // Only a missing project is a client error; anything else is a real
+      // failure and must reach withApiHandler (logged + reported to Sentry).
+      if (e instanceof Error && e.message === "Project not found") {
+        return fail("NOT_FOUND", e.message, 404);
+      }
+      throw e;
     }
   }
   if (Object.keys(rest).length > 0) {

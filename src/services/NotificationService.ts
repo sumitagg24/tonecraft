@@ -4,6 +4,7 @@ import { getSocketInstance } from "@/lib/socket";
 import { NotificationType, NotificationChannel } from "@prisma/client";
 import type { NotificationPreference } from "@prisma/client";
 import { queueService } from "@/services/QueueService";
+import { fireAndForget } from "@/lib/fire-and-forget";
 
 export interface NotificationPayload {
   userId: string;
@@ -203,27 +204,27 @@ export class NotificationService {
   }
 
   async createMention(mentionerId: string, mentionedUserId: string, resource: string, resourceId: string, content: string, link?: string | null): Promise<void> {
-    void this.create({
+    fireAndForget(this.create({
       userId: mentionedUserId,
       type: "mention",
       title: `mentioned you in ${resource}`,
       body: content,
       link,
       metadata: { mentionerId, resource, resourceId },
-    });
+    }), "notification.createMention", { userId: mentionedUserId, resource, resourceId });
   }
 
   async createComment(commenterId: string, targetUserId: string, resource: string, resourceId: string, content: string, link?: string | null): Promise<void> {
     if (commenterId === targetUserId) return;
 
-    void this.create({
+    fireAndForget(this.create({
       userId: targetUserId,
       type: "comment",
       title: `new comment on ${resource}`,
       body: content,
       link,
       metadata: { commenterId, resource, resourceId },
-    });
+    }), "notification.createComment", { userId: targetUserId, resource, resourceId });
   }
 
   async createInvitation(inviterId: string, inviteeEmail: string, workspaceId: string, workspaceName: string, role: string): Promise<void> {
@@ -233,7 +234,7 @@ export class NotificationService {
     });
 
     if (invitee) {
-      void this.create({
+      fireAndForget(this.create({
         userId: invitee.id,
         type: "team_invite",
         title: "Workspace invitation",
@@ -241,7 +242,7 @@ export class NotificationService {
         link: `/workspaces/${workspaceId}`,
         metadata: { inviterId: inviterId, workspaceId, workspaceName, role },
         workspaceId,
-      });
+      }), "notification.createInvitation", { userId: invitee.id, workspaceId });
     }
   }
 
@@ -364,14 +365,14 @@ export class NotificationService {
     const title = `${recent.length} notifications summary`;
     const body = recent.map((n) => n.title).join(", ");
 
-    void this.create({
+    fireAndForget(this.create({
       userId,
       type: "digest",
       title,
       body,
       link: "/notifications",
       metadata: { count: recent.length, items: recent.map((n) => ({ id: n.id, title: n.title, type: n.type })) },
-    });
+    }), "notification.digest", { userId });
   }
 }
 

@@ -12,6 +12,9 @@ import { modelRegistry } from "@/services/ModelRegistry";
 import { auditLogService } from "@/services/AuditLogService";
 import { type PlanTier, getPlanConfig } from "@/config/plans";
 import { CODE_PATTERN } from "@/lib/capabilities";
+import { logger } from "@/lib/logger";
+import { fireAndForget } from "@/lib/fire-and-forget";
+import { isAbortError } from "@/lib/is-abort-error";
 
 export class AIEngine {
   private providerRouter: ProviderRouter;
@@ -99,7 +102,13 @@ export class AIEngine {
         tools: options.tools,
       });
     } catch (routeErr) {
-      console.warn("[AIEngine] Cloud providers route failed, using ToneCraft Local Transformer Engine:", (routeErr as Error).message);
+      // A cancelled request is not a provider failure — propagate it instead of
+      // burning a local fallback generation the caller no longer wants.
+      if (isAbortError(routeErr) || options.signal?.aborted) throw routeErr;
+      logger.warn(
+        "[AIEngine] Cloud providers route failed, using ToneCraft Local Transformer Engine",
+        { error: routeErr instanceof Error ? routeErr.message : String(routeErr) }
+      );
       providerResult = await localToneEngine.transform(options);
     }
 
@@ -118,7 +127,10 @@ export class AIEngine {
 
     // Track usage
     if (options.userId) {
-      this.trackUsage(options.userId, providerResult).catch(() => {});
+      fireAndForget(this.trackUsage(options.userId, providerResult), "aiEngine.trackUsage", {
+        userId: options.userId,
+        model: providerResult.model,
+      });
       void auditLogService.record("ai.request_complete", "ai", {
         actorId: options.userId,
         metadata: { model: providerResult.model, provider: providerResult.provider, tokens: providerResult.tokens },
@@ -230,20 +242,37 @@ export class AIEngine {
       );
 
       if (options.userId) {
-        this.trackUsage(options.userId, {
-          content: fullContent, model: finalModel, provider: finalProvider, tokens: finalTokens, latency: finalLatency,
-        }).catch(() => {});
+        fireAndForget(
+          this.trackUsage(options.userId, {
+            content: fullContent, model: finalModel, provider: finalProvider, tokens: finalTokens, latency: finalLatency,
+          }),
+          "aiEngine.trackUsage",
+          { userId: options.userId, model: finalModel }
+        );
       }
 
       yield { type: "done", result };
     } catch (error) {
-      console.warn("[AIEngine] Cloud providers unavailable, using ToneCraft Local Transformer Engine:", (error as Error).message);
+      // Client cancellation: stop, don't fall back (the caller already has the
+      // partial content and is no longer reading).
+      if (isAbortError(error) || options.signal?.aborted) throw error;
+      logger.warn(
+        "[AIEngine] Cloud providers unavailable, using ToneCraft Local Transformer Engine",
+        { error: error instanceof Error ? error.message : String(error) }
+      );
       try {
         const localStream = localToneEngine.stream(options);
         for await (const event of localStream) {
           yield event;
         }
       } catch (fallbackErr) {
+        // Both the providers and the local fallback failed — report it as an
+        // error (the original provider failure is the root cause).
+        logger.error(
+          "[AIEngine] Local fallback failed after provider failure",
+          { providerError: error instanceof Error ? error.message : String(error) },
+          fallbackErr instanceof Error ? fallbackErr : new Error(String(fallbackErr))
+        );
         yield { type: "error", message: (fallbackErr as Error).message };
       }
     }

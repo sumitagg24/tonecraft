@@ -6,6 +6,7 @@ import { inviteCreateSchema } from "../../workspaceSchema";
 import { permissionMiddleware } from "@/middleware/permissionMiddleware";
 import { notificationService } from "@/services/NotificationService";
 import { auditLogService } from "@/services/AuditLogService";
+import { fireAndForget } from "@/lib/fire-and-forget";
 
 const api = withApiHandler();
 
@@ -45,7 +46,11 @@ export const POST = api.POST(async (ctx, body) => {
     payload: { action: "invite_sent", email, role, inviteId: invite.id },
   });
 
-  void notificationService.createInvitation(ctx.user.id, email, id, workspace.name, role ?? "member");
+  fireAndForget(
+    notificationService.createInvitation(ctx.user.id, email, id, workspace.name, role ?? "member"),
+    "notification.createInvitation",
+    { workspaceId: id, email }
+  );
 
   void auditLogService.record("permission.member_add", "workspace_invite", {
     actorId: ctx.user.id,

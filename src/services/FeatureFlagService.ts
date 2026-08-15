@@ -5,6 +5,7 @@ import {
 } from "@/config/features";
 import { planService } from "./PlanService";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 /**
  * Phase 12.8 — feature flags.
@@ -60,8 +61,14 @@ export class FeatureFlagService {
       this.overrideCache = new Map(rows.map((r) => [r.key, r.enabled]));
       this.overrideCacheAt = Date.now();
       return Object.fromEntries(this.overrideCache);
-    } catch {
-      // DB hiccup — fall back to plan defaults (fail-open for flags).
+    } catch (error) {
+      // DB hiccup — fall back to plan defaults (fail-open for flags), but the
+      // fallback must be observable: overrides are silently ignored until it heals.
+      logger.error(
+        "featureFlags.getAllOverrides failed — falling back to plan defaults",
+        undefined,
+        error instanceof Error ? error : new Error(String(error))
+      );
       return {};
     }
   }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { api } from "@/lib/api-client";
+import { logger } from "@/lib/logger";
 
 /**
  * Phase 12.8 — client-side feature gating.
@@ -16,8 +17,11 @@ export function useEnabledFeatures() {
     try {
       const data = await api<{ features: string[] }>("/api/features/me");
       setFeatures(data.features);
-    } catch {
+    } catch (error) {
       // Fall back to showing everything — the server still enforces gates.
+      logger.warn("[features] failed to load enabled features, showing all", {
+        error: error instanceof Error ? error.message : String(error),
+      });
       setFeatures(null);
     }
   }, []);

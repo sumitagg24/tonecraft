@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Store, Search, Award, Download, Wand2, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api-client";
+import { logger } from "@/lib/logger";
+import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -59,6 +61,13 @@ export default function MarketplacePage() {
       if (q.trim()) params.set("q", q.trim());
       const data = await api<{ items: Listing[] }>(`/api/marketplace/listings?${params}`);
       setItems(data.items);
+    } catch (error) {
+      logger.error(
+        "[marketplace] failed to load listings",
+        { kind, sort },
+        error instanceof Error ? error : new Error(String(error))
+      );
+      toast.error("Failed to load marketplace listings");
     } finally {
       setLoading(false);
     }
@@ -69,7 +78,16 @@ export default function MarketplacePage() {
   }, [fetchListings]);
 
   useEffect(() => {
-    api<Listing[]>("/api/marketplace/featured").then(setFeatured).catch(() => {});
+    api<Listing[]>("/api/marketplace/featured")
+      .then(setFeatured)
+      .catch((error: unknown) => {
+        // The featured strip is supplementary — log rather than block the page.
+        logger.error(
+          "[marketplace] failed to load featured listings",
+          undefined,
+          error instanceof Error ? error : new Error(String(error))
+        );
+      });
   }, []);
 
   return (

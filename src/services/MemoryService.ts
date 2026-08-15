@@ -3,6 +3,16 @@ import { logger } from "@/lib/logger";
 import { embed, cosineSimilarity, toJsonVector, fromJsonVector } from "@/lib/embeddings";
 import type { MemoryOwnerType, Prisma } from "@prisma/client";
 
+/** Prisma known-request-error code check without depending on Prisma error classes. */
+function isPrismaErrorCode(error: unknown, code: string): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === code
+  );
+}
+
 export interface RememberInput {
   ownerType: MemoryOwnerType;
   ownerId: string;
@@ -150,8 +160,11 @@ export class MemoryService {
     try {
       await prisma.memoryItem.delete({ where: { id } });
       return true;
-    } catch {
-      return false;
+    } catch (error) {
+      // "Record not found" is the only expected failure — anything else (DB
+      // down, constraint violation) must reach the caller, not report success.
+      if (isPrismaErrorCode(error, "P2025")) return false;
+      throw error;
     }
   }
 
@@ -169,8 +182,13 @@ export class MemoryService {
         create: { fromId, toId, relation },
         update: {},
       });
-    } catch {
-      return null;
+    } catch (error) {
+      // A dangling memory id is a caller-level no-op; real failures propagate.
+      if (isPrismaErrorCode(error, "P2003") || isPrismaErrorCode(error, "P2025")) {
+        logger.warn("memory.link skipped — memory not found", { fromId, toId, relation });
+        return null;
+      }
+      throw error;
     }
   }
 

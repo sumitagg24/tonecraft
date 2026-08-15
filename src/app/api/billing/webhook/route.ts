@@ -5,6 +5,7 @@ import { logger } from "@/lib/logger";
 import { planService } from "@/services/PlanService";
 import { auditLogService } from "@/services/AuditLogService";
 import { getPriceId } from "@/lib/billing-prices";
+import { fireAndForget } from "@/lib/fire-and-forget";
 
 export async function POST(req: Request) {
   const body = await req.text();
@@ -257,7 +258,7 @@ async function syncSubscription(normalized: { type: string; data: Record<string,
     }
   }
 
-  void planService.invalidateCache(userId);
+  fireAndForget(planService.invalidateCache(userId), "billing.invalidatePlanCache", { userId });
 }
 
 function planFromPriceId(priceId: string | null): string {

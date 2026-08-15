@@ -8,6 +8,8 @@ import { messageRepository } from "@/repositories/MessageRepository";
 import { chatRepository } from "@/repositories/ChatRepository";
 import { knowledgeService } from "@/services/KnowledgeService";
 import { flattenZodError } from "@/lib/withApiHandler";
+import { logger } from "@/lib/logger";
+import { isAbortError } from "@/lib/is-abort-error";
 import { z } from "zod";
 
 const messageSchema = z.object({
@@ -198,18 +200,39 @@ export async function POST(
         controller.close();
       } catch (error) {
         const partial = fullContent.trim();
-        console.error("Streaming error:", error);
-        await prisma.message.update({
-          where: { id: assistantMessage.id },
-          data: {
-            content: partial || "I apologize, but I'm having trouble responding right now. Please try again in a moment.",
-            model: usedModel || usedProvider,
-            tokens: totalTokens,
-            latency: Date.now() - startTime,
-          },
-        }).catch(() => {});
+        const cancelled = isAbortError(error) || req.signal.aborted;
+        if (cancelled) {
+          logger.info(`[chat] stream cancelled by client`, { chatId: effectiveChatId, messageId: assistantMessage.id });
+        } else {
+          logger.error(
+            "[chat] stream failed",
+            { chatId: effectiveChatId, messageId: assistantMessage.id, userId, model: usedModel || usedProvider },
+            error instanceof Error ? error : new Error(String(error))
+          );
+        }
         try {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "error", message: "Failed to generate response" })}\n`));
+          await prisma.message.update({
+            where: { id: assistantMessage.id },
+            data: {
+              content: partial || "I apologize, but I'm having trouble responding right now. Please try again in a moment.",
+              model: usedModel || usedProvider,
+              tokens: totalTokens,
+              latency: Date.now() - startTime,
+            },
+          });
+        } catch (saveError) {
+          // The partial/placeholder content is lost, but the request must still
+          // terminate cleanly — surface the write failure instead of hiding it.
+          logger.error(
+            "[chat] failed to persist partial assistant message",
+            { chatId: effectiveChatId, messageId: assistantMessage.id },
+            saveError instanceof Error ? saveError : new Error(String(saveError))
+          );
+        }
+        try {
+          if (!cancelled) {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "error", message: "Failed to generate response" })}\n`));
+          }
         } catch {
           /* stream already cancelled by client */
         }
