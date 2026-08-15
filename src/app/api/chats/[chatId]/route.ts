@@ -1,6 +1,7 @@
 import { ok, fail, notFound, withApiHandler } from "@/lib/withApiHandler";
 import { chatService } from "@/services/ChatService";
 import { projectService } from "@/services/ProjectService";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 
 const updateSchema = z.object({
@@ -29,7 +30,8 @@ export const PATCH = api.PATCH(async (ctx, body) => {
     try {
       await projectService.moveChat(chatId, ctx.user.id, projectId ?? null);
     } catch (e) {
-      return fail("NOT_FOUND", e instanceof Error ? e.message : "Failed", 404);
+      logger.error("[API] moveChat failed", { chatId, userId: ctx.user.id }, e instanceof Error ? e : undefined);
+      return fail("NOT_FOUND", "Chat or project not found", 404);
     }
   }
   if (Object.keys(rest).length > 0) {

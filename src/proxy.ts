@@ -1,5 +1,6 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
-import type { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { checkAuthRouteLimit } from "@/lib/ratelimit";
 
 const PUBLIC_PATHS: ReadonlyArray<string> = [
   "/",
@@ -48,8 +49,47 @@ function isPublicPath(pathname: string): boolean {
   );
 }
 
+/** Best-effort client IP (x-forwarded-for from the proxy). */
+function getClientIp(req: NextRequest): string {
+  const fwd = req.headers.get("x-forwarded-for");
+  if (fwd) return fwd.split(",")[0].trim();
+  return req.headers.get("x-real-ip") ?? "unknown";
+}
+
 export default clerkMiddleware(async (auth, req: NextRequest) => {
-  if (!isPublicPath(req.nextUrl.pathname)) {
+  const { pathname } = req.nextUrl;
+
+  // Rate-limit credential submissions on the authentication surface
+  // (defense-in-depth; Clerk enforces per-account password-attempt limits
+  // natively). Clerk's sign-in / sign-up attempts are proxied through
+  // /__clerk/v1/client/sign_ins and /sign_ups — those POSTs get a strict
+  // per-IP window plus an exponential backoff rather than a hard lockout.
+  // Page loads are intentionally NOT limited: Clerk components prefetch the
+  // auth pages as RSC requests from every public page, so throttling pages
+  // would block legitimate traffic. Thresholds are env-configurable
+  // (RATE_LIMIT_AUTH_* — see lib/ratelimit).
+  const isAuthAttempt =
+    req.method === "POST" && pathname.startsWith("/__clerk/v1/client/sign_");
+  if (isAuthAttempt) {
+    const check = await checkAuthRouteLimit(getClientIp(req));
+    if (!check.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "RATE_LIMITED",
+            message: "Too many attempts — try again later.",
+          },
+        },
+        {
+          status: 429,
+          headers: { "Retry-After": String(check.retryAfterSeconds ?? 60) },
+        },
+      );
+    }
+  }
+
+  if (!isPublicPath(pathname)) {
     await auth.protect();
   }
 });

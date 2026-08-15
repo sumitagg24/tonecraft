@@ -1,27 +1,38 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { logger } from "@/lib/logger";
+import { fail, withApiHandler } from "@/lib/withApiHandler";
+import { z } from "zod";
 
-export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-    const { referralCode, userId } = body;
+/**
+ * Referral endpoint — the referral program is not implemented yet: there is
+ * no referral-code registry (no model/column in Prisma), so no code can
+ * resolve to a real referrer. The route is auth-required, validated, and rate
+ * limited, and returns 404 rather than awarding credits blindly.
+ *
+ * (Security: the previous implementation let ANY anonymous caller POST an
+ * arbitrary userId + referralCode and decrement that user's `creditsUsed`,
+ * i.e. farm unlimited credits. The userId must come from the session, never
+ * from the request body.)
+ */
+const schema = z.object({
+  referralCode: z
+    .string()
+    .trim()
+    .min(4, "Referral code is too short")
+    .max(64, "Referral code is too long")
+    .regex(/^[A-Za-z0-9_-]+$/, "Referral code contains invalid characters"),
+});
 
-    if (!referralCode || !userId) {
-      return NextResponse.json({ error: "referralCode and userId required" }, { status: 400 });
-    }
+const api = withApiHandler({
+  schema,
+  rateLimit: { key: "referral", limit: 10, ipLimit: 30 },
+});
 
-    logger.info(`[Referral] User ${userId} used code ${referralCode}`);
-
-    // Award bonus credits or record affiliate attribution
-    await prisma.usage.updateMany({
-      where: { userId },
-      data: { creditsUsed: { decrement: 50 } }, // 50 credit referral bonus
-    });
-
-    return NextResponse.json({ success: true, bonusCredits: 50 });
-  } catch (error) {
-    logger.error("[Referral] Failed to record referral", { error: String(error) });
-    return NextResponse.json({ error: "Internal error" }, { status: 500 });
-  }
-}
+export const POST = api.POST(async () => {
+  // No referral registry exists yet — nothing to validate against, so there
+  // can be no valid code. Keep the route alive for the future feature while
+  // refusing to award credits today.
+  return fail(
+    "REFERRAL_NOT_AVAILABLE",
+    "Referral codes are not available yet.",
+    404
+  );
+});

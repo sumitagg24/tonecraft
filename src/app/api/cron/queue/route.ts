@@ -40,10 +40,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: true, ...summary });
   } catch (error) {
     logger.error("[Cron] Queue worker failed", error);
-    return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "Worker failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: false, error: "Worker failed" }, { status: 500 });
   }
 }
 

@@ -24,6 +24,17 @@ export interface TranscriptionResult {
   durationMs?: number;
 }
 
+/**
+ * Thrown when the provider key is missing/invalid — the route maps this to a
+ * safe, curated user-facing hint (never raw provider error text).
+ */
+export class VoiceConfigError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "VoiceConfigError";
+  }
+}
+
 export interface SynthesisResult {
   audioBase64: string;
   format: "mp3";
@@ -52,9 +63,9 @@ export class VoiceService {
       const detail = await res.text().catch(() => "");
       logger.error(`[Voice] transcription failed: ${res.status} ${detail}`);
       if (res.status === 401) {
-        throw new Error("Voice transcription failed (HTTP 401 — check your OPENAI_API_KEY)");
+        throw new VoiceConfigError("Voice transcription isn't configured correctly — check your OPENAI_API_KEY");
       }
-      throw new Error(`Transcription provider error (HTTP ${res.status})`);
+      throw new Error("Transcription provider error");
     }
     const data = (await res.json()) as { text: string };
     return {

@@ -1,5 +1,6 @@
 import { ok, fail, withApiHandler } from "@/lib/withApiHandler";
 import { voiceService } from "@/services/VoiceService";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 
 const synthSchema = z.object({
@@ -17,6 +18,7 @@ export const POST = api.POST(async (ctx, body) => {
     const result = await voiceService.synthesize(parsed.data.text, parsed.data.voice);
     return ok(result);
   } catch (error) {
-    return fail("SYNTHESIS_FAILED", error instanceof Error ? error.message : "Synthesis failed", 502);
+    logger.error("[API] Voice synthesis failed", { userId: ctx.user.id }, error instanceof Error ? error : undefined);
+    return fail("SYNTHESIS_FAILED", "Synthesis failed", 502);
   }
 });

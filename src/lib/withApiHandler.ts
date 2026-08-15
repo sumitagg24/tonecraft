@@ -3,7 +3,14 @@ import * as Sentry from "@sentry/nextjs";
 import { auth } from "@/lib/auth";
 import { logger } from "./logger";
 import { z, ZodError } from "zod";
-import { checkEndpointLimit, checkIpLimit } from "./ratelimit";
+import {
+  checkEndpointLimit,
+  checkIpLimit,
+  checkAuthedIpLimit,
+  checkAuthedUserLimit,
+  checkPublicIpLimit,
+  type RateLimitCheck,
+} from "./ratelimit";
 import { featureFlagService } from "@/services/FeatureFlagService";
 import type { FeatureKey } from "@/config/features";
 
@@ -166,15 +173,50 @@ function buildHandler(
       }
     }
 
-    // 1b. Phase 12.4 — optional per-endpoint rate limiting (per user + per IP).
-    if (rateLimit && session?.user?.id) {
-      const userLimit = await checkEndpointLimit(rateLimit.key, session.user.id, rateLimit.limit);
+    // 1b. Tier ceilings — every API request gets a per-IP ceiling (and, for
+    //     authenticated routes, a per-user ceiling). Public routes use the
+    //     moderate public tier; authenticated actions get the loose authed
+    //     tier. Thresholds come from rateLimitConfig (env-configurable).
+    const clientIp = getClientIp(req);
+    let tierBlocked: RateLimitCheck | null = null;
+    if (requireAuth) {
+      const ipCheck = await checkAuthedIpLimit(clientIp);
+      const userCheck = session ? await checkAuthedUserLimit(session.user.id) : null;
+      if (!ipCheck.allowed) tierBlocked = ipCheck;
+      else if (userCheck && !userCheck.allowed) tierBlocked = userCheck;
+    } else {
+      const ipCheck = await checkPublicIpLimit(clientIp);
+      if (!ipCheck.allowed) tierBlocked = ipCheck;
+    }
+    if (tierBlocked) {
+      logger.warn(`[API] Rate limited (tier) ${requestId} ${method} ${req.nextUrl.pathname}`, {
+        ...(session?.user?.id ? { userId: session.user.id } : {}),
+        ip: clientIp,
+      });
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "RATE_LIMITED",
+            message: "Too many requests — try again shortly.",
+          },
+        },
+        { status: 429, headers: { "Retry-After": "60" } }
+      );
+    }
+
+    // 1c. Optional per-endpoint rate limit — keyed by the user for authed
+    //     routes and by IP for unauthenticated ones (e.g. public LLM-costly
+    //     debug endpoints). Plus an optional per-IP ceiling.
+    if (rateLimit) {
+      const limitKey = session?.user?.id ?? clientIp;
+      const endpointCheck = await checkEndpointLimit(rateLimit.key, limitKey, rateLimit.limit);
       const ipLimited = rateLimit.ipLimit
-        ? !(await checkIpLimit(getClientIp(req), rateLimit.ipLimit)).allowed
+        ? !(await checkIpLimit(clientIp, rateLimit.ipLimit)).allowed
         : false;
-      if (!userLimit.allowed || ipLimited) {
+      if (!endpointCheck.allowed || ipLimited) {
         logger.warn(`[API] Rate limited ${requestId} ${method} ${req.nextUrl.pathname}`, {
-          userId: session.user.id,
+          ...(session?.user?.id ? { userId: session.user.id } : {}),
           key: rateLimit.key,
         });
         return NextResponse.json(
@@ -185,7 +227,7 @@ function buildHandler(
               message: `Rate limit exceeded — try again in a minute (${rateLimit.limit}/min)`,
             },
           },
-          { status: 429 }
+          { status: 429, headers: { "Retry-After": "60" } }
         );
       }
     }

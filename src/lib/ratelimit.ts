@@ -17,6 +17,47 @@ const CONFIGURED = Boolean(
     process.env.UPSTASH_REDIS_REST_URL !== "https://..."
 );
 
+// ── Configuration ───────────────────────────────────────────────────────────
+// Every threshold is env-overridable (RATE_LIMIT_*). Nothing is hardcoded at
+// call sites; the defaults below are the safe out-of-the-box values.
+
+function num(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (raw === undefined || raw === "") return fallback;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 0 ? n : fallback;
+}
+
+export const rateLimitConfig = {
+  /** Authentication routes — strict per-IP windows + exponential cooldown. */
+  auth: {
+    // Actual credential submissions (Clerk sign-in / sign-up attempts, per IP).
+    // (Page loads are NOT limited — Clerk components prefetch /sign-in and
+    // /sign-up as RSC fetches from every public page, so throttling pages
+    // would block legitimate traffic.)
+    attemptPerIpPerMinute: num("RATE_LIMIT_AUTH_ATTEMPT_PER_IP_PER_MIN", 20),
+    // Exponential backoff rather than a hard lockout: each consecutive
+    // violation doubles the cooldown, from base up to max, then it decays.
+    backoffBaseSeconds: num("RATE_LIMIT_AUTH_BACKOFF_BASE_SECONDS", 30),
+    backoffMaxSeconds: num("RATE_LIMIT_AUTH_BACKOFF_MAX_SECONDS", 1800),
+  },
+  /** Public (unauthenticated) endpoints — moderate per-IP ceiling. */
+  public: {
+    perIpPerMinute: num("RATE_LIMIT_PUBLIC_PER_IP_PER_MIN", 30),
+  },
+  /** Authenticated user actions — loose ceilings (per IP + per user). */
+  authed: {
+    perIpPerMinute: num("RATE_LIMIT_AUTHED_IP_PER_MIN", 2000),
+    perUserPerMinute: num("RATE_LIMIT_AUTHED_USER_PER_MIN", 1200),
+  },
+  /** Free-plan AI message budgets (per user). */
+  plans: {
+    freeHourly: num("RATE_LIMIT_FREE_HOURLY", 10),
+    freeDaily: num("RATE_LIMIT_FREE_DAILY", 50),
+    proHourly: num("RATE_LIMIT_PRO_HOURLY", 100),
+  },
+} as const;
+
 let _redis: Redis | null = null;
 function getRedis(): Redis {
   if (!_redis) {
@@ -36,7 +77,7 @@ function getFreeHourly() {
   if (!_freeHourly) {
     _freeHourly = new Ratelimit({
       redis: getRedis(),
-      limiter: Ratelimit.slidingWindow(10, "1 h"),
+      limiter: Ratelimit.slidingWindow(rateLimitConfig.plans.freeHourly, "1 h"),
       analytics: true,
       prefix: "ratelimit:free:hourly",
     });
@@ -49,7 +90,7 @@ function getFreeDaily() {
   if (!_freeDaily) {
     _freeDaily = new Ratelimit({
       redis: getRedis(),
-      limiter: Ratelimit.slidingWindow(50, "24 h"),
+      limiter: Ratelimit.slidingWindow(rateLimitConfig.plans.freeDaily, "24 h"),
       analytics: true,
       prefix: "ratelimit:free:daily",
     });
@@ -62,7 +103,7 @@ function getProHourly() {
   if (!_proHourly) {
     _proHourly = new Ratelimit({
       redis: getRedis(),
-      limiter: Ratelimit.slidingWindow(100, "1 h"),
+      limiter: Ratelimit.slidingWindow(rateLimitConfig.plans.proHourly, "1 h"),
       analytics: true,
       prefix: "ratelimit:pro:hourly",
     });
@@ -159,21 +200,169 @@ export async function checkMessageLimit(userId: string, plan: string): Promise<R
     return unconfiguredCheck();
   }
 
+  const { plans } = rateLimitConfig;
   if (plan === "pro" || plan === "enterprise") {
     const { success, remaining } = await getProHourly().limit(userId);
-    return { allowed: success, limit: 100, window: "hour", remaining: remaining ?? 0 };
+    return { allowed: success, limit: plans.proHourly, window: "hour", remaining: remaining ?? 0 };
   }
   const [hourly, daily] = await Promise.all([
     getFreeHourly().limit(userId),
     getFreeDaily().limit(userId),
   ]);
   if (!daily.success) {
-    return { allowed: false, limit: 50, window: "day", remaining: 0 };
+    return { allowed: false, limit: plans.freeDaily, window: "day", remaining: 0 };
   }
   if (!hourly.success) {
-    return { allowed: false, limit: 10, window: "hour", remaining: daily.remaining ?? 0 };
+    return { allowed: false, limit: plans.freeHourly, window: "hour", remaining: daily.remaining ?? 0 };
   }
-  return { allowed: true, limit: 50, window: "day", remaining: daily.remaining ?? 0 };
+  return { allowed: true, limit: plans.freeDaily, window: "day", remaining: daily.remaining ?? 0 };
+}
+
+// ── Tier limiters (auth / public / authed) ────────────────────────────
+
+let _authAttemptLimiter: Ratelimit | null = null;
+function getAuthAttemptLimiter() {
+  if (!_authAttemptLimiter) {
+    _authAttemptLimiter = new Ratelimit({
+      redis: getRedis(),
+      limiter: Ratelimit.slidingWindow(rateLimitConfig.auth.attemptPerIpPerMinute, "1 m"),
+      prefix: "ratelimit:auth:attempt",
+    });
+  }
+  return _authAttemptLimiter;
+}
+
+let _publicIpLimiter: Ratelimit | null = null;
+function getPublicIpLimiter() {
+  if (!_publicIpLimiter) {
+    _publicIpLimiter = new Ratelimit({
+      redis: getRedis(),
+      limiter: Ratelimit.slidingWindow(rateLimitConfig.public.perIpPerMinute, "1 m"),
+      prefix: "ratelimit:public:ip",
+    });
+  }
+  return _publicIpLimiter;
+}
+
+let _authedIpLimiter: Ratelimit | null = null;
+function getAuthedIpLimiter() {
+  if (!_authedIpLimiter) {
+    _authedIpLimiter = new Ratelimit({
+      redis: getRedis(),
+      limiter: Ratelimit.slidingWindow(rateLimitConfig.authed.perIpPerMinute, "1 m"),
+      prefix: "ratelimit:authed:ip",
+    });
+  }
+  return _authedIpLimiter;
+}
+
+let _authedUserLimiter: Ratelimit | null = null;
+function getAuthedUserLimiter() {
+  if (!_authedUserLimiter) {
+    _authedUserLimiter = new Ratelimit({
+      redis: getRedis(),
+      limiter: Ratelimit.slidingWindow(rateLimitConfig.authed.perUserPerMinute, "1 m"),
+      prefix: "ratelimit:authed:user",
+    });
+  }
+  return _authedUserLimiter;
+}
+
+/**
+ * Auth-route guard (credential submissions) with exponential backoff instead
+ * of a hard lockout: a per-IP window, plus a cooldown that doubles with each
+ * consecutive violation (base → max seconds) and decays once the IP stops
+ * trying. Per-account attempt limits are enforced natively by Clerk's
+ * password policy; this is the defense-in-depth layer.
+ *
+ * Returns `retryAfterSeconds` when rejected so callers can set Retry-After.
+ */
+export async function checkAuthRouteLimit(
+  ip: string
+): Promise<RateLimitCheck & { retryAfterSeconds?: number }> {
+  if (!CONFIGURED) return unconfiguredCheck();
+  const redis = getRedis();
+  const key = ip || "unknown";
+  const cooldownKey = `ratelimit:auth:cooldown:${key}`;
+  const violationsKey = `ratelimit:auth:violations:${key}`;
+  const max = rateLimitConfig.auth.backoffMaxSeconds;
+
+  // Active exponential cooldown? Reject immediately with the remaining time.
+  const ttl = await redis.ttl(cooldownKey);
+  if (ttl > 0) {
+    return {
+      allowed: false,
+      limit: rateLimitConfig.auth.attemptPerIpPerMinute,
+      window: "minute",
+      remaining: 0,
+      retryAfterSeconds: ttl,
+    };
+  }
+
+  const { success, remaining } = await getAuthAttemptLimiter().limit(key);
+  if (success) {
+    // The IP is behaving again — clear the violation counter so the backoff
+    // (and any future cooldown) starts from scratch.
+    await redis.del(violationsKey).catch(() => {});
+    return {
+      allowed: true,
+      limit: rateLimitConfig.auth.attemptPerIpPerMinute,
+      window: "minute",
+      remaining: remaining ?? 0,
+    };
+  }
+
+  // Over the window: grow the cooldown exponentially per consecutive violation.
+  const violations = await redis.incr(violationsKey);
+  await redis.expire(violationsKey, max);
+  const cooldown = Math.min(
+    rateLimitConfig.auth.backoffBaseSeconds * Math.pow(2, Math.max(0, violations - 1)),
+    max
+  );
+  await redis.set(cooldownKey, String(Date.now() + cooldown * 1000), { ex: max });
+  return {
+    allowed: false,
+    limit: rateLimitConfig.auth.attemptPerIpPerMinute,
+    window: "minute",
+    remaining: 0,
+    retryAfterSeconds: cooldown,
+  };
+}
+
+/** Moderate per-IP ceiling for public (unauthenticated) endpoints. */
+export async function checkPublicIpLimit(ip: string): Promise<RateLimitCheck> {
+  if (!CONFIGURED) return unconfiguredCheck();
+  const { success, remaining } = await getPublicIpLimiter().limit(ip || "unknown");
+  return {
+    allowed: success,
+    limit: rateLimitConfig.public.perIpPerMinute,
+    window: "minute",
+    remaining: remaining ?? 0,
+  };
+}
+
+/** Loose per-IP ceiling for authenticated requests. */
+export async function checkAuthedIpLimit(ip: string): Promise<RateLimitCheck> {
+  if (!CONFIGURED) return unconfiguredCheck();
+  const { success, remaining } = await getAuthedIpLimiter().limit(ip || "unknown");
+  return {
+    allowed: success,
+    limit: rateLimitConfig.authed.perIpPerMinute,
+    window: "minute",
+    remaining: remaining ?? 0,
+  };
+}
+
+/** Loose per-user ceiling for authenticated requests. */
+export async function checkAuthedUserLimit(userId: string): Promise<RateLimitCheck> {
+  if (!CONFIGURED) return unconfiguredCheck();
+  const { success, remaining } = await getAuthedUserLimiter().limit(userId || "unknown");
+  return {
+    allowed: success,
+    limit: rateLimitConfig.authed.perUserPerMinute,
+    window: "minute",
+    remaining: remaining ?? 0,
+  };
 }
 
 /** True when Upstash is configured (used by startup validation to decide strictness). */

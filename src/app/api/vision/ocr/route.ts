@@ -1,5 +1,6 @@
 import { ok, fail, withApiHandler } from "@/lib/withApiHandler";
 import { visionService } from "@/services/VisionService";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 
 const ocrSchema = z.object({
@@ -16,6 +17,7 @@ export const POST = api.POST(async (ctx, body) => {
     const result = await visionService.ocr(parsed.data.image);
     return ok(result);
   } catch (error) {
-    return fail("OCR_FAILED", error instanceof Error ? error.message : "OCR failed", 502);
+    logger.error("[API] OCR failed", { userId: ctx.user.id }, error instanceof Error ? error : undefined);
+    return fail("OCR_FAILED", "OCR failed", 502);
   }
 });

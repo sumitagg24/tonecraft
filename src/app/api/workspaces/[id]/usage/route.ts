@@ -1,6 +1,7 @@
 import { ok, fail, withApiHandler } from "@/lib/withApiHandler";
 import { usageService } from "@/services/UsageService";
 import { permissionMiddleware } from "@/middleware/permissionMiddleware";
+import { logger } from "@/lib/logger";
 
 const api = withApiHandler();
 
@@ -42,6 +43,7 @@ export const POST = api.POST(async (ctx, body) => {
     );
     return ok(usage, 201);
   } catch (e) {
-    return fail("ERROR", e instanceof Error ? e.message : "Failed to record usage", 500);
+    logger.error("[API] Failed to record usage", { userId: ctx.user.id }, e instanceof Error ? e : undefined);
+    return fail("ERROR", "Failed to record usage", 500);
   }
 });

@@ -1,5 +1,6 @@
 import { ok, fail, withApiHandler } from "@/lib/withApiHandler";
 import { visionService } from "@/services/VisionService";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 
 const analyzeSchema = z.object({
@@ -17,6 +18,7 @@ export const POST = api.POST(async (ctx, body) => {
     const result = await visionService.analyzeImage(parsed.data.image, parsed.data.prompt);
     return ok(result);
   } catch (error) {
-    return fail("VISION_FAILED", error instanceof Error ? error.message : "Vision analysis failed", 502);
+    logger.error("[API] Vision analysis failed", { userId: ctx.user.id }, error instanceof Error ? error : undefined);
+    return fail("VISION_FAILED", "Vision analysis failed", 502);
   }
 });
