@@ -1,88 +1,45 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { createPollingStreamRoute } from "@/lib/sse";
 
-export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+export const GET = createPollingStreamRoute({
+  intervalMs: 10_000,
+  createPoll: (userId) => {
+    let lastCount = 0;
+    let lastPoll = 0;
 
-  const encoder = new TextEncoder();
-  const stream = new ReadableStream({
-    async start(controller) {
-      const userId = session.user.id;
+    return async (send) => {
+      const now = Date.now();
 
-      const sendEvent = (data: string) => {
-        controller.enqueue(encoder.encode(`data: ${data}\n\n`));
-      };
-
-      sendEvent(JSON.stringify({ type: "connected" }));
-
-      let lastCount = 0;
-      let lastPoll = 0;
-
-      const pollInterval = setInterval(async () => {
-        try {
-          const now = Date.now();
-          const since = new Date(now - 30_000);
-
-          const unread = await prisma.notification.count({
-            where: { userId, readAt: null },
-          });
-
-          if (unread !== lastCount) {
-            lastCount = unread;
-            sendEvent(JSON.stringify({ type: "unread_count", count: unread }));
-          }
-
-          if (now - lastPoll > 5_000) {
-            lastPoll = now;
-            const recent = await prisma.notification.findMany({
-              where: { userId, createdAt: { gte: since } },
-              orderBy: { createdAt: "desc" },
-              take: 5,
-              select: {
-                id: true,
-                type: true,
-                title: true,
-                body: true,
-                link: true,
-                readAt: true,
-                createdAt: true,
-              },
-            });
-
-            if (recent.length > 0) {
-              sendEvent(JSON.stringify({ type: "notifications", notifications: recent }));
-            }
-          }
-        } catch {
-          sendEvent(JSON.stringify({ type: "error", message: "poll failed" }));
-        }
-      }, 10_000);
-
-      req.signal.addEventListener("abort", () => {
-        clearInterval(pollInterval);
-        controller.close();
+      const unread = await prisma.notification.count({
+        where: { userId, readAt: null },
       });
 
-      try {
-        await new Promise<void>((resolve) => {
-          req.signal.addEventListener("abort", () => resolve());
-        });
-      } finally {
-        clearInterval(pollInterval);
+      if (unread !== lastCount) {
+        lastCount = unread;
+        send({ type: "unread_count", count: unread });
       }
-    },
-  });
 
-  return new NextResponse(stream, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-      "X-Accel-Buffering": "no",
-    },
-  });
-}
+      if (now - lastPoll > 5_000) {
+        lastPoll = now;
+        const recent = await prisma.notification.findMany({
+          where: { userId, createdAt: { gte: new Date(now - 30_000) } },
+          orderBy: { createdAt: "desc" },
+          take: 5,
+          select: {
+            id: true,
+            type: true,
+            title: true,
+            body: true,
+            link: true,
+            readAt: true,
+            createdAt: true,
+          },
+        });
+
+        if (recent.length > 0) {
+          send({ type: "notifications", notifications: recent });
+        }
+      }
+    };
+  },
+});

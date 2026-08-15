@@ -1,22 +1,14 @@
-import { ok, fail, withApiHandler } from "@/lib/withApiHandler";
+import { ok, withApiHandler } from "@/lib/withApiHandler";
 import { prisma } from "@/lib/prisma";
-import { permissionMiddleware } from "@/middleware/permissionMiddleware";
+import { requireWorkspaceAdmin, resolveMetricsPeriod } from "@/lib/admin-metrics";
 
 const api = withApiHandler();
 
 export const GET = api.GET(async (ctx) => {
-  const workspaceId = ctx.request.nextUrl.searchParams.get("workspaceId");
-  const period = ctx.request.nextUrl.searchParams.get("period") || "30d";
-
-  if (!workspaceId) {
-    return fail("BAD_REQUEST", "workspaceId is required", 400);
-  }
-
-  const role = await permissionMiddleware.checkWorkspaceRole(workspaceId, ctx.user.id, "admin");
-  if (role !== "admin") return fail("FORBIDDEN", "Admin access required", 403);
-
-  const days = period === "7d" ? 7 : period === "30d" ? 30 : period === "90d" ? 90 : 30;
-  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  const admin = await requireWorkspaceAdmin(ctx);
+  if (!admin.ok) return admin.error;
+  const { workspaceId } = admin.scope;
+  const { period, since } = resolveMetricsPeriod(ctx);
 
   const projects = await prisma.project.findMany({
     where: { workspaceId },

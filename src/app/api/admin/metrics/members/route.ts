@@ -1,18 +1,13 @@
-import { ok, fail, withApiHandler } from "@/lib/withApiHandler";
+import { ok, withApiHandler } from "@/lib/withApiHandler";
 import { prisma } from "@/lib/prisma";
-import { permissionMiddleware } from "@/middleware/permissionMiddleware";
+import { requireWorkspaceAdmin } from "@/lib/admin-metrics";
 
 const api = withApiHandler();
 
 export const GET = api.GET(async (ctx) => {
-  const workspaceId = ctx.request.nextUrl.searchParams.get("workspaceId");
-
-  if (!workspaceId) {
-    return fail("BAD_REQUEST", "workspaceId is required", 400);
-  }
-
-  const role = await permissionMiddleware.checkWorkspaceRole(workspaceId, ctx.user.id, "admin");
-  if (role !== "admin") return fail("FORBIDDEN", "Admin access required", 403);
+  const admin = await requireWorkspaceAdmin(ctx);
+  if (!admin.ok) return admin.error;
+  const { workspaceId } = admin.scope;
 
   const members = await prisma.workspaceMember.findMany({
     where: { workspaceId },

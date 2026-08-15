@@ -5,8 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { api } from "@/lib/api-client";
-import { ApiError } from "@/lib/api-client";
+import { api, ApiError } from "@/lib/api-client";
+import { AdminPageSkeleton } from "@/components/shared/AdminPageSkeleton";
+import { fetchCurrentWorkspaceId } from "@/hooks/use-admin-metrics";
 
 interface PermissionData {
   total: number;
@@ -54,13 +55,8 @@ export default function AdminPermissionsPage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
 
-  const fetchWorkspaceId = useCallback(async (): Promise<string | null> => {
-    const workspaces = await api<Array<{ id: string }>>("/api/workspaces");
-    return workspaces?.[0]?.id ?? null;
-  }, []);
-
   const fetchData = useCallback(async () => {
-    const workspaceId = await fetchWorkspaceId();
+    const workspaceId = await fetchCurrentWorkspaceId();
     if (!workspaceId) return;
     setLoading(true);
     try {
@@ -71,14 +67,14 @@ export default function AdminPermissionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [fetchWorkspaceId]);
+  }, []);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
   const handleChangeRole = useCallback(async (userId: string, role: string) => {
-    const workspaceId = (await fetchWorkspaceId());
+    const workspaceId = await fetchCurrentWorkspaceId();
     if (!workspaceId) return;
     setUpdating(userId);
     try {
@@ -94,10 +90,10 @@ export default function AdminPermissionsPage() {
     } finally {
       setUpdating(null);
     }
-  }, [fetchWorkspaceId, fetchData]);
+  }, [fetchData]);
 
   const handleRemoveMember = useCallback(async (userId: string) => {
-    const workspaceId = (await fetchWorkspaceId());
+    const workspaceId = await fetchCurrentWorkspaceId();
     if (!workspaceId) return;
     if (!confirm("Remove this member from the workspace?")) return;
     setUpdating(userId);
@@ -112,19 +108,10 @@ export default function AdminPermissionsPage() {
     } finally {
       setUpdating(null);
     }
-  }, [fetchWorkspaceId, fetchData]);
+  }, [fetchData]);
 
   if (loading) {
-    return (
-      <div className="p-6 space-y-4">
-        <div className="h-8 w-48 bg-muted/30 rounded animate-pulse" />
-        <div className="space-y-3">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-16 bg-muted/10 rounded-xl animate-pulse" />
-          ))}
-        </div>
-      </div>
-    );
+    return <AdminPageSkeleton count={4} itemClassName="h-16" />;
   }
 
   if (!data) {

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { workspaceMemberRepository } from "@/repositories/WorkspaceMemberRepository";
 import { workspaceActivityRepository } from "@/repositories/WorkspaceActivityRepository";
 import { auditLogService } from "@/services/AuditLogService";
-import { permissionMiddleware } from "@/middleware/permissionMiddleware";
+import { requireWorkspaceAdmin } from "@/lib/admin-metrics";
 import { z } from "zod";
 
 const roleSchema = z.object({
@@ -13,14 +13,9 @@ const roleSchema = z.object({
 const api = withApiHandler();
 
 export const GET = api.GET(async (ctx) => {
-  const workspaceId = ctx.request.nextUrl.searchParams.get("workspaceId");
-
-  if (!workspaceId) {
-    return fail("BAD_REQUEST", "workspaceId is required", 400);
-  }
-
-  const role = await permissionMiddleware.checkWorkspaceRole(workspaceId, ctx.user.id, "admin");
-  if (role !== "admin") return fail("FORBIDDEN", "Admin access required", 403);
+  const admin = await requireWorkspaceAdmin(ctx);
+  if (!admin.ok) return admin.error;
+  const { workspaceId } = admin.scope;
 
   const [members, pendingInvites, auditLogs] = await Promise.all([
     workspaceMemberRepository.findByWorkspace(workspaceId),
@@ -66,15 +61,14 @@ export const GET = api.GET(async (ctx) => {
 });
 
 export const PATCH = api.PATCH(async (ctx, body) => {
-  const workspaceId = ctx.request.nextUrl.searchParams.get("workspaceId");
+  const admin = await requireWorkspaceAdmin(ctx, {
+    forbiddenMessage: "Only admins can update member roles",
+  });
+  if (!admin.ok) return admin.error;
+  const { workspaceId } = admin.scope;
+
   const targetUserId = ctx.request.nextUrl.searchParams.get("targetUserId");
-
-  if (!workspaceId || !targetUserId) {
-    return fail("BAD_REQUEST", "workspaceId and targetUserId are required", 400);
-  }
-
-  const check = await permissionMiddleware.checkWorkspaceRole(workspaceId, ctx.user.id, "admin");
-  if (check !== "admin") return fail("FORBIDDEN", "Only admins can update member roles", 403);
+  if (!targetUserId) return fail("BAD_REQUEST", "targetUserId is required", 400);
 
   const parsed = roleSchema.safeParse(body ?? {});
   if (!parsed.success) {
@@ -107,15 +101,14 @@ export const PATCH = api.PATCH(async (ctx, body) => {
 });
 
 export const DELETE = api.DELETE(async (ctx) => {
-  const workspaceId = ctx.request.nextUrl.searchParams.get("workspaceId");
+  const admin = await requireWorkspaceAdmin(ctx, {
+    forbiddenMessage: "Only admins can remove members",
+  });
+  if (!admin.ok) return admin.error;
+  const { workspaceId } = admin.scope;
+
   const targetUserId = ctx.request.nextUrl.searchParams.get("targetUserId");
-
-  if (!workspaceId || !targetUserId) {
-    return fail("BAD_REQUEST", "workspaceId and targetUserId are required", 400);
-  }
-
-  const check = await permissionMiddleware.checkWorkspaceRole(workspaceId, ctx.user.id, "admin");
-  if (check !== "admin") return fail("FORBIDDEN", "Only admins can remove members", 403);
+  if (!targetUserId) return fail("BAD_REQUEST", "targetUserId is required", 400);
 
   const result = await workspaceMemberRepository.remove(workspaceId, targetUserId);
   if (result.count === 0) return notFound();

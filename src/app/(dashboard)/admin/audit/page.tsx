@@ -1,12 +1,12 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { FileText, RefreshCw, Search } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
-import { api } from "@/lib/api-client";
+import { AdminPageSkeleton } from "@/components/shared/AdminPageSkeleton";
+import { useAdminMetrics } from "@/hooks/use-admin-metrics";
 
 interface AuditEntry {
   id: string;
@@ -24,35 +24,20 @@ interface AuditResponse {
 }
 
 export default function AdminAuditPage() {
-  const [data, setData] = useState<AuditResponse>({ items: [], total: 0 });
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [page] = useState(1);
   const perPage = 50;
 
-  const fetchWorkspaceId = useCallback(async (): Promise<string | null> => {
-    const workspaces = await api<Array<{ id: string }>>("/api/workspaces");
-    return workspaces?.[0]?.id ?? null;
-  }, []);
+  const { data: response, loading, refetch } = useAdminMetrics<AuditResponse>({
+    path: useCallback(
+      (workspaceId: string) =>
+        `/api/admin/audit-logs?workspaceId=${workspaceId}&page=${page}&perPage=${perPage}`,
+      [page]
+    ),
+    errorMessage: "Failed to load audit logs",
+  });
 
-  const fetchData = useCallback(async () => {
-    const workspaceId = await fetchWorkspaceId();
-    if (!workspaceId) return;
-    setLoading(true);
-    try {
-      const url = `/api/admin/audit-logs?workspaceId=${workspaceId}&page=${page}&perPage=${perPage}`;
-      const d = await api<AuditResponse>(url);
-      setData(d);
-    } catch {
-      toast.error("Failed to load audit logs");
-    } finally {
-      setLoading(false);
-    }
-  }, [fetchWorkspaceId, page]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const data = response ?? { items: [], total: 0 };
 
   const filtered = searchTerm
     ? data.items.filter(
@@ -73,16 +58,7 @@ export default function AdminAuditPage() {
   );
 
   if (loading) {
-    return (
-      <div className="p-6 space-y-4">
-        <div className="h-8 w-48 bg-muted/30 rounded animate-pulse" />
-        <div className="space-y-3">
-          {Array.from({ length: 10 }).map((_, i) => (
-            <div key={i} className="h-12 bg-muted/10 rounded animate-pulse" />
-          ))}
-        </div>
-      </div>
-    );
+    return <AdminPageSkeleton count={10} itemClassName="h-12 rounded" />;
   }
 
   return (
@@ -104,7 +80,7 @@ export default function AdminAuditPage() {
               className="pl-8 w-48"
             />
           </div>
-          <Button variant="outline" size="sm" onClick={fetchData}>
+          <Button variant="outline" size="sm" onClick={refetch}>
             <RefreshCw className="w-4 h-4 mr-2" />
             Refresh
           </Button>
