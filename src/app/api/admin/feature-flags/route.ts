@@ -1,5 +1,5 @@
 import { ok, fail, withApiHandler } from "@/lib/withApiHandler";
-import { permissionMiddleware } from "@/middleware/permissionMiddleware";
+import { requireWorkspaceAdmin } from "@/lib/admin-metrics";
 import { getFeatureFlags, type FeatureKey } from "@/config/features";
 import { featureFlagService } from "@/services/FeatureFlagService";
 import { auditLogService } from "@/services/AuditLogService";
@@ -14,11 +14,8 @@ const setSchema = z.object({
 });
 
 export const GET = api.GET(async (ctx) => {
-  const workspaceId = ctx.request.nextUrl.searchParams.get("workspaceId");
-  if (!workspaceId) return fail("BAD_REQUEST", "workspaceId is required", 400);
-
-  const role = await permissionMiddleware.checkWorkspaceRole(workspaceId, ctx.user.id, "admin");
-  if (role !== "admin") return fail("FORBIDDEN", "Admin access required", 403);
+  const admin = await requireWorkspaceAdmin(ctx);
+  if (!admin.ok) return admin.error;
 
   const overrides = await featureFlagService.getAllOverrides();
   const flags = getFeatureFlags().map((f) => ({
@@ -33,11 +30,9 @@ export const GET = api.GET(async (ctx) => {
 });
 
 export const POST = api.POST(async (ctx, body) => {
-  const workspaceId = ctx.request.nextUrl.searchParams.get("workspaceId");
-  if (!workspaceId) return fail("BAD_REQUEST", "workspaceId is required", 400);
-
-  const role = await permissionMiddleware.checkWorkspaceRole(workspaceId, ctx.user.id, "admin");
-  if (role !== "admin") return fail("FORBIDDEN", "Admin access required", 403);
+  const admin = await requireWorkspaceAdmin(ctx);
+  if (!admin.ok) return admin.error;
+  const { workspaceId } = admin.scope;
 
   const parsed = setSchema.safeParse(body);
   if (!parsed.success) return fail("VALIDATION_ERROR", "Invalid request body", 400);
@@ -57,11 +52,9 @@ export const POST = api.POST(async (ctx, body) => {
 });
 
 export const DELETE = api.DELETE(async (ctx) => {
-  const workspaceId = ctx.request.nextUrl.searchParams.get("workspaceId");
-  if (!workspaceId) return fail("BAD_REQUEST", "workspaceId is required", 400);
-
-  const role = await permissionMiddleware.checkWorkspaceRole(workspaceId, ctx.user.id, "admin");
-  if (role !== "admin") return fail("FORBIDDEN", "Admin access required", 403);
+  const admin = await requireWorkspaceAdmin(ctx);
+  if (!admin.ok) return admin.error;
+  const { workspaceId } = admin.scope;
 
   const key = ctx.request.nextUrl.searchParams.get("key");
   if (!key) return fail("BAD_REQUEST", "key is required", 400);

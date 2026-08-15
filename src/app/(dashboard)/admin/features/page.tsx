@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { api } from "@/lib/api-client";
+import { AdminPageSkeleton } from "@/components/shared/AdminPageSkeleton";
+import { fetchCurrentWorkspaceId } from "@/hooks/use-admin-metrics";
 import { cn } from "@/lib/utils";
 
 interface FlagEntry {
@@ -31,13 +33,8 @@ export default function AdminFeatureFlagsPage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
 
-  const fetchWorkspaceId = useCallback(async (): Promise<string | null> => {
-    const workspaces = await api<Array<{ id: string }>>("/api/workspaces");
-    return workspaces?.[0]?.id ?? null;
-  }, []);
-
   const fetchData = useCallback(async () => {
-    const workspaceId = await fetchWorkspaceId();
+    const workspaceId = await fetchCurrentWorkspaceId();
     if (!workspaceId) return;
     setLoading(true);
     try {
@@ -48,14 +45,14 @@ export default function AdminFeatureFlagsPage() {
     } finally {
       setLoading(false);
     }
-  }, [fetchWorkspaceId]);
+  }, []);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
   const toggle = useCallback(async (key: string, enabled: boolean) => {
-    const workspaceId = await fetchWorkspaceId();
+    const workspaceId = await fetchCurrentWorkspaceId();
     if (!workspaceId) return;
     setUpdating(key);
     try {
@@ -71,10 +68,10 @@ export default function AdminFeatureFlagsPage() {
     } finally {
       setUpdating(null);
     }
-  }, [fetchWorkspaceId, fetchData]);
+  }, [fetchData]);
 
   const clearOverride = useCallback(async (key: string) => {
-    const workspaceId = await fetchWorkspaceId();
+    const workspaceId = await fetchCurrentWorkspaceId();
     if (!workspaceId) return;
     setUpdating(key);
     try {
@@ -86,19 +83,10 @@ export default function AdminFeatureFlagsPage() {
     } finally {
       setUpdating(null);
     }
-  }, [fetchWorkspaceId, fetchData]);
+  }, [fetchData]);
 
   if (loading) {
-    return (
-      <div className="p-6 space-y-4">
-        <div className="h-8 w-48 bg-muted/30 rounded animate-pulse" />
-        <div className="space-y-3">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-20 bg-muted/10 rounded-xl animate-pulse" />
-          ))}
-        </div>
-      </div>
-    );
+    return <AdminPageSkeleton count={5} itemClassName="h-20" />;
   }
 
   return (
