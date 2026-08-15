@@ -1,10 +1,15 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { BarChart3, TrendingUp, Clock, Activity } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
-import { api } from "@/lib/api-client";
+import { AdminPageSkeleton } from "@/components/shared/AdminPageSkeleton";
+import {
+  useAdminMetrics,
+  METRIC_PERIODS,
+  DEFAULT_METRIC_PERIOD,
+} from "@/hooks/use-admin-metrics";
+import { formatCompactNumber } from "@/lib/utils";
 
 interface AiUsageData {
   period: string;
@@ -30,57 +35,20 @@ interface AiUsageData {
   }>;
 }
 
-const PERIODS = [
-  { value: "7d", label: "7 days" },
-  { value: "30d", label: "30 days" },
-  { value: "90d", label: "90 days" },
-];
-
 export default function AdminUsagePage() {
-  const [data, setData] = useState<AiUsageData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState("30d");
+  const [period, setPeriod] = useState<string>(DEFAULT_METRIC_PERIOD);
 
-  const fetchWorkspaceId = useCallback(async (): Promise<string | null> => {
-    const workspaces = await api<Array<{ id: string }>>("/api/workspaces");
-    return workspaces?.[0]?.id ?? null;
-  }, []);
-
-  const fetchData = useCallback(async () => {
-    const workspaceId = await fetchWorkspaceId();
-    if (!workspaceId) return;
-    setLoading(true);
-    try {
-      const d = await api<AiUsageData>(`/api/admin/metrics/ai-usage?workspaceId=${workspaceId}&period=${period}`);
-      setData(d);
-    } catch {
-      toast.error("Failed to load AI usage data");
-    } finally {
-      setLoading(false);
-    }
-  }, [fetchWorkspaceId, period]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const formatNumber = (n: number) => {
-    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-    return n.toString();
-  };
+  const { data, loading } = useAdminMetrics<AiUsageData>({
+    path: useCallback(
+      (workspaceId: string) =>
+        `/api/admin/metrics/ai-usage?workspaceId=${workspaceId}&period=${period}`,
+      [period]
+    ),
+    errorMessage: "Failed to load AI usage data",
+  });
 
   if (loading) {
-    return (
-      <div className="p-6 space-y-4">
-        <div className="h-8 w-48 bg-muted/30 rounded animate-pulse" />
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-24 bg-muted/10 rounded-xl animate-pulse" />
-          ))}
-        </div>
-      </div>
-    );
+    return <AdminPageSkeleton count={4} gridClassName="grid-cols-1 md:grid-cols-4" />;
   }
 
   if (!data) {
@@ -105,7 +73,7 @@ export default function AdminUsagePage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {PERIODS.map((p) => (
+            {METRIC_PERIODS.map((p) => (
               <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
             ))}
           </SelectContent>
@@ -119,7 +87,7 @@ export default function AdminUsagePage() {
               <BarChart3 className="w-4 h-4 text-brand" />
               <span className="text-xs text-muted-foreground">Total Tokens</span>
             </div>
-            <p className="text-2xl font-bold">{formatNumber(data.overview.totalTokens)}</p>
+            <p className="text-2xl font-bold">{formatCompactNumber(data.overview.totalTokens)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -128,7 +96,7 @@ export default function AdminUsagePage() {
               <Activity className="w-4 h-4 text-emerald-500" />
               <span className="text-xs text-muted-foreground">Requests</span>
             </div>
-            <p className="text-2xl font-bold">{formatNumber(data.overview.totalRequests)}</p>
+            <p className="text-2xl font-bold">{formatCompactNumber(data.overview.totalRequests)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -163,7 +131,7 @@ export default function AdminUsagePage() {
                 <div key={m.model} className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="font-medium">{m.model}</span>
-                    <span className="text-muted-foreground">{formatNumber(m.tokens)} tokens · {m.calls} calls</span>
+                    <span className="text-muted-foreground">{formatCompactNumber(m.tokens)} tokens · {m.calls} calls</span>
                   </div>
                   <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                     <div
@@ -234,7 +202,7 @@ export default function AdminUsagePage() {
                   </div>
                 </div>
                 <span className="w-20 text-right text-xs text-muted-foreground">
-                  {formatNumber(d.tokens)} tokens
+                  {formatCompactNumber(d.tokens)} tokens
                 </span>
                 {d.errors > 0 && (
                   <span className="text-xs text-destructive">{d.errors} errors</span>

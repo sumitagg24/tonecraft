@@ -1,12 +1,11 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useCallback } from "react";
 import { BookOpen, RefreshCw, FileText, Database } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import { formatFileSize } from "@/lib/utils";
-import { cn } from "@/lib/utils";
-import { api } from "@/lib/api-client";
+import { AdminPageSkeleton } from "@/components/shared/AdminPageSkeleton";
+import { useAdminMetrics } from "@/hooks/use-admin-metrics";
+import { cn, formatFileSize } from "@/lib/utils";
 
 interface KnowledgeData {
   totalFiles: number;
@@ -32,43 +31,16 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function AdminKnowledgePage() {
-  const [data, setData] = useState<KnowledgeData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const fetchWorkspaceId = useCallback(async (): Promise<string | null> => {
-    const workspaces = await api<Array<{ id: string }>>("/api/workspaces");
-    return workspaces?.[0]?.id ?? null;
-  }, []);
-
-  const fetchData = useCallback(async () => {
-    const workspaceId = await fetchWorkspaceId();
-    if (!workspaceId) return;
-    setLoading(true);
-    try {
-      const d = await api<KnowledgeData>(`/api/admin/metrics/knowledge?workspaceId=${workspaceId}`);
-      setData(d);
-    } catch {
-      toast.error("Failed to load knowledge data");
-    } finally {
-      setLoading(false);
-    }
-  }, [fetchWorkspaceId]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const { data, loading, refetch } = useAdminMetrics<KnowledgeData>({
+    path: useCallback(
+      (workspaceId: string) => `/api/admin/metrics/knowledge?workspaceId=${workspaceId}`,
+      []
+    ),
+    errorMessage: "Failed to load knowledge data",
+  });
 
   if (loading) {
-    return (
-      <div className="p-6 space-y-4">
-        <div className="h-8 w-48 bg-muted/30 rounded animate-pulse" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-24 bg-muted/10 rounded-xl animate-pulse" />
-          ))}
-        </div>
-      </div>
-    );
+    return <AdminPageSkeleton count={6} gridClassName="grid-cols-1 md:grid-cols-3" />;
   }
 
   if (!data) {
@@ -88,7 +60,7 @@ export default function AdminKnowledgePage() {
             {data.totalFiles} files, {formatFileSize(data.totalBytes)} total storage
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={fetchData}>
+        <Button variant="outline" size="sm" onClick={refetch}>
           <RefreshCw className="w-4 h-4 mr-2" />
           Refresh
         </Button>

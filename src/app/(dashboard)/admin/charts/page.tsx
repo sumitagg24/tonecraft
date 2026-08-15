@@ -1,10 +1,14 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
-import { api } from "@/lib/api-client";
-import { cn } from "@/lib/utils";
+import { AdminPageSkeleton } from "@/components/shared/AdminPageSkeleton";
+import {
+  useAdminMetrics,
+  METRIC_PERIODS,
+  DEFAULT_METRIC_PERIOD,
+} from "@/hooks/use-admin-metrics";
+import { cn, formatCompactNumber } from "@/lib/utils";
 
 interface DailyUsage {
   date: string;
@@ -33,12 +37,6 @@ interface AIUsageResponse {
   recentErrors: unknown[];
 }
 
-const PERIODS = [
-  { value: "7d", label: "7 days" },
-  { value: "30d", label: "30 days" },
-  { value: "90d", label: "90 days" },
-];
-
 const CHART_COLORS = [
   "bg-violet-500", "bg-indigo-500", "bg-blue-500", "bg-cyan-500",
   "bg-teal-500", "bg-green-500", "bg-amber-500", "bg-rose-500",
@@ -46,58 +44,28 @@ const CHART_COLORS = [
 ];
 
 export default function AdminChartsPage() {
-  const [data, setData] = useState<ChartData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState("30d");
+  const [period, setPeriod] = useState<string>(DEFAULT_METRIC_PERIOD);
 
-  const fetchWorkspaceId = useCallback(async (): Promise<string | null> => {
-    const workspaces = await api<Array<{ id: string }>>("/api/workspaces");
-    return workspaces?.[0]?.id ?? null;
-  }, []);
-
-  const fetchData = useCallback(async () => {
-    const workspaceId = await fetchWorkspaceId();
-    if (!workspaceId) return;
-    setLoading(true);
-    try {
-      const d = await api<AIUsageResponse>(`/api/admin/metrics/ai-usage?workspaceId=${workspaceId}&period=${period}`);
-      setData({
-        period: d.period,
-        modelUsage: d.byModel,
-        providerUsage: d.byProvider,
-        dailyUsage: d.dailyUsage,
-        errorRate: d.overview.errorRate,
-        totalRequests: d.overview.totalRequests,
-        totalTokens: d.overview.totalTokens,
-      });
-    } catch {
-      toast.error("Failed to load chart data");
-    } finally {
-      setLoading(false);
-    }
-  }, [fetchWorkspaceId, period]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const formatNumber = (n: number) => {
-    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-    return n.toString();
-  };
+  const { data, loading } = useAdminMetrics<ChartData, AIUsageResponse>({
+    path: useCallback(
+      (workspaceId: string) =>
+        `/api/admin/metrics/ai-usage?workspaceId=${workspaceId}&period=${period}`,
+      [period]
+    ),
+    errorMessage: "Failed to load chart data",
+    select: (d) => ({
+      period: d.period,
+      modelUsage: d.byModel,
+      providerUsage: d.byProvider,
+      dailyUsage: d.dailyUsage,
+      errorRate: d.overview.errorRate,
+      totalRequests: d.overview.totalRequests,
+      totalTokens: d.overview.totalTokens,
+    }),
+  });
 
   if (loading) {
-    return (
-      <div className="p-6 space-y-4">
-        <div className="h-8 w-48 bg-muted/30 rounded animate-pulse" />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-64 bg-muted/10 rounded-xl animate-pulse" />
-          ))}
-        </div>
-      </div>
-    );
+    return <AdminPageSkeleton count={4} itemClassName="h-64" gridClassName="grid-cols-1 lg:grid-cols-2" />;
   }
 
   if (!data) {
@@ -126,7 +94,7 @@ export default function AdminChartsPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {PERIODS.map((p) => (
+            {METRIC_PERIODS.map((p) => (
               <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
             ))}
           </SelectContent>
@@ -156,7 +124,7 @@ export default function AdminChartsPage() {
                     />
                   </div>
                   <span className="w-16 text-xs text-right text-muted-foreground">
-                    {formatNumber(m.tokens)}
+                    {formatCompactNumber(m.tokens)}
                   </span>
                 </div>
               ))}
@@ -309,11 +277,11 @@ export default function AdminChartsPage() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center p-4 bg-muted/20 rounded-xl">
-                <p className="text-2xl font-bold">{formatNumber(data.totalTokens)}</p>
+                <p className="text-2xl font-bold">{formatCompactNumber(data.totalTokens)}</p>
                 <p className="text-xs text-muted-foreground">Total Tokens</p>
               </div>
               <div className="text-center p-4 bg-muted/20 rounded-xl">
-                <p className="text-2xl font-bold">{formatNumber(data.totalRequests)}</p>
+                <p className="text-2xl font-bold">{formatCompactNumber(data.totalRequests)}</p>
                 <p className="text-xs text-muted-foreground">Total Requests</p>
               </div>
               <div className="text-center p-4 bg-muted/20 rounded-xl">

@@ -1,5 +1,11 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import { AdminPageSkeleton } from "@/components/shared/AdminPageSkeleton";
+import {
+  useAdminMetrics,
+  METRIC_PERIODS,
+  DEFAULT_METRIC_PERIOD,
+} from "@/hooks/use-admin-metrics";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -9,9 +15,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
-import { cn } from "@/lib/utils";
-import { api } from "@/lib/api-client";
+import { cn, formatCompactNumber, formatFileSize } from "@/lib/utils";
 
 interface OverviewData {
   workspace: { id: string; name: string; color: string };
@@ -25,71 +29,26 @@ interface OverviewData {
   period: string;
 }
 
-const PERIODS = [
-  { value: "7d", label: "7 days" },
-  { value: "30d", label: "30 days" },
-  { value: "90d", label: "90 days" },
-];
-
 export default function AdminOverviewPage() {
   const router = useRouter();
-  const [data, setData] = useState<OverviewData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState("30d");
+  const [period, setPeriod] = useState<string>(DEFAULT_METRIC_PERIOD);
   // Hydration-safe "last updated" — rendered only after mount, deterministic locale.
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   useEffect(() => {
     setLastUpdated(new Date().toLocaleTimeString("en-US"));
   }, []);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const workspaces = await api<Array<{ id: string }>>(`/api/workspaces`);
-      const workspace = workspaces?.[0];
-
-      if (!workspace) {
-        return;
-      }
-
-      const d = await api<OverviewData>(`/api/admin/metrics/overview?workspaceId=${workspace.id}&period=${period}`);
-      setData(d);
-    } catch {
-      toast.error("Failed to load workspace overview");
-    } finally {
-      setLoading(false);
-    }
-  }, [period]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const formatBytes = (bytes: number) => {
-    if (bytes === 0) return "0 B";
-    const k = 1024;
-    const sizes = ["B", "KB", "MB", "GB", "TB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
-  };
-
-  const formatNumber = (n: number) => {
-    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-    return n.toString();
-  };
+  const { data, loading } = useAdminMetrics<OverviewData>({
+    path: useCallback(
+      (workspaceId: string) =>
+        `/api/admin/metrics/overview?workspaceId=${workspaceId}&period=${period}`,
+      [period]
+    ),
+    errorMessage: "Failed to load workspace overview",
+  });
 
   if (loading) {
-    return (
-      <div className="p-6 space-y-6">
-        <div className="h-8 w-48 bg-muted/30 rounded animate-pulse" />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="h-24 bg-muted/10 rounded-xl animate-pulse" />
-          ))}
-        </div>
-      </div>
-    );
+    return <AdminPageSkeleton count={8} gridClassName="grid-cols-2 md:grid-cols-4" />;
   }
 
   if (!data) {
@@ -104,11 +63,11 @@ export default function AdminOverviewPage() {
     { label: "Members", value: data.members.total.toString(), icon: Users, color: "text-blue-500" },
     { label: "Projects", value: data.projects.total.toString(), icon: Folder, color: "text-brand" },
     { label: "Chats", value: data.chats.total.toString(), icon: MessageSquare, color: "text-emerald-500" },
-    { label: "Messages", value: formatNumber(data.messages.total), icon: Activity, color: "text-amber-500" },
+    { label: "Messages", value: formatCompactNumber(data.messages.total), icon: Activity, color: "text-amber-500" },
     { label: "Knowledge Files", value: data.knowledge.files.toString(), icon: HardDrive, color: "text-cyan-500" },
-    { label: "Storage", value: formatBytes(data.knowledge.storageBytes), icon: HardDrive, color: "text-indigo-500" },
-    { label: "AI Tokens", value: formatNumber(data.aiUsage.tokens), icon: BarChart3, color: "text-pink-500" },
-    { label: "AI Requests", value: formatNumber(data.aiUsage.requests), icon: TrendingUp, color: "text-rose-500" },
+    { label: "Storage", value: formatFileSize(data.knowledge.storageBytes), icon: HardDrive, color: "text-indigo-500" },
+    { label: "AI Tokens", value: formatCompactNumber(data.aiUsage.tokens), icon: BarChart3, color: "text-pink-500" },
+    { label: "AI Requests", value: formatCompactNumber(data.aiUsage.requests), icon: TrendingUp, color: "text-rose-500" },
   ];
 
   return (
@@ -122,7 +81,7 @@ export default function AdminOverviewPage() {
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5">
-            {PERIODS.map((p) => (
+            {METRIC_PERIODS.map((p) => (
               <Button
                 key={p.value}
                 variant={period === p.value ? "default" : "outline"}
@@ -219,7 +178,7 @@ export default function AdminOverviewPage() {
               <div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Total Tokens</span>
-                  <span className="font-medium">{formatNumber(data.aiUsage.tokens)}</span>
+                  <span className="font-medium">{formatCompactNumber(data.aiUsage.tokens)}</span>
                 </div>
                 <div className="w-full h-2 bg-muted rounded-full mt-1 overflow-hidden">
                   <div
@@ -231,7 +190,7 @@ export default function AdminOverviewPage() {
               <div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">API Requests</span>
-                  <span className="font-medium">{formatNumber(data.aiUsage.requests)}</span>
+                  <span className="font-medium">{formatCompactNumber(data.aiUsage.requests)}</span>
                 </div>
                 <div className="w-full h-2 bg-muted rounded-full mt-1 overflow-hidden">
                   <div

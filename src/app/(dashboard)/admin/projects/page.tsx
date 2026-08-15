@@ -1,10 +1,11 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useCallback } from "react";
 import { Folder, RefreshCw, ExternalLink, Archive } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import { api } from "@/lib/api-client";
+import { AdminPageSkeleton } from "@/components/shared/AdminPageSkeleton";
+import { useAdminMetrics } from "@/hooks/use-admin-metrics";
+import { formatCompactNumber } from "@/lib/utils";
 
 interface ProjectsData {
   totalProjects: number;
@@ -24,49 +25,16 @@ interface ProjectsData {
 }
 
 export default function AdminProjectsPage() {
-  const [data, setData] = useState<ProjectsData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const fetchWorkspaceId = useCallback(async (): Promise<string | null> => {
-    const workspaces = await api<Array<{ id: string }>>("/api/workspaces");
-    return workspaces?.[0]?.id ?? null;
-  }, []);
-
-  const fetchData = useCallback(async () => {
-    const workspaceId = await fetchWorkspaceId();
-    if (!workspaceId) return;
-    setLoading(true);
-    try {
-      const d = await api<ProjectsData>(`/api/admin/metrics/projects?workspaceId=${workspaceId}`);
-      setData(d);
-    } catch {
-      toast.error("Failed to load projects data");
-    } finally {
-      setLoading(false);
-    }
-  }, [fetchWorkspaceId]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const formatNumber = (n: number) => {
-    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-    return n.toString();
-  };
+  const { data, loading, refetch } = useAdminMetrics<ProjectsData>({
+    path: useCallback(
+      (workspaceId: string) => `/api/admin/metrics/projects?workspaceId=${workspaceId}`,
+      []
+    ),
+    errorMessage: "Failed to load projects data",
+  });
 
   if (loading) {
-    return (
-      <div className="p-6 space-y-4">
-        <div className="h-8 w-48 bg-muted/30 rounded animate-pulse" />
-        <div className="space-y-3">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-24 bg-muted/10 rounded-xl animate-pulse" />
-          ))}
-        </div>
-      </div>
-    );
+    return <AdminPageSkeleton count={5} />;
   }
 
   if (!data) {
@@ -83,10 +51,10 @@ export default function AdminProjectsPage() {
         <div>
           <h1 className="text-2xl font-bold">Projects</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {data.totalProjects} projects, {formatNumber(data.totalMessages)} messages
+            {data.totalProjects} projects, {formatCompactNumber(data.totalMessages)} messages
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={fetchData}>
+        <Button variant="outline" size="sm" onClick={refetch}>
           <RefreshCw className="w-4 h-4 mr-2" />
           Refresh
         </Button>
@@ -107,7 +75,7 @@ export default function AdminProjectsPage() {
             <div className="flex items-center gap-2 mb-2">
               <span className="text-xs text-muted-foreground">AI Tokens Used</span>
             </div>
-            <p className="text-2xl font-bold">{formatNumber(data.aiUsage.tokens)}</p>
+            <p className="text-2xl font-bold">{formatCompactNumber(data.aiUsage.tokens)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -115,7 +83,7 @@ export default function AdminProjectsPage() {
             <div className="flex items-center gap-2 mb-2">
               <span className="text-xs text-muted-foreground">AI Requests</span>
             </div>
-            <p className="text-2xl font-bold">{formatNumber(data.aiUsage.requests)}</p>
+            <p className="text-2xl font-bold">{formatCompactNumber(data.aiUsage.requests)}</p>
           </CardContent>
         </Card>
       </div>

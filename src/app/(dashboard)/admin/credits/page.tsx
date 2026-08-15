@@ -1,11 +1,15 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { CreditCard, TrendingUp, Users } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
-import { cn } from "@/lib/utils";
-import { api } from "@/lib/api-client";
+import { AdminPageSkeleton } from "@/components/shared/AdminPageSkeleton";
+import {
+  useAdminMetrics,
+  METRIC_PERIODS,
+  DEFAULT_METRIC_PERIOD,
+} from "@/hooks/use-admin-metrics";
+import { cn, formatCompactNumber } from "@/lib/utils";
 
 interface CreditsData {
   credits: {
@@ -23,57 +27,20 @@ interface CreditsData {
   period: string;
 }
 
-const PERIODS = [
-  { value: "7d", label: "7 days" },
-  { value: "30d", label: "30 days" },
-  { value: "90d", label: "90 days" },
-];
-
 export default function AdminCreditsPage() {
-  const [data, setData] = useState<CreditsData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState("30d");
+  const [period, setPeriod] = useState<string>(DEFAULT_METRIC_PERIOD);
 
-  const fetchWorkspaceId = useCallback(async (): Promise<string | null> => {
-    const workspaces = await api<Array<{ id: string }>>("/api/workspaces");
-    return workspaces?.[0]?.id ?? null;
-  }, []);
-
-  const fetchData = useCallback(async () => {
-    const workspaceId = await fetchWorkspaceId();
-    if (!workspaceId) return;
-    setLoading(true);
-    try {
-      const d = await api<CreditsData>(`/api/admin/metrics/credits?workspaceId=${workspaceId}&period=${period}`);
-      setData(d);
-    } catch {
-      toast.error("Failed to load credits metrics");
-    } finally {
-      setLoading(false);
-    }
-  }, [fetchWorkspaceId, period]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const formatNumber = (n: number) => {
-    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-    return n.toString();
-  };
+  const { data, loading } = useAdminMetrics<CreditsData>({
+    path: useCallback(
+      (workspaceId: string) =>
+        `/api/admin/metrics/credits?workspaceId=${workspaceId}&period=${period}`,
+      [period]
+    ),
+    errorMessage: "Failed to load credits metrics",
+  });
 
   if (loading) {
-    return (
-      <div className="p-6 space-y-4">
-        <div className="h-8 w-48 bg-muted/30 rounded animate-pulse" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-24 bg-muted/10 rounded-xl animate-pulse" />
-          ))}
-        </div>
-      </div>
-    );
+    return <AdminPageSkeleton count={3} gridClassName="grid-cols-1 md:grid-cols-3" />;
   }
 
   if (!data) {
@@ -98,7 +65,7 @@ export default function AdminCreditsPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {PERIODS.map((p) => (
+            {METRIC_PERIODS.map((p) => (
               <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
             ))}
           </SelectContent>
@@ -112,7 +79,7 @@ export default function AdminCreditsPage() {
               <CreditCard className="w-4 h-4 text-brand" />
               <span className="text-xs text-muted-foreground">Total Tokens</span>
             </div>
-            <p className="text-2xl font-bold">{formatNumber(data.credits.totalTokens)}</p>
+            <p className="text-2xl font-bold">{formatCompactNumber(data.credits.totalTokens)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -121,7 +88,7 @@ export default function AdminCreditsPage() {
               <TrendingUp className="w-4 h-4 text-emerald-500" />
               <span className="text-xs text-muted-foreground">Total Requests</span>
             </div>
-            <p className="text-2xl font-bold">{formatNumber(data.credits.totalRequests)}</p>
+            <p className="text-2xl font-bold">{formatCompactNumber(data.credits.totalRequests)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -156,7 +123,7 @@ export default function AdminCreditsPage() {
                   </div>
                 </div>
                 <span className="w-20 text-right text-xs text-muted-foreground">
-                  {formatNumber(d.tokens)} tokens
+                  {formatCompactNumber(d.tokens)} tokens
                 </span>
               </div>
             ))}
