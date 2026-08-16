@@ -14,9 +14,21 @@ env:
   DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
 
 jobs:
+  # Probe which optional secrets are present. The `secrets` context is NOT
+  # available in `if:` conditions — GitHub rejects the whole workflow — so we
+  # surface secret presence as a job output here and gate steps/jobs on it.
+  check-secrets:
+    runs-on: ubuntu-latest
+    outputs:
+      clerk-present: ${{ steps.probe.outputs.clerk-present }}
+    steps:
+      - id: probe
+        run: echo "clerk-present=${{ secrets.CLERK_SECRET_KEY != '' }}" >> "$GITHUB_OUTPUT"
+
   # Gate: typecheck, dead-code check, and a production build. Always runs,
   # even without Clerk secrets.
   build-and-test:
+    needs: check-secrets
     runs-on: ubuntu-latest
 
     steps:
@@ -59,7 +71,7 @@ jobs:
       # save when e2e will actually run (same condition as the e2e job), so we
       # never write dead entries that would sit in the repo's cache budget.
       - name: Cache production build for e2e jobs
-        if: ${{ secrets.CLERK_SECRET_KEY != '' }}
+        if: needs.check-secrets.outputs.clerk-present == 'true'
         continue-on-error: true
         uses: actions/cache/save@v4
         with:
@@ -67,7 +79,7 @@ jobs:
           key: next-build-${{ github.sha }}
 
       - name: Warn when e2e jobs are disabled
-        if: ${{ secrets.CLERK_SECRET_KEY == '' }}
+        if: needs.check-secrets.outputs.clerk-present != 'true'
         run: echo "::warning::Playwright e2e jobs are SKIPPED — add CLERK_SECRET_KEY and NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY repo secrets to enable them (one job per viewport then runs on every PR)."
 
   # Browser regression guard — ONE JOB PER VIEWPORT so failures are reported
@@ -106,8 +118,8 @@ jobs:
   # from the SAME sandbox account, or the probe passes while silently testing
   # nothing.
   e2e:
-    needs: build-and-test
-    if: ${{ secrets.CLERK_SECRET_KEY != '' }}
+    needs: [build-and-test, check-secrets]
+    if: needs.check-secrets.outputs.clerk-present == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60 # insurance against slow AI-latency runs (retries × 300s tests)
     strategy:
