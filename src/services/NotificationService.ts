@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
-import { getSocketInstance } from "@/lib/socket";
+import { getRealtimeServer } from "@/lib/realtime";
 import { NotificationType, NotificationChannel } from "@prisma/client";
 import type { NotificationPreference } from "@prisma/client";
 import { queueService } from "@/services/QueueService";
@@ -209,7 +209,7 @@ export class NotificationService {
     workspaceId?: string | null
   ): void {
     try {
-      const io = getSocketInstance();
+      const io = getRealtimeServer();
       if (io) {
         io.to(`user:${userId}`).emit("notification", {
           type,
