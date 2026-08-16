@@ -9,11 +9,12 @@ import { useCommandPalette } from "@/hooks/use-command-palette";
 import { useChat } from "@/hooks/use-chat";
 import { NAV_ITEMS } from "./nav-items";
 import {
-  PanelLeft, Command, Plus, Moon, Sun,
+  PanelLeft, Command, Plus, Moon, Sun, MessageSquareHeart,
 } from "lucide-react";
 import { NotificationCenter } from "./NotificationCenter";
 import ProfileDropdown from "./ProfileDropdown";
 import { useUserProfile } from "@/hooks/use-user-profile";
+import { FeedbackDialog } from "@/components/feedback/FeedbackDialog";
 
 function getTitle(pathname: string): { title: string; crumb?: string } {
   if (pathname === "/chat" || pathname.startsWith("/chat/")) return { title: "Compose" };
@@ -47,6 +48,7 @@ export function TopBar() {
   const { toggleRailCollapsed, setMobileNavOpen } = useNavigationStore();
   const { toggle } = useCommandPalette();
   const { createChat } = useChat();
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const { title, crumb } = getTitle(pathname);
   const activeItem = NAV_ITEMS.find((item) =>
@@ -105,6 +107,15 @@ export function TopBar() {
           <Command className="w-3.5 h-3.5" />
         </button>
 
+        <button
+          onClick={() => setFeedbackOpen(true)}
+          className="hidden lg:flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs text-muted-foreground hover:text-foreground hover:bg-muted/40 border border-border/40 transition-all"
+          aria-label="Send feedback"
+        >
+          <MessageSquareHeart className="w-3.5 h-3.5" />
+          Feedback
+        </button>
+
         <NotificationCenter />
 
         <motion.button
@@ -132,6 +143,8 @@ export function TopBar() {
           onSignOut={() => signOut({ redirectUrl: "/" })}
         />
       </div>
+
+      <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
     </header>
   );
 }

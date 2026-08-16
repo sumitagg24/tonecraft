@@ -28,7 +28,7 @@ export const TONES: { id: string; label: string; description: string; color: str
 ];
 
 export const FREE_TIER_LIMITS = {
-  messagesPerDay: 30,
+  messagesPerDay: 50,
   messagesPerHour: 10,
   maxTokensPerMessage: 2000,
   maxFileSize: 5 * 1024 * 1024,
@@ -51,7 +51,7 @@ export const PRICING_TIERS = [
     price: 0,
     description: "For individuals getting started",
     features: [
-      "30 AI generations per day",
+      "50 AI generations per day",
       "All tone presets",
       "4K context window",
       "5 file uploads/day",

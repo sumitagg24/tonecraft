@@ -5,11 +5,13 @@ import { ContextBuilder, contextBuilder, type BuiltContext } from "./ContextBuil
 import { IntentEngine, intentEngine } from "./IntentEngine";
 import { WorkflowEngine } from "./WorkflowEngine";
 import { localToneEngine } from "./LocalToneEngine";
+import { AIEngineError, classifyAIError } from "./AIEngineError";
 import { buildPrompt } from "@/prompts";
 import { prisma } from "@/lib/prisma";
 import { usageGuard } from "@/services/UsageGuard";
 import { modelRegistry } from "@/services/ModelRegistry";
 import { auditLogService } from "@/services/AuditLogService";
+import { logger } from "@/lib/logger";
 import { type PlanTier, getPlanConfig } from "@/config/plans";
 import { CODE_PATTERN } from "@/lib/capabilities";
 
@@ -99,7 +101,22 @@ export class AIEngine {
         tools: options.tools,
       });
     } catch (routeErr) {
-      console.warn("[AIEngine] Cloud providers route failed, using ToneCraft Local Transformer Engine:", (routeErr as Error).message);
+      const cause = routeErr instanceof Error ? routeErr : new Error(String(routeErr));
+      // Production: never silently fall back to the template engine — canned
+      // text would mask a real outage and still charge credits. Surface a
+      // user-visible error instead. Dev keeps the local fallback so local
+      // work without provider keys still functions.
+      if (process.env.NODE_ENV === "production") {
+        const classified = classifyAIError(cause);
+        throw new AIEngineError(
+          {
+            ...classified,
+            errorCode: classified.errorCode === "unknown" ? "all_providers_exhausted" : classified.errorCode,
+          },
+          cause
+        );
+      }
+      logger.warn("[AIEngine] Cloud providers route failed, using ToneCraft Local Transformer Engine", { error: cause.message });
       providerResult = await localToneEngine.transform(options);
     }
 
@@ -237,7 +254,22 @@ export class AIEngine {
 
       yield { type: "done", result };
     } catch (error) {
-      console.warn("[AIEngine] Cloud providers unavailable, using ToneCraft Local Transformer Engine:", (error as Error).message);
+      const cause = error instanceof Error ? error : new Error(String(error));
+      // Production: surface the failure to the user instead of emitting the
+      // template engine's canned text (which would also charge credits).
+      if (process.env.NODE_ENV === "production") {
+        const classified = classifyAIError(cause);
+        const engineError = new AIEngineError(
+          {
+            ...classified,
+            errorCode: classified.errorCode === "unknown" ? "all_providers_exhausted" : classified.errorCode,
+          },
+          cause
+        );
+        yield { type: "error", message: engineError.userMessage };
+        return;
+      }
+      logger.warn("[AIEngine] Cloud providers unavailable, using ToneCraft Local Transformer Engine", { error: cause.message });
       try {
         const localStream = localToneEngine.stream(options);
         for await (const event of localStream) {

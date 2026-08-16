@@ -15,8 +15,9 @@ import {
  * Workspace" button is visible (hidden sm:flex) and there is no mobile nav
  * drawer, so this uses a different open-chat path than the phone checks in
  * mobile-responsive.spec.ts. It pins the composer layout at the md range —
- * the send button must stay fully on-screen and the toolbar must NOT force
- * horizontal scrolling (the mobile toolbar scroll is md:overflow-visible).
+ * the send button must stay fully on-screen and clickable: the toolbar is a
+ * horizontal scroll container whose buttons must never spill over (and
+ * intercept clicks on) the send button.
  *
  * Signed-in only (the composer lives behind auth) — same conventions as
  * signed-in-smoke.spec.ts (E2E_STORAGE_STATE or E2E_EMAIL/E2E_PASSWORD); skips
@@ -56,7 +57,7 @@ test.describe("tablet chat workspace (md range)", () => {
     await page.getByLabel("Message input").waitFor({ timeout: 20_000 });
   }
 
-  test("composer: send button on-screen and no forced horizontal scroll at md width", async ({
+  test("composer: send button on-screen and clickable at md width", async ({
     page,
   }) => {
     const errors = captureErrors(page);
@@ -78,17 +79,19 @@ test.describe("tablet chat workspace (md range)", () => {
       "send button should not extend past the right edge of the viewport"
     ).toBeLessThanOrEqual(viewport.width + 1);
 
-    // At md the toolbar must NOT create a scroll container (mobile-only scroll
-    // is md:overflow-visible — a regression here means the toolbar pushes the
-    // send button off-screen at tablet width).
-    const toolbarOverflowX = await page.getByLabel("Select tone").evaluate((el) => {
-      const scroll = el.closest(".overflow-x-auto") as HTMLElement | null;
-      return scroll ? getComputedStyle(scroll).overflowX : null;
-    });
-    expect(
-      toolbarOverflowX,
-      "tablet toolbar should not be a horizontal scroll container"
-    ).not.toBe("auto");
+    // The toolbar is a horizontal scroll container at every breakpoint (the
+    // send button lives OUTSIDE it, so it is never pushed off-screen). The
+    // regression this guards is toolbar buttons spilling over the send button
+    // and intercepting clicks — assert the send button's center is actually
+    // hit-testable, not covered by an overflowing chip.
+    const hit = await page.evaluate(({ x, y }) => {
+      const el = document.elementFromPoint(x, y);
+      if (!el) return "nothing";
+      if (el.closest('[aria-label="Send message"]')) return "send";
+      const cls = (el as HTMLElement).className;
+      return (el.tagName + " " + String(cls).slice(0, 80)).trim();
+    }, { x: sendBox.x + sendBox.width / 2, y: sendBox.y + sendBox.height / 2 });
+    expect(hit, "send button center should not be covered by a toolbar chip").toBe("send");
 
     assertNoClientErrors(errors.filter((e) => !isEnvironmentalError(e)), "tablet chat workspace");
   });

@@ -2,17 +2,30 @@ import { io, Socket } from "socket.io-client";
 
 let socket: Socket | null = null;
 
-export const connectSocket = (userId: string) => {
+export const connectSocket = (_userId: string) => {
   if (socket) return socket;
 
-  const token = localStorage.getItem("token"); // Assuming token is stored in localStorage
+  // Send the real Clerk session JWT (the `__session` cookie). The server
+  // verifies it against Clerk's JWKS and derives the identity from the token
+  // — the userId argument is kept for call-site compatibility but is NOT sent
+  // to the server, so a client can never claim another user's identity.
   socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3000", {
-    auth: { token, userId },
+    auth: { token: getSessionToken() },
     transports: ["websocket"],
   });
 
   return socket;
 };
+
+/**
+ * Read the Clerk session token from the `__session` cookie (same-origin,
+ * readable by client JS). Clerk rotates this short-lived JWT automatically.
+ */
+function getSessionToken(): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.split("; ").find((c) => c.startsWith("__session="));
+  return match ? decodeURIComponent(match.slice("__session=".length)) : null;
+}
 
 export const getSocket = () => socket;
 

@@ -1,11 +1,20 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SOLUTIONS } from "@/lib/marketing";
+import { publicPageMetadata } from "@/lib/site";
+
+export const metadata: Metadata = publicPageMetadata({
+  title: "AI Writing Solutions — ToneCraft",
+  description:
+    "ToneCraft adapts to your world — solutions for students, marketers, sales teams, founders, recruiters, creators, businesses, agencies, and developers.",
+  path: "/solutions",
+});
 
 export default function SolutionsPage() {
   return (
-    <div className="relative noise-bg min-h-screen">
+    <main id="main-content" className="relative noise-bg min-h-screen">
       <div className="max-w-6xl mx-auto px-6 py-24">
 
         <div className="text-center mb-16">
@@ -47,6 +56,6 @@ export default function SolutionsPage() {
           </Button>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

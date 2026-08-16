@@ -101,7 +101,7 @@ export default function StatusPage() {
     : undefined;
 
   return (
-    <main className="min-h-screen bg-background flex items-center justify-center p-6">
+    <main id="main-content" className="min-h-screen bg-background flex items-center justify-center p-6">
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}

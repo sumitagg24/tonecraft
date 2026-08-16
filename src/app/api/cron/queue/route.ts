@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
 import { guardCronRequest } from "@/lib/cron-guard";
+import { sendEmail, type EmailMessage } from "@/lib/email";
+import { escapeHtml } from "@/lib/escape";
 import { queueService } from "@/services/QueueService";
+import { knowledgeService } from "@/services/KnowledgeService";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 
@@ -50,8 +53,9 @@ async function dispatch(type: string, payload: Prisma.JsonValue): Promise<void> 
 
   switch (type) {
     case "email": {
-      // Placeholder transport — real SMTP (nodemailer) is wired by the caller.
-      logger.info("[Queue] email job", { to: data.to, subject: data.subject });
+      // Real SMTP delivery via nodemailer (see src/lib/email.ts). Throwing on
+      // send failure triggers the queue's retry-with-backoff, then dead-letter.
+      await sendEmail(renderNotificationEmail(data));
       return;
     }
     case "notification": {
@@ -77,10 +81,47 @@ async function dispatch(type: string, payload: Prisma.JsonValue): Promise<void> 
     }
     case "embedding": {
       // Knowledge chunk embedding — enqueued by KnowledgeService when indexing.
-      logger.info("[Queue] embedding job", { knowledgeFileId: data.knowledgeFileId });
+      const fileId = data.knowledgeFileId as string | undefined;
+      if (!fileId) throw new Error("embedding job missing knowledgeFileId");
+      await knowledgeService.embedFile(fileId, data.userId as string | undefined);
       return;
     }
     default:
       throw new Error(`Unknown queue type: ${type}`);
   }
 }
+
+/**
+ * Build a notification email from the payload enqueued by NotificationService
+ * (`to`, `userName`, `title`, `body`, `link`). All user-derived text is HTML-
+ * escaped so notification content can never inject markup into the message.
+ */
+function renderNotificationEmail(data: Record<string, unknown>): EmailMessage {
+  const to = data.to as string | undefined;
+  if (!to) throw new Error("email job missing recipient");
+
+  const title = (data.title as string | undefined) ?? "ToneCraft notification";
+  const body = (data.body as string | undefined) ?? "";
+  const link = (data.link as string | undefined) ?? null;
+  const userName = (data.userName as string | undefined) ?? null;
+  const greeting = userName ? `Hi ${userName},` : "Hi,";
+
+  const text = [greeting, "", title, "", body, ...(link ? ["", link] : [])].join("\n");
+  const html = [
+    '<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#1a1a2e;">',
+    `  <p style="margin:0 0 16px;">${escapeHtml(greeting)}</p>`,
+    `  <h2 style="margin:0 0 12px;font-size:18px;color:#1a1a2e;">${escapeHtml(title)}</h2>`,
+    `  <p style="margin:0 0 16px;line-height:1.6;white-space:pre-wrap;">${escapeHtml(body)}</p>`,
+    ...(link
+      ? [
+          `  <p><a href="${escapeHtml(link)}" style="background:#7C74F5;color:#ffffff;text-decoration:none;padding:10px 18px;border-radius:8px;display:inline-block;">View on ToneCraft</a></p>`,
+        ]
+      : []),
+    '  <p style="margin:24px 0 0;font-size:12px;color:#888;">Sent by ToneCraft</p>',
+    "</div>",
+  ].join("\n");
+
+  return { to, subject: title, text, html };
+}
+
+

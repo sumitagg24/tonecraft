@@ -5,6 +5,17 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/**
+ * Compact file-size label (B / KB / MB) — used by chat attachment chips.
+ * Deliberately separate from formatFileSize: keeps the exact legacy output
+ * (no "0 B" case, KB without decimals) so swapping callers changes nothing.
+ */
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes}B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)}MB`;
+}
+
 export function formatDate(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date;
   return d.toLocaleDateString("en-US", {

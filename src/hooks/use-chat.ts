@@ -2,9 +2,19 @@ import { useCallback } from "react";
 import { useChatStore } from "@/stores/chat-store";
 import type { Chat, Message } from "@/types";
 import { api } from "@/lib/api-client";
+import { reportError } from "@/lib/error-reporting";
 import { toast } from "sonner";
 
 let activeController: AbortController | null = null;
+
+/** An uploaded (or uploading) attachment ready to be sent with a message. */
+export interface PendingAttachment {
+  key: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  url?: string | null;
+}
 
 /**
  * Pending optimistic chat creations keyed by temp id. When a message is sent
@@ -36,7 +46,7 @@ function isLimitError(err: unknown): LimitErrorShape | null {
 
 export function useChat() {
   const sendMessage = useCallback(
-    async (content: string, chatId: string, opts?: { knowledgeFileIds?: string[] }) => {
+    async (content: string, chatId: string, opts?: { knowledgeFileIds?: string[]; attachments?: PendingAttachment[] }) => {
       const { selectedTone, selectedModel, selectedPersona, setIsLoading, clearStreamingContent, addMessage, appendStreamingContent, setMessages, context } = useChatStore.getState();
 
       // If this is an optimistic temp chat whose server row is still being
@@ -67,7 +77,15 @@ export function useChat() {
         feedback: null,
         parentId: null,
         createdAt: new Date(),
-        attachments: [],
+        attachments: (opts?.attachments ?? []).map((a, i) => ({
+          id: `temp-att-${Date.now()}-${i}`,
+          messageId: targetChatId,
+          fileName: a.fileName,
+          fileType: a.fileType,
+          fileSize: a.fileSize,
+          storageKey: a.key,
+          createdAt: new Date(),
+        })),
       };
       addMessage(tempUserMessage);
 
@@ -79,7 +97,20 @@ export function useChat() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           signal: controller.signal,
-          body: JSON.stringify({ content, tone: selectedTone, model: selectedModel, personaId: selectedPersona, knowledgeFileIds: opts?.knowledgeFileIds, ...context }),
+          body: JSON.stringify({
+            content,
+            tone: selectedTone,
+            model: selectedModel,
+            personaId: selectedPersona,
+            knowledgeFileIds: opts?.knowledgeFileIds,
+            attachments: opts?.attachments?.map((a) => ({
+              key: a.key,
+              fileName: a.fileName,
+              fileType: a.fileType,
+              fileSize: a.fileSize,
+            })),
+            ...context,
+          }),
         });
 
         if (!response.ok) {
@@ -162,7 +193,7 @@ export function useChat() {
               }
             );
           } else {
-            console.error("Chat error:", error);
+            reportError(error, { source: "use-chat.sendMessage" });
             toast.error(err?.message || "Failed to send message");
           }
         }

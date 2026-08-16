@@ -1,16 +1,19 @@
 import { ok, fail, withApiHandler } from "@/lib/withApiHandler";
 import { prisma } from "@/lib/prisma";
 import { modelTierLabel } from "@/lib/ai-labels";
+import { isGlobalAdmin } from "@/lib/admin";
 
 const api = withApiHandler();
 
+/**
+ * Platform-wide analytics (all users, chats, revenue). This is a global admin
+ * surface — previously it "authorized" by checking the caller's
+ * preferredModel setting, which any user could change themselves (anyone who
+ * picked "gpt-4" in their model preferences could read every user's
+ * subscription data). Now gated on ADMIN_EMAILS (see src/lib/admin.ts).
+ */
 export const GET = api.GET(async (ctx) => {
-  const user = await prisma.user.findUnique({
-    where: { id: ctx.user.id },
-    select: { preferredModel: true, preferredPlatform: true },
-  });
-
-  if (user?.preferredModel !== "auto" && user?.preferredModel !== "gpt-4" && user?.preferredModel !== "claude-3") {
+  if (!(await isGlobalAdmin(ctx.user.id))) {
     return fail("FORBIDDEN", "Admin access required", 403);
   }
 

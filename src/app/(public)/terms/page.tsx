@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 
 export default function TermsPage() {
   return (
-    <div className="relative noise-bg min-h-screen">
+    <main id="main-content" className="relative noise-bg min-h-screen">
       <div className="max-w-3xl mx-auto px-4 py-24">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -84,6 +84,6 @@ export default function TermsPage() {
           </div>
         </motion.div>
       </div>
-    </div>
+    </main>
   );
 }

@@ -14,7 +14,7 @@ const features = [
   {
     icon: Music2,
     title: "Tones that match you",
-    description: "Nine built-in voices — or create custom personas that sound exactly like you.",
+    description: "Ten built-in voices — or create custom personas that sound exactly like you.",
   },
   {
     icon: Languages,

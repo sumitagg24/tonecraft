@@ -1,4 +1,5 @@
 import { getAllModels } from "@/config/models";
+import { logger } from "./logger";
 
 /**
  * Startup configuration validation (audit 12 P0.8).
@@ -76,7 +77,7 @@ if (isServer && !isBuildPhase && process.env.NODE_ENV === "production") {
   const missingCritical = getMissingCritical();
   if (missingCritical.length > 0) {
     const message = `[startup-validation] Missing required env vars: ${missingCritical.join(", ")}. Refusing to boot.`;
-    console.error(message);
+    logger.error(message);
     throw new Error(message);
   }
 }
@@ -84,13 +85,13 @@ if (isServer && !isBuildPhase && process.env.NODE_ENV === "production") {
 if (isServer) {
   const missingCritical = getMissingCritical();
   if (missingCritical.length > 0) {
-    console.warn(`[startup-validation] Missing env vars (will be fatal in production): ${missingCritical.join(", ")}`);
+    logger.warn(`[startup-validation] Missing env vars (will be fatal in production): ${missingCritical.join(", ")}`);
   }
 
   const warnings = validateConfig();
   if (warnings.length > 0) {
-    console.warn("\n⚠️  Configuration Warnings:");
-    warnings.forEach((w) => console.warn(`  • ${w}`));
-    console.warn("");
+    logger.warn("\n⚠️  Configuration Warnings:");
+    warnings.forEach((w) => logger.warn(`  • ${w}`));
+    logger.warn("");
   }
 }

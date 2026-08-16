@@ -7,19 +7,17 @@ import {
 } from "./utils";
 
 /**
- * Composer attach-button regression guard — runs on ALL projects (desktop,
- * mobile-android, mobile-ios, tablet-ios; see playwright.config.ts).
+ * Composer attach-button guard — runs on ALL projects (desktop, mobile-android,
+ * mobile-ios, tablet-ios; see playwright.config.ts).
  *
- * The file-storage feature (R2 / Backblaze B2 chat attachments) was removed in
- * v1.5.0, and with it the composer's paperclip "Attach files" button + hidden
- * file input. This spec pins that removal (no dead button on any viewport) and
+ * Chat attachments were re-added in v1.6.0 on top of Cloudflare R2 (the
+ * /api/upload route + composer paperclip). This spec pins that the attach
+ * button + hidden file input are present in the composer on every viewport and
  * guards the chat send flow against regressions from the composer surgery.
  *
- * Scoping note: Paperclip icons still legitimately appear OUTSIDE the composer
- * — in message cards (they display already-attached files) and the AI context
- * panel's "Attachments" section header — and library pages still have file
- * inputs (knowledge upload, persona/prompt import). So the "no attach button"
- * assertions are scoped to the composer root only.
+ * Scoping note: paperclip icons also appear OUTSIDE the composer — in message
+ * cards (they display attached files) and the AI context panel's "Attachments"
+ * section header — so presence assertions are scoped to the composer root.
  *
  * Signed-in only — same conventions as signed-in-smoke.spec.ts
  * (E2E_STORAGE_STATE or E2E_EMAIL/E2E_PASSWORD); skips when no session.
@@ -28,7 +26,7 @@ const email = process.env.E2E_EMAIL;
 const password = process.env.E2E_PASSWORD;
 const storageState = process.env.E2E_STORAGE_STATE;
 
-test.describe("composer attach removal + send flow", () => {
+test.describe("composer attach + send flow", () => {
   test.skip(
     !storageState && (!email || !password),
     "Set E2E_STORAGE_STATE (recommended) or E2E_EMAIL/E2E_PASSWORD to run the composer checks"
@@ -73,47 +71,38 @@ test.describe("composer attach removal + send flow", () => {
     await page.getByLabel("Message input").waitFor({ timeout: 20_000 });
   }
 
-  test("composer has no paperclip/attach button (storage removed)", async ({ page }) => {
+  test("composer exposes the attach button + file input (R2 attachments)", async ({ page }) => {
     const errors = captureErrors(page);
     await openNewChat(page);
 
     const composer = page.getByLabel("Message input");
     await expect(composer).toBeEnabled();
 
-    // The composer's bounding box: the innermost rounded-2xl container holds
-    // the textarea + toolbar (the removed attach button lived in the toolbar).
     const composerRoot = composer.locator(
       "xpath=ancestor::div[contains(@class,'rounded-2xl')][1]"
     );
 
-    // 1. The "Attach files" toolbar button must be gone.
+    // 1. The "Attach files" toolbar button must exist and be clickable.
     await expect(
       composerRoot.getByRole("button", { name: "Attach files", exact: true }),
-      "the 'Attach files' toolbar button should no longer exist"
-    ).toHaveCount(0);
+      "the 'Attach files' toolbar button should exist"
+    ).toBeVisible();
 
-    // 2. The hidden file input behind the paperclip must be gone.
-    await expect(
-      composerRoot.locator('input[type="file"]'),
-      "the composer's hidden file input should no longer exist"
-    ).toHaveCount(0);
+    // 2. The hidden file input behind the paperclip must exist (multiselect).
+    const fileInput = composerRoot.locator('input[type="file"]');
+    await expect(fileInput, "the composer's file input should exist").toHaveCount(1);
+    await expect(fileInput).toHaveAttribute("multiple", "");
 
-    // 3. No paperclip icon anywhere inside the composer (the button's glyph).
-    await expect(
-      composerRoot.locator(".lucide-paperclip"),
-      "no paperclip icon should render inside the composer"
-    ).toHaveCount(0);
-
-    // The send button still exists and is wired up (disabled only when empty).
+    // 3. The send button still exists and is wired up (disabled only when empty).
     await expect(page.getByRole("button", { name: "Send message" })).toBeVisible();
 
     assertNoClientErrors(
       errors.filter((e) => !isEnvironmentalError(e)),
-      "composer attach removal"
+      "composer attach presence"
     );
   });
 
-  test("chat send flow still works after the composer surgery", async ({ page }) => {
+  test("chat send flow still works with the composer surgery", async ({ page }) => {
     test.setTimeout(240_000);
     const errors = captureErrors(page);
     await openNewChat(page);

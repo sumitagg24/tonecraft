@@ -8,6 +8,7 @@ import { messageRepository } from "@/repositories/MessageRepository";
 import { chatRepository } from "@/repositories/ChatRepository";
 import { knowledgeService } from "@/services/KnowledgeService";
 import { flattenZodError } from "@/lib/withApiHandler";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 
 const messageSchema = z.object({
@@ -24,6 +25,17 @@ const messageSchema = z.object({
   formality: z.enum(["casual", "neutral", "formal"]).optional(),
   personaId: z.string().nullable().optional(),
   knowledgeFileIds: z.array(z.string()).max(20).optional(),
+  attachments: z
+    .array(
+      z.object({
+        key: z.string().min(1).max(500),
+        fileName: z.string().min(1).max(255),
+        fileType: z.string().min(1).max(100),
+        fileSize: z.number().int().min(0).max(25 * 1024 * 1024),
+      })
+    )
+    .max(10)
+    .optional(),
 });
 
 export async function POST(
@@ -115,7 +127,27 @@ export async function POST(
     }
   }
 
-  await messageRepository.create({ chatId: effectiveChatId, role: "user", content, tone, platform, language });
+  const userMessage = await messageRepository.create({ chatId: effectiveChatId, role: "user", content, tone, platform, language });
+
+  // Attachments must be the caller's own R2 objects — the key prefix is the
+  // ownership proof (`uploads/<userId>/…`). Reject anything else so a user can
+  // never attach another user's files to their message.
+  const attachments = parsed.data.attachments ?? [];
+  if (attachments.length > 0) {
+    const owned = attachments.filter((a) => a.key.startsWith(`uploads/${userId}/`));
+    if (owned.length > 0) {
+      await prisma.attachment.createMany({
+        data: owned.map((a) => ({
+          messageId: userMessage.id,
+          fileName: a.fileName,
+          fileType: a.fileType,
+          fileSize: a.fileSize,
+          storageKey: a.key,
+        })),
+      });
+    }
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await chatRepository.update(effectiveChatId, userId, { updatedAt: new Date() } as any);
 
@@ -181,7 +213,11 @@ export async function POST(
             usedProvider = chunk.result.provider;
             totalTokens = chunk.result.tokens;
           } else if (chunk.type === "error") {
-            throw new Error(chunk.message);
+            // Engine-reported failure (e.g. all AI providers down) — tag it so
+            // the catch below can surface the specific message to the user.
+            const engineError = new Error(chunk.message);
+            (engineError as Error & { isEngineError?: boolean }).isEngineError = true;
+            throw engineError;
           }
         }
 
@@ -198,18 +234,27 @@ export async function POST(
         controller.close();
       } catch (error) {
         const partial = fullContent.trim();
-        console.error("Streaming error:", error);
+        // Engine-reported errors (all AI providers exhausted, etc.) carry a
+        // user-safe message — surface it instead of the generic apology.
+        const isEngineError = (error as { isEngineError?: boolean } | null)?.isEngineError === true;
+        const userMessage =
+          isEngineError && error instanceof Error
+            ? error.message
+            : "I apologize, but I'm having trouble responding right now. Please try again in a moment.";
+        logger.error("Streaming error in chat message generation", { chatId: effectiveChatId, userId }, error instanceof Error ? error : undefined);
         await prisma.message.update({
           where: { id: assistantMessage.id },
           data: {
-            content: partial || "I apologize, but I'm having trouble responding right now. Please try again in a moment.",
+            content: partial || userMessage,
             model: usedModel || usedProvider,
             tokens: totalTokens,
             latency: Date.now() - startTime,
           },
         }).catch(() => {});
         try {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "error", message: "Failed to generate response" })}\n`));
+          const errorMessage =
+            isEngineError && error instanceof Error ? error.message : "Failed to generate response";
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "error", message: errorMessage })}\n`));
         } catch {
           /* stream already cancelled by client */
         }

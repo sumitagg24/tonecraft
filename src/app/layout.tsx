@@ -8,6 +8,7 @@ import { ReducedMotionProvider } from "@/hooks/use-reduced-motion";
 import { GlobalEffects } from "@/components/shared/Effects";
 import { ServiceWorkerRegistration } from "@/components/shared/ServiceWorkerRegistration";
 import { PaddleCheckoutAutoOpen } from "@/components/shared/PaddleCheckoutAutoOpen";
+import { SITE_URL, SITE_NAME, SITE_TITLE, SITE_DESCRIPTION, OG_IMAGE } from "@/lib/site";
 import "@/lib/startup-validation";
 import "./globals.css";
 
@@ -31,33 +32,25 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
-  title: "ToneCraft — AI Communication Platform",
-  description:
-    "Write Once. Speak Perfectly. Everywhere. ToneCraft rewrites your messages for every platform and tone.",
+  metadataBase: new URL(SITE_URL),
+  // Every public page sets its own full title (already carrying the brand, e.g.
+  // "Pricing — ToneCraft"), so no title template — it would only double the brand.
+  title: SITE_TITLE,
+  description: SITE_DESCRIPTION,
   openGraph: {
-    title: "ToneCraft — AI Communication Platform",
-    description:
-      "Write Once. Speak Perfectly. Everywhere. Transform your messages for every platform with AI.",
-    url: "https://tonecraft.ai",
-    siteName: "ToneCraft",
-    images: [
-      {
-        url: "/og.png",
-        width: 1200,
-        height: 630,
-        alt: "ToneCraft — AI Communication Platform",
-      },
-    ],
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    images: [{ url: `${SITE_URL}${OG_IMAGE}`, width: 1200, height: 630, alt: SITE_TITLE }],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "ToneCraft — AI Communication Platform",
-    description:
-      "Write Once. Speak Perfectly. Everywhere. Transform your messages for every platform with AI.",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
     creator: "@tonecraft",
-    images: ["/og.png"],
+    images: [`${SITE_URL}${OG_IMAGE}`],
   },
   icons: {
     icon: "/favicon.ico",

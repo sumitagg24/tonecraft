@@ -1,12 +1,21 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { FAQ_ITEMS } from "@/lib/marketing";
+import { publicPageMetadata } from "@/lib/site";
+
+export const metadata: Metadata = publicPageMetadata({
+  title: "FAQ — ToneCraft",
+  description:
+    "Answers about ToneCraft's AI writing engine, free tier, credits, custom personas, data security, and subscriptions.",
+  path: "/faq",
+});
 
 export default function FaqPage() {
   return (
-    <div className="relative noise-bg min-h-screen">
+    <main id="main-content" className="relative noise-bg min-h-screen">
       <div className="max-w-2xl mx-auto px-6 py-24">
 
         <div className="text-center mb-14">
@@ -40,6 +49,6 @@ export default function FaqPage() {
           </Button>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

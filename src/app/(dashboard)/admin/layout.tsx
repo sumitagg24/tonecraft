@@ -2,7 +2,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Database, CreditCard, Folder, Users, BookOpen,
-  BarChart3, PieChart, Shield, FileText, Flag,
+  BarChart3, PieChart, Shield, FileText, Flag, MessageSquareHeart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -26,6 +26,7 @@ const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { id: "permissions", label: "Permissions", href: "/admin/permissions", icon: Shield },
   { id: "features", label: "Feature Flags", href: "/admin/features", icon: Flag },
   { id: "audit", label: "Audit Log", href: "/admin/audit", icon: FileText },
+  { id: "feedback", label: "Feedback", href: "/admin/feedback", icon: MessageSquareHeart },
 ];
 
 interface AdminLayoutProps {

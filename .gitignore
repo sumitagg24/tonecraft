@@ -132,4 +132,8 @@ plans/
 
 # Kilo agent runtime state
 .kilo/
+kilo_memory_save
 .env*
+
+# Freebuff agent runtime state
+.freebuff/

@@ -1,6 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { BookOpen, CreditCard, Coins, Users, Cpu, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { publicPageMetadata } from "@/lib/site";
+
+export const metadata: Metadata = publicPageMetadata({
+  title: "Documentation — ToneCraft",
+  description:
+    "Getting-started guides, billing and credits explained, workspace tips, and AI provider details for ToneCraft.",
+  path: "/help",
+});
 
 const SECTIONS = [
   {
@@ -20,7 +29,7 @@ const SECTIONS = [
     icon: CreditCard,
     title: "Billing",
     body: [
-      "The Free tier includes 30 AI generations/day with all tone presets.",
+      "The Free tier includes 50 AI generations/day with all tone presets.",
       "Pro ($6/mo) unlocks unlimited messages, custom personas, and a 16K context window.",
       "Manage your plan, invoices, and payment method in Settings → Billing.",
     ],
@@ -69,7 +78,7 @@ const SECTIONS = [
 
 export default function HelpPage() {
   return (
-    <div className="relative noise-bg min-h-screen">
+    <main id="main-content" className="relative noise-bg min-h-screen">
       <div className="max-w-3xl mx-auto px-4 py-24">
 
         <div className="text-center mb-16">
@@ -108,6 +117,6 @@ export default function HelpPage() {
           </Button>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

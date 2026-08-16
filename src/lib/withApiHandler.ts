@@ -13,6 +13,7 @@ import {
 } from "./ratelimit";
 import { featureFlagService } from "@/services/FeatureFlagService";
 import type { FeatureKey } from "@/config/features";
+import { getClientIp } from "@/lib/request-ip";
 
 /**
  * Standardized API handler used by every JSON API route.
@@ -72,13 +73,6 @@ export interface WithApiHandlerOptions<S extends z.ZodTypeAny = z.ZodTypeAny> {
    * without deploying. Only applies to authed routes.
    */
   feature?: FeatureKey;
-}
-
-/** Best-effort client IP (x-forwarded-for from the proxy). */
-function getClientIp(req: NextRequest): string {
-  const fwd = req.headers.get("x-forwarded-for");
-  if (fwd) return fwd.split(",")[0].trim();
-  return req.headers.get("x-real-ip") ?? "unknown";
 }
 
 /** Success helper — returns `{ success: true, data }`. */

@@ -55,13 +55,13 @@ export function Testimonials() {
             className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium mb-4"
           >
             <Quote className="w-3.5 h-3.5" />
-            Editorial Stories
+            How people write with ToneCraft
           </motion.div>
           <motion.h2 variants={sectionItem} className="font-display text-4xl md:text-6xl tracking-tight mb-4">
-            Trusted by master communicators
+            Made for master communicators
           </motion.h2>
           <motion.p variants={sectionItem} className="text-muted-foreground text-base md:text-lg max-w-xl mx-auto leading-relaxed">
-            Discover how leaders, editors, and creators elevate every sentence with ToneCraft.
+            The kinds of writing ToneCraft is built for — leaders, editors, and creators who polish every sentence.
           </motion.p>
         </motion.div>
 
@@ -90,17 +90,25 @@ export function Testimonials() {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={t.avatar}
-                  alt={t.author}
+                  alt={`Portrait of ${t.author}`}
+                  width={44}
+                  height={44}
+                  loading="lazy"
+                  decoding="async"
                   className="w-11 h-11 rounded-full object-cover border border-border/60"
                 />
                 <div>
-                  <h4 className="font-semibold text-sm text-foreground">{t.author}</h4>
+                  <p className="font-semibold text-sm text-foreground">{t.author}</p>
                   <p className="text-xs text-muted-foreground">{t.role} · {t.company}</p>
                 </div>
               </div>
             </motion.div>
           ))}
         </motion.div>
+
+        <p className="mt-10 text-center text-xs text-muted-foreground/60">
+          Illustrative examples for demonstration purposes. Real user results vary.
+        </p>
       </div>
     </section>
   );

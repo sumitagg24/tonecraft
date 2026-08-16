@@ -9,7 +9,9 @@ import {
 } from "@/lib/export/serialize";
 import type { Attachment, Chat, Message } from "@/types";
 
-const CREATED_AT = new Date("2024-05-04T10:30:00Z");
+// Local-time date so the serializer's toLocaleString rendering ("May 4, 2024,
+// 10:30 AM") is identical on every CI machine regardless of its timezone.
+const CREATED_AT = new Date(2024, 4, 4, 10, 30);
 
 function chat(overrides: Partial<Chat> = {}): Chat {
   return {

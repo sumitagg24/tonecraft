@@ -74,8 +74,48 @@ model User {
   creatorProfile      CreatorProfile?
   following           CreatorFollow[]    @relation("CreatorFollower")
   followers           CreatorFollow[]    @relation("CreatorFollowing")
+  feedback            Feedback[]
 
   // NOTE: no redundant @@index on clerkId/email — @unique already builds them.
+}
+
+// ════════════════════════════════════════════════════════════════════
+// Phase 20 — User feedback
+// Submissions from the in-app feedback dialog. Status is triaged by the
+// platform admin on /admin/feedback; optional screenshots are NOT stored here
+// (Postgres keeps only the reference; media lives in Cloudflare R2).
+// ════════════════════════════════════════════════════════════════════
+
+enum FeedbackCategory {
+  bug
+  feature_request
+  general
+  other
+}
+
+enum FeedbackStatus {
+  NEW
+  REVIEWED
+  RESOLVED
+}
+
+model Feedback {
+  id        String           @id @default(cuid())
+  userId    String
+  category  FeedbackCategory @default(general)
+  rating    Int?             // 1–5, optional
+  message   String
+  page      String?          // where the user was when submitting
+  status    FeedbackStatus   @default(NEW)
+  reviewedAt DateTime?
+  reviewedBy String?         // admin User id who last changed status
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@index([category, status])
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -1253,6 +1293,23 @@ model QueueItem {
 
   @@index([status, availableAt])
   @@index([type, status])
+}
+
+// Phase 20 — webhook event dedupe. Claims each inbound webhook by provider +
+// event id so a replay (Paddle/Svix redelivery, manual re-post) can't double-
+// process the same event. `processed` flips to true only after the handler
+// succeeds; a crash mid-processing leaves it false so the retry re-runs.
+model WebhookEvent {
+  id          String    @id @default(cuid())
+  provider    String // "paddle" | "clerk"
+  eventId     String
+  type        String?
+  processed   Boolean   @default(false)
+  processedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@unique([provider, eventId])
+  @@index([provider, createdAt])
 }
 
 // Phase 12 — runtime feature-flag overrides. Lets operators toggle features

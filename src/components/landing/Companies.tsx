@@ -23,7 +23,7 @@ export function Companies() {
           transition={{ duration: 0.5 }}
           className="text-center text-micro font-semibold uppercase tracking-[0.2em] text-muted-foreground/50 mb-10"
         >
-          Trusted by communicators at
+          Built for teams of every size
         </motion.p>
         <motion.div
           initial={{ opacity: 0, y: 12 }}

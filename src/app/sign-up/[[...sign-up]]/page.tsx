@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import { SignUp } from "@clerk/nextjs";
 import { Logo } from "@/components/shared/Logo";
 import { safeRedirectUrl } from "@/lib/utils";
+
+export const metadata: Metadata = {
+  title: "Sign up — ToneCraft",
+  robots: { index: false, follow: false },
+};
 
 export default async function SignUpPage({
   searchParams,

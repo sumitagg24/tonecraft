@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { Webhook } from "svix";
 import { headers } from "next/headers";
 import { auditLogService } from "@/services/AuditLogService";
+import { claimWebhookEvent, markWebhookProcessed } from "@/lib/webhook-dedupe";
+import { logger } from "@/lib/logger";
 
 const webhookSecret = process.env.CLERK_WEBHOOK_SECRET;
 
@@ -31,8 +33,15 @@ export async function POST(req: NextRequest) {
       "svix-signature": svixSignature,
     }) as { type: string; data: Record<string, unknown> };
   } catch (err) {
-    console.error("Webhook verification failed:", err);
+    logger.error("Webhook verification failed", undefined, err instanceof Error ? err : undefined);
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
+  }
+
+  // Replay protection: svix-id is the unique message id — retries of the same
+  // delivery keep the same svix-id, so a redelivered message is skipped.
+  const claim = await claimWebhookEvent("clerk", svixId, evt.type);
+  if (claim === "duplicate") {
+    return NextResponse.json({ received: true, deduplicated: true });
   }
 
   if (evt.type === "user.created" || evt.type === "user.updated") {
@@ -86,5 +95,6 @@ export async function POST(req: NextRequest) {
     await prisma.user.deleteMany({ where: { clerkId: id } });
   }
 
+  await markWebhookProcessed("clerk", svixId);
   return NextResponse.json({ received: true });
 }

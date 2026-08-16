@@ -1,12 +1,5 @@
 import type { Chat, Message } from "@/types";
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
+import { escapeHtml } from "@/lib/escape";
 
 function fmtDate(d: Date | string): string {
   const date = typeof d === "string" ? new Date(d) : d;

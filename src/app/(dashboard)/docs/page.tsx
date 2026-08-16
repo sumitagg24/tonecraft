@@ -117,7 +117,7 @@ const GUIDES: GuideSection[] = [
         <GuideHeading>1. Create your account</GuideHeading>
         <p className="text-sm leading-relaxed text-foreground/80">
           Head to the <strong>Sign Up</strong> page and create a free account — no credit card required.
-          Your free plan includes <strong>30 AI generations per day</strong>, the full prompt library,
+          Your free plan includes <strong>50 AI generations per day</strong>, the full prompt library,
           knowledge base, and workspace tools.
         </p>
         <GuideHeading>2. Open the studio</GuideHeading>
@@ -300,7 +300,7 @@ const GUIDES: GuideSection[] = [
         <p className="text-sm leading-relaxed text-foreground/80">
           Open the Knowledge page and drop files into the upload area. Each document is indexed
           automatically; the status badge shows when it's ready to use. Free accounts can store up to
-          100 MB; Pro and Business plans expand that to 5 GB.
+          100 MB total; Pro accounts up to 1 GB and Enterprise accounts up to 10 GB.
         </p>
         <GuideHeading>Semantic search</GuideHeading>
         <p className="text-sm leading-relaxed text-foreground/80">
@@ -461,7 +461,7 @@ const GUIDES: GuideSection[] = [
         <GuideHeading>Free</GuideHeading>
         <GuideList
           items={[
-            "30 AI generations per day — enough for daily writing.",
+            "50 AI generations per day — enough for daily writing.",
             "Full prompt library, knowledge base (100 MB), and workspace tools.",
             "Personal workspace with projects and notes.",
           ]}

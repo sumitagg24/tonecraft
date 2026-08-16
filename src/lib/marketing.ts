@@ -235,7 +235,7 @@ export const FAQ_ITEMS: { question: string; answer: string }[] = [
   {
     question: "Is the free tier really free?",
     answer:
-      "Yes. The free tier includes 30 AI generations per day, all tone presets, and the core writing engine — no credit card required, free forever.",
+      "Yes. The free tier includes 50 AI generations per day, all tone presets, and the core writing engine — no credit card required, free forever.",
   },
   {
     question: "How does tone control work?",

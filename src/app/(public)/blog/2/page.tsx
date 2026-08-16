@@ -1,8 +1,41 @@
-"use client";
+import type { Metadata } from "next";
 import { BlogArticleShell } from "@/components/blog/BlogArticleShell";
+import { publicPageMetadata, SITE_URL } from "@/lib/site";
+
+export const metadata: Metadata = publicPageMetadata({
+  title: "The Future of AI Communication Tools",
+  description:
+    "Tone-aware AI is quietly becoming the difference between generic and genuinely human writing. Here is what the next generation of writing tools gets right — and what it gets wrong.",
+  path: "/blog/2",
+});
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Article",
+      headline: "The Future of AI Communication Tools",
+      description:
+        "Tone-aware AI is quietly becoming the difference between generic and genuinely human writing. Here is what the next generation of writing tools gets right — and what it gets wrong.",
+      datePublished: "2026-06-01",
+      author: { "@type": "Person", name: "Daniel Osei", jobTitle: "Product Lead, ToneCraft" },
+      publisher: { "@type": "Organization", name: "ToneCraft", url: SITE_URL },
+      mainEntityOfPage: `${SITE_URL}/blog/2`,
+    },
+    {
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+        { "@type": "ListItem", position: 2, name: "Blog", item: `${SITE_URL}/blog` },
+        { "@type": "ListItem", position: 3, name: "The Future of AI Communication Tools", item: `${SITE_URL}/blog/2` },
+      ],
+    },
+  ],
+};
 
 export default function BlogPost2Page() {
   return (
+    <main id="main-content">
     <BlogArticleShell
       category="AI & Writing"
       title="The Future of AI Communication Tools"
@@ -51,5 +84,7 @@ export default function BlogPost2Page() {
         In the next few years, we expect writing tools to remember your preferences across conversations (your tone, your pet phrases, the audiences you write for), understand the document you are working on, and suggest edits the way a sharp editor would — rarely, specifically, and in your voice. The technology is already in the room. The design is what will separate the tools that feel like magic from the ones that feel like a spell check.
       </p>
     </BlogArticleShell>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+    </main>
   );
 }

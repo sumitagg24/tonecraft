@@ -1,7 +1,16 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { publicPageMetadata } from "@/lib/site";
+
+export const metadata: Metadata = publicPageMetadata({
+  title: "Changelog — ToneCraft",
+  description:
+    "What's new in ToneCraft — product updates, improvements, and fixes, release by release.",
+  path: "/changelog",
+});
 
 type EntryType = "New" | "Improved" | "Fixed";
 
@@ -99,7 +108,7 @@ const TYPE_STYLES: Record<EntryType, string> = {
 
 export default function ChangelogPage() {
   return (
-    <div className="relative noise-bg min-h-screen">
+    <main id="main-content" className="relative noise-bg min-h-screen">
       <div className="max-w-3xl mx-auto px-6 py-24">
 
         <div className="text-center mb-16">
@@ -148,6 +157,6 @@ export default function ChangelogPage() {
           </Button>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

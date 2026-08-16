@@ -8,18 +8,46 @@
  * the account's "default payment link" and may be a bare host).
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+interface PaddleEnvironment {
+  set: (environment: "sandbox" | "production") => void;
+}
+
+interface PaddleCheckout {
+  open: (options: PaddleCheckoutOptions) => void;
+}
+
+interface PaddleCheckoutOptions {
+  transactionId: string;
+  settings?: {
+    displayMode: "overlay" | "inline";
+    theme?: "light" | "dark";
+    allowCurrencyChange?: boolean;
+  };
+  eventCallback?: (event: PaddleEvent) => void;
+}
+
+interface PaddleEvent {
+  name: string;
+  data?: Record<string, unknown>;
+}
+
+interface PaddleInstance {
+  Environment: PaddleEnvironment;
+  Checkout: PaddleCheckout;
+  Initialize: (options: { token: string }) => Promise<void>;
+}
+
 declare global {
   interface Window {
-    Paddle?: any;
+    Paddle?: PaddleInstance;
   }
 }
 
-let paddlePromise: Promise<any> | null = null;
+let paddlePromise: Promise<PaddleInstance> | null = null;
 
-export function loadPaddle(): Promise<any> {
+export function loadPaddle(): Promise<PaddleInstance> {
   if (!paddlePromise) {
-    paddlePromise = new Promise<any>((resolve, reject) => {
+    paddlePromise = new Promise<PaddleInstance>((resolve, reject) => {
       if (typeof window === "undefined") {
         reject(new Error("Paddle.js is client-only"));
         return;
@@ -31,7 +59,14 @@ export function loadPaddle(): Promise<any> {
       const script = document.createElement("script");
       script.src = "https://cdn.paddle.com/paddle/v2/paddle.js";
       script.async = true;
-      script.onload = () => resolve(window.Paddle);
+      script.onload = () => {
+        if (window.Paddle) {
+          resolve(window.Paddle);
+        } else {
+          paddlePromise = null; // allow retry on next call
+          reject(new Error("Paddle.js loaded but window.Paddle is undefined"));
+        }
+      };
       script.onerror = () => {
         paddlePromise = null; // allow retry on next call
         reject(new Error("Failed to load Paddle.js"));
@@ -79,7 +114,7 @@ export async function openPaddleCheckout(
     // a 400 (validation.no_validation_set) unless the account has currency
     // change validation configured, which would blank the overlay.
     settings: { displayMode: "overlay" },
-    eventCallback: (event: any) => {
+    eventCallback: (event: PaddleEvent) => {
       // Event names are dotted ("checkout.completed", "checkout.error") per
       // https://developer.paddle.com/paddle-js/events. A dashed name never
       // matches, so the success callback silently never fired.

@@ -1,6 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Check, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { publicPageMetadata } from "@/lib/site";
+
+export const metadata: Metadata = publicPageMetadata({
+  title: "Roadmap — ToneCraft",
+  description:
+    "What's next for ToneCraft — team collaboration, voice & dictation, the AI marketplace, and agentic workflows.",
+  path: "/roadmap",
+});
 
 const PHASES = [
   {
@@ -25,7 +34,7 @@ const PHASES = [
 
 export default function RoadmapPage() {
   return (
-    <div className="relative noise-bg min-h-screen">
+    <main id="main-content" className="relative noise-bg min-h-screen">
       <div className="max-w-4xl mx-auto px-4 py-24">
 
         <div className="text-center mb-16">
@@ -71,6 +80,6 @@ export default function RoadmapPage() {
           </Button>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

@@ -1,6 +1,7 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { checkAuthRouteLimit } from "@/lib/ratelimit";
+import { getClientIp } from "@/lib/request-ip";
 
 const PUBLIC_PATHS: ReadonlyArray<string> = [
   "/",
@@ -33,6 +34,10 @@ const PUBLIC_PATHS: ReadonlyArray<string> = [
   // Public status pages (12.3)
   "/status",
   "/health",
+  // SEO/LLM metadata files — crawlers must reach these without a session.
+  "/robots.txt",
+  "/sitemap.xml",
+  "/llms.txt",
   "/api/webhook",
   "/api/auth",
   "/api/health",
@@ -47,13 +52,6 @@ function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.some(
     (p) => pathname === p || pathname.startsWith(p + "/"),
   );
-}
-
-/** Best-effort client IP (x-forwarded-for from the proxy). */
-function getClientIp(req: NextRequest): string {
-  const fwd = req.headers.get("x-forwarded-for");
-  if (fwd) return fwd.split(",")[0].trim();
-  return req.headers.get("x-real-ip") ?? "unknown";
 }
 
 export default clerkMiddleware(async (auth, req: NextRequest) => {

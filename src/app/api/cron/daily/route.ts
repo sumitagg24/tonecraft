@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { guardCronRequest } from "@/lib/cron-guard";
 import { usageService } from "@/services/UsageService";
 import { notificationService } from "@/services/NotificationService";
+import { retentionService } from "@/services/RetentionService";
+import { knowledgeService } from "@/services/KnowledgeService";
+import { optimizeCollaborationStorage } from "@/lib/socket-storage";
 import { logger } from "@/lib/logger";
 
 /**
@@ -24,6 +27,17 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     ["dailyReset", () => usageService.resetDailyIfDue()],
     ["monthlyReset", () => usageService.resetMonthlyIfDue()],
     ["digests", () => notificationService.sendDailyDigests()],
+    // Retention cleanup — prunes unbounded tables (queue jobs, audit logs,
+    // activity, notifications, usage records, …). Windows are env-configurable
+    // (RETENTION_DAYS_*); user-content tables default to disabled.
+    ["retention", () => retentionService.runDaily()],
+    // Embedding backfill — gives vectors to knowledge files uploaded before the
+    // embedding path existed (or whose queue job failed). Bounded per run.
+    ["embeddingBackfill", () => knowledgeService.backfillEmbeddings(25)],
+    // Collaboration storage — stale presences/typing/sessions + excess auto
+    // snapshots and document-operation history (also triggerable by admins via
+    // POST /api/collaboration/optimize).
+    ["collabStorage", () => optimizeCollaborationStorage()],
   ];
 
   for (const [name, run] of jobs) {

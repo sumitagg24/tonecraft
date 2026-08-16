@@ -11,7 +11,7 @@ import { sectionReveal, sectionItem } from "@/styles/motion";
 import { Minus } from "lucide-react";
 
 const COMPARISON_ROWS: { feature: string; tiers: (string | boolean)[] }[] = [
-  { feature: "AI Messages", tiers: ["30 / day", "Unlimited", "Unlimited"] },
+  { feature: "AI Messages", tiers: ["50 / day", "Unlimited", "Unlimited"] },
   { feature: "Knowledge Base", tiers: [true, true, true] },
   { feature: "Workspace", tiers: [true, true, true] },
   { feature: "Priority Models", tiers: [false, true, true] },

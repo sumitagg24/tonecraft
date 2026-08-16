@@ -1,8 +1,41 @@
-"use client";
+import type { Metadata } from "next";
 import { BlogArticleShell } from "@/components/blog/BlogArticleShell";
+import { publicPageMetadata, SITE_URL } from "@/lib/site";
+
+export const metadata: Metadata = publicPageMetadata({
+  title: "5 Email Templates ToneCraft Users Love (And Why They Work)",
+  description:
+    "We analyzed the most-saved email rewrites from our users. These five templates — from cold follow-ups to meeting summaries — account for a third of all saves.",
+  path: "/blog/3",
+});
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Article",
+      headline: "5 Email Templates ToneCraft Users Love (And Why They Work)",
+      description:
+        "We analyzed the most-saved email rewrites from our users. These five templates — from cold follow-ups to meeting summaries — account for a third of all saves.",
+      datePublished: "2026-05-20",
+      author: { "@type": "Person", name: "Maya Chen", jobTitle: "Growth Lead, ToneCraft" },
+      publisher: { "@type": "Organization", name: "ToneCraft", url: SITE_URL },
+      mainEntityOfPage: `${SITE_URL}/blog/3`,
+    },
+    {
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+        { "@type": "ListItem", position: 2, name: "Blog", item: `${SITE_URL}/blog` },
+        { "@type": "ListItem", position: 3, name: "5 Email Templates ToneCraft Users Love (And Why They Work)", item: `${SITE_URL}/blog/3` },
+      ],
+    },
+  ],
+};
 
 export default function BlogPost3Page() {
   return (
+    <main id="main-content">
     <BlogArticleShell
       category="Email"
       title="5 Email Templates ToneCraft Users Love (And Why They Work)"
@@ -77,5 +110,7 @@ export default function BlogPost3Page() {
         The reason these templates get saved is the structure: one clear ask, a respectful close, and no filler. Paste any rough draft into ToneCraft, pick the Email preset, and the engine will restructure it along these exact lines — in your voice, not ours.
       </p>
     </BlogArticleShell>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+    </main>
   );
 }

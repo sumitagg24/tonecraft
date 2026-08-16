@@ -319,7 +319,11 @@ export async function checkAuthRouteLimit(
     rateLimitConfig.auth.backoffBaseSeconds * Math.pow(2, Math.max(0, violations - 1)),
     max
   );
-  await redis.set(cooldownKey, String(Date.now() + cooldown * 1000), { ex: max });
+  // The cooldown key must expire after the COMPUTED cooldown, not the cap:
+  // `ex: max` made ttl() report ~max on the first violation, effectively a
+  // 30-minute hard lockout instead of the intended 30s base (caught live).
+  // The violation counter keeps its own max-length lifetime via expire() above.
+  await redis.set(cooldownKey, String(Date.now() + cooldown * 1000), { ex: cooldown });
   return {
     allowed: false,
     limit: rateLimitConfig.auth.attemptPerIpPerMinute,

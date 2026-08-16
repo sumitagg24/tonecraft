@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { WebSocketServer, WebSocket } from "ws";
 import type { IncomingMessage } from "http";
 import type { Duplex } from "stream";
+import { permissionMiddleware } from "@/middleware/permissionMiddleware";
 
 interface WSMessage {
   type: string;
@@ -72,6 +73,13 @@ export const GET = async (req: NextRequest) => {
   const workspaceId = new URL(req.url).searchParams.get("workspaceId");
   if (!workspaceId) {
     return new Response("Missing workspaceId", { status: 400 });
+  }
+
+  // Authorization: the user must be a member of the workspace they're
+  // connecting to — never trust a client-claimed workspace membership.
+  const isMember = await permissionMiddleware.isWorkspaceMember(workspaceId, userId);
+  if (!isMember) {
+    return new Response("Forbidden", { status: 403 });
   }
 
   const wss = new WebSocketServer({ noServer: true });

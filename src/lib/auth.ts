@@ -1,5 +1,6 @@
 import { auth as clerkAuth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 import type { User } from "@prisma/client";
 
 export async function auth() {
@@ -13,7 +14,7 @@ export async function auth() {
       select: { id: true },
     });
   } catch (e) {
-    console.error(e);
+    logger.error("Auth database query failed", { userId }, e instanceof Error ? e : undefined);
     throw e;
   }
 
@@ -25,7 +26,7 @@ export async function auth() {
         select: { id: true },
       });
     } catch (e) {
-      console.warn("auth: user create failed (race)", e instanceof Error ? e.message : e);
+      logger.warn("auth: user create failed (race condition)", { userId, error: e instanceof Error ? e.message : String(e) });
       user = await prisma.user.findUnique({
         where: { clerkId: userId },
         select: { id: true },
@@ -51,7 +52,7 @@ export async function getAuthUser(): Promise<User | null> {
         data: { clerkId: userId, email: `temp-${userId}@clerk.local` },
       });
     } catch (e) {
-      console.warn("auth: getAuthUser create failed (race)", e instanceof Error ? e.message : e);
+      logger.warn("auth: getAuthUser create failed (race condition)", { userId, error: e instanceof Error ? e.message : String(e) });
       user = await prisma.user.findUnique({
         where: { clerkId: userId },
       });

@@ -5,6 +5,7 @@ import { logger } from "@/lib/logger";
 import { planService } from "@/services/PlanService";
 import { auditLogService } from "@/services/AuditLogService";
 import { getPriceId } from "@/lib/billing-prices";
+import { claimWebhookEvent, markWebhookProcessed } from "@/lib/webhook-dedupe";
 
 export async function POST(req: Request) {
   const body = await req.text();
@@ -24,7 +25,19 @@ export async function POST(req: Request) {
 
   const normalized = await billingService.handleWebhookEvent(event);
 
-  logger.info("Webhook received", { type: normalized.type });
+  // Replay protection: skip events we've already processed (Paddle redelivers
+  // on 5xx/network failures and supports manual replays from the dashboard).
+  const rawEvent = event as { event_id?: string; eventId?: string };
+  const eventId = rawEvent.eventId ?? rawEvent.event_id;
+  const claim = eventId
+    ? await claimWebhookEvent("paddle", eventId, normalized.type)
+    : "new";
+  if (claim === "duplicate") {
+    logger.info("Webhook replay skipped (already processed)", { eventId, type: normalized.type });
+    return NextResponse.json({ received: true, deduplicated: true });
+  }
+
+  logger.info("Webhook received", { type: normalized.type, claim });
   // Only record events we actually act on — ignored ones (product.*, customer.*,
   // transaction.created, …) would otherwise spam the audit log.
   if (normalized.type !== "ignored") {
@@ -35,6 +48,7 @@ export async function POST(req: Request) {
 
   try {
     await syncSubscription(normalized);
+    if (eventId) await markWebhookProcessed("paddle", eventId);
   } catch (err) {
     logger.error("Webhook sync failed", { type: normalized.type, error: String(err) });
   }
@@ -190,15 +204,6 @@ async function syncSubscription(normalized: { type: string; data: Record<string,
         actorId: userId,
         resourceId: subscriptionId,
         metadata: { eventType: normalized.type, status: "paused" },
-      });
-      break;
-    }
-    case "subscription.payment_succeeded": {
-
-      void auditLogService.record("billing.unsubscribe", "subscription", {
-        actorId: userId,
-        resourceId: subscriptionId,
-        metadata: { eventType: normalized.type },
       });
       break;
     }

@@ -1,4 +1,5 @@
 import { ok, fail, withApiHandler } from "@/lib/withApiHandler";
+import { PdfParseError } from "@/lib/knowledge/extract";
 import { knowledgeService } from "@/services/KnowledgeService";
 import { notificationService } from "@/services/NotificationService";
 import { auditLogService } from "@/services/AuditLogService";
@@ -48,7 +49,15 @@ export const POST = api.POST(async (ctx) => {
     return fail("PAYLOAD_TOO_LARGE", "Storage limit reached", 413);
   }
 
-  const created = await knowledgeService.create(ctx.user.id, file.name, buffer, projectId);
+  let created: Awaited<ReturnType<typeof knowledgeService.create>>;
+  try {
+    created = await knowledgeService.create(ctx.user.id, file.name, buffer, projectId);
+  } catch (error) {
+    if (error instanceof PdfParseError) {
+      return fail("PARSE_FAILED", error.message, 422);
+    }
+    throw error;
+  }
 
   // Account for the upload against usage counters (knowledge files live in Postgres).
   await prisma.usage.upsert({

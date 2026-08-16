@@ -64,7 +64,7 @@ export default function BlogPage() {
     : allRest.filter((p) => p.category === activeCategory);
 
   return (
-    <div className="relative noise-bg min-h-screen">
+    <main id="main-content" className="relative noise-bg min-h-screen">
       <div className="mx-auto max-w-4xl px-4 py-16 sm:py-24">
         {/* Header */}
         <motion.div
@@ -238,6 +238,6 @@ export default function BlogPage() {
           </p>
         </motion.div>
       </div>
-    </div>
+    </main>
   );
 }

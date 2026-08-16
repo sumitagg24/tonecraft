@@ -13,6 +13,9 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: process.cwd(),
   },
+  // pdf.js (via pdf-parse) spawns worker threads and needs the real Node
+  // module — opt it out of bundling to avoid Turbopack resolution errors.
+  serverExternalPackages: ["pdf-parse"],
   poweredByHeader: false,
 
   async headers() {

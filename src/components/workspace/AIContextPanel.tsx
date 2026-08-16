@@ -9,7 +9,7 @@ import { useMediaQuery } from "@/hooks/use-media-query";
 import { api } from "@/lib/api-client";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { cn } from "@/lib/utils";
+import { cn, formatBytes } from "@/lib/utils";
 import type { Persona } from "@/types";
 import {
   ChevronDown, Wand2, MessageSquare, Clock, Hash,
@@ -456,8 +456,3 @@ function UsageBadge({ wordCount, estTokens }: { wordCount: number; estTokens: nu
   );
 }
 
-function formatBytes(bytes: number) {
-  if (bytes < 1024) return `${bytes}B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)}MB`;
-}

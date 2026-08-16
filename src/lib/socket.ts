@@ -1,13 +1,9 @@
 import { Server as SocketIOServer } from "socket.io";
 import { Server as HTTPServer } from "http";
+import { verifyToken } from "@clerk/nextjs/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-
-interface SocketData {
-  userId: string;
-  name: string | null;
-  image: string | null;
-}
+import { logger } from "@/lib/logger";
 
 let ioInstance: SocketIOServer | null = null;
 
@@ -28,26 +24,43 @@ export function initSocket(server: HTTPServer) {
 
   ioInstance.use(async (socket, next) => {
     try {
-      const token = socket.handshake.auth.token;
-      if (!token) {
+      const token = socket.handshake.auth?.token;
+      if (typeof token !== "string" || token.length === 0) {
+        logger.warn("Socket connection rejected: no token provided");
         return next(new Error("Authentication required"));
       }
+
+      // Verify the Clerk session JWT (signature + exp/nbf against the Clerk
+      // JWKS). `sub` is the Clerk user id — the connection identity always
+      // comes from the verified token, never from client-supplied fields.
+      const claims = await verifyToken(token, {
+        secretKey: process.env.CLERK_SECRET_KEY,
+      });
+      if (!claims?.sub) {
+        logger.warn("Socket connection rejected: token missing subject");
+        return next(new Error("Invalid authentication token"));
+      }
+
+      socket.data.userId = claims.sub;
       next();
     } catch (error) {
-      next(error as Error);
+      logger.warn("Socket connection rejected: invalid token", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      next(new Error("Invalid authentication token"));
     }
   });
 
   ioInstance.on("connection", (socket) => {
-    const userData = socket.handshake.auth as SocketData;
-    socket.data.userId = userData.userId;
-    socket.data.name = userData.name;
-    socket.data.image = userData.image;
+    // Use validated data from middleware instead of raw handshake
+    const userId = socket.data.userId;
+
+    logger.info("Socket connection established", { userId });
 
     socket.on("join-project", async (data: { projectId: string }) => {
       socket.join(`project:${data.projectId}`);
       const existingPresence = await prisma.presence.findFirst({
-        where: { userId: userData.userId, projectId: data.projectId, chatId: null },
+        where: { userId, projectId: data.projectId, chatId: null },
       });
       if (existingPresence) {
         await prisma.presence.update({
@@ -56,11 +69,11 @@ export function initSocket(server: HTTPServer) {
         });
       } else {
         await prisma.presence.create({
-          data: { userId: userData.userId, projectId: data.projectId, status: "active" },
+          data: { userId, projectId: data.projectId, status: "active" },
         });
       }
       ioInstance?.to(`project:${data.projectId}`).emit("presence-update", {
-        userId: userData.userId,
+        userId,
         projectId: data.projectId,
         status: "active",
       });
@@ -69,7 +82,7 @@ export function initSocket(server: HTTPServer) {
     socket.on("join-chat", async (data: { chatId: string }) => {
       socket.join(`chat:${data.chatId}`);
       const existingPresence = await prisma.presence.findFirst({
-        where: { userId: userData.userId, projectId: null, chatId: data.chatId },
+        where: { userId, projectId: null, chatId: data.chatId },
       });
       if (existingPresence) {
         await prisma.presence.update({
@@ -78,11 +91,11 @@ export function initSocket(server: HTTPServer) {
         });
       } else {
         await prisma.presence.create({
-          data: { userId: userData.userId, chatId: data.chatId, status: "active" },
+          data: { userId, chatId: data.chatId, status: "active" },
         });
       }
       ioInstance?.to(`chat:${data.chatId}`).emit("presence-update", {
-        userId: userData.userId,
+        userId,
         chatId: data.chatId,
         status: "active",
       });
@@ -90,25 +103,25 @@ export function initSocket(server: HTTPServer) {
 
     socket.on("typing-start", async (data: { chatId: string }) => {
       socket.to(`chat:${data.chatId}`).emit("user-typing", {
-        userId: userData.userId,
+        userId,
         chatId: data.chatId,
         isTyping: true,
       });
       await prisma.typingIndicator.upsert({
-        where: { userId_chatId: { userId: userData.userId, chatId: data.chatId } },
-        create: { userId: userData.userId, chatId: data.chatId, isTyping: true },
+        where: { userId_chatId: { userId, chatId: data.chatId } },
+        create: { userId, chatId: data.chatId, isTyping: true },
         update: { isTyping: true, updatedAt: new Date() },
       });
     });
 
     socket.on("typing-stop", async (data: { chatId: string }) => {
       socket.to(`chat:${data.chatId}`).emit("user-typing", {
-        userId: userData.userId,
+        userId,
         chatId: data.chatId,
         isTyping: false,
       });
       await prisma.typingIndicator.deleteMany({
-        where: { userId: userData.userId, chatId: data.chatId },
+        where: { userId, chatId: data.chatId },
       });
     });
 
@@ -116,7 +129,7 @@ export function initSocket(server: HTTPServer) {
       const room = data.chatId ? `chat:${data.chatId}` : data.projectId ? `project:${data.projectId}` : null;
       if (room) {
         socket.to(room).emit("cursor-move", {
-          userId: userData.userId,
+          userId,
           x: data.x,
           y: data.y,
         });
@@ -153,7 +166,7 @@ export function initSocket(server: HTTPServer) {
         data: {
           resourceType: data.resourceType,
           resourceId: data.resourceId,
-          userId: userData.userId,
+          userId,
           version: data.version,
           operation: data.operation as Prisma.InputJsonValue,
           baseVersion: data.baseVersion,
@@ -164,7 +177,7 @@ export function initSocket(server: HTTPServer) {
       socket.to(data.resourceType === "chat" ? `chat:${data.resourceId}` : `project:${data.resourceId}`).emit("document-operation", {
         resourceType: data.resourceType,
         resourceId: data.resourceId,
-        userId: userData.userId,
+        userId,
         operation: data.operation,
         version: data.version,
       });
@@ -173,10 +186,10 @@ export function initSocket(server: HTTPServer) {
     socket.on("leave-project", async (data: { projectId: string }) => {
       socket.leave(`project:${data.projectId}`);
       await prisma.presence.deleteMany({
-        where: { userId: userData.userId, projectId: data.projectId },
+        where: { userId, projectId: data.projectId },
       });
       ioInstance?.to(`project:${data.projectId}`).emit("presence-update", {
-        userId: userData.userId,
+        userId,
         projectId: data.projectId,
         status: "offline",
       });
@@ -185,13 +198,13 @@ export function initSocket(server: HTTPServer) {
     socket.on("leave-chat", async (data: { chatId: string }) => {
       socket.leave(`chat:${data.chatId}`);
       await prisma.presence.deleteMany({
-        where: { userId: userData.userId, chatId: data.chatId },
+        where: { userId, chatId: data.chatId },
       });
       await prisma.typingIndicator.deleteMany({
-        where: { userId: userData.userId, chatId: data.chatId },
+        where: { userId, chatId: data.chatId },
       });
       ioInstance?.to(`chat:${data.chatId}`).emit("presence-update", {
-        userId: userData.userId,
+        userId,
         chatId: data.chatId,
         status: "offline",
       });
@@ -199,10 +212,10 @@ export function initSocket(server: HTTPServer) {
 
     socket.on("disconnect", async () => {
       await prisma.presence.updateMany({
-        where: { userId: userData.userId },
+        where: { userId },
         data: { status: "offline" },
       });
-      ioInstance?.emit("user-offline", { userId: userData.userId });
+      ioInstance?.emit("user-offline", { userId });
     });
   });
 
@@ -212,3 +225,4 @@ export function initSocket(server: HTTPServer) {
 export function getSocketInstance(): SocketIOServer | null {
   return ioInstance;
 }
+

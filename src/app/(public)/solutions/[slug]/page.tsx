@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SOLUTIONS } from "@/lib/marketing";
 import { tools, type ToolDefinition } from "@/components/tools/ToolDefinitions";
+import { publicPageMetadata, SITE_URL } from "@/lib/site";
 
 export function generateStaticParams() {
   return SOLUTIONS.map((s) => ({ slug: s.slug }));
@@ -13,10 +14,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const solution = SOLUTIONS.find((s) => s.slug === slug);
   if (!solution) return { title: "Solution not found — ToneCraft" };
-  return {
+  return publicPageMetadata({
     title: `${solution.name} — ToneCraft`,
     description: solution.tagline,
-  };
+    path: `/solutions/${solution.slug}`,
+  });
 }
 
 export default async function SolutionPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -30,8 +32,18 @@ export default async function SolutionPage({ params }: { params: Promise<{ slug:
     .slice(0, 6);
   const others = SOLUTIONS.filter((s) => s.slug !== solution.slug);
 
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: "Solutions", item: `${SITE_URL}/solutions` },
+      { "@type": "ListItem", position: 3, name: solution.name, item: `${SITE_URL}/solutions/${solution.slug}` },
+    ],
+  };
+
   return (
-    <div className="relative noise-bg min-h-screen">
+    <main id="main-content" className="relative noise-bg min-h-screen">
       <div className="max-w-4xl mx-auto px-6 py-24">
         <Button variant="ghost" size="sm" asChild className="mb-8">
           <Link href="/solutions">
@@ -116,6 +128,7 @@ export default async function SolutionPage({ params }: { params: Promise<{ slug:
           </div>
         </div>
       </div>
-    </div>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+    </main>
   );
 }

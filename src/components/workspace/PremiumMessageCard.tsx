@@ -1,9 +1,9 @@
 "use client";
-import { useState, useCallback, memo } from "react";
+import { useState, useCallback, memo, isValidElement, type ReactElement, type ReactNode } from "react";
 import { useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Message } from "@/types";
-import { cn } from "@/lib/utils";
+import { cn, formatBytes } from "@/lib/utils";
 import { TONES } from "@/lib/constants";
 import { useChatStore } from "@/stores/chat-store";
 import { useMediaQuery } from "@/hooks/use-media-query";
@@ -201,9 +201,22 @@ export const PremiumMessageCard = memo(function PremiumMessageCard({
                     <pre className="bg-muted/80 rounded-xl p-4 overflow-x-auto my-3 group/pre relative border border-border/20">
                       <button
                         onClick={() => {
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          const codeEl = (children as any)?.props?.children;
-                          const code = typeof codeEl === "string" ? codeEl : "";
+                          let code = "";
+                          if (isValidElement(children)) {
+                            const childProps = children.props as { children?: ReactNode };
+                            if (children.type === "code" && typeof childProps.children === "string") {
+                              code = childProps.children;
+                            } else if (Array.isArray(childProps.children)) {
+                              const codeChild = childProps.children.find(
+                                (child): child is ReactElement =>
+                                  isValidElement(child) && child.type === "code"
+                              );
+                              if (codeChild) {
+                                const codeText = (codeChild.props as { children?: ReactNode }).children;
+                                if (typeof codeText === "string") code = codeText;
+                              }
+                            }
+                          }
                           handleCopyCode(code);
                         }}
                         className="absolute top-2.5 right-2.5 opacity-0 group-hover/pre:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 p-1.5 rounded-lg bg-background/60 hover:bg-background/80 border border-border/20 transition-all"
@@ -483,8 +496,3 @@ function MetaRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function formatBytes(bytes: number) {
-  if (bytes < 1024) return `${bytes}B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)}MB`;
-}

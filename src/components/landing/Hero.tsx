@@ -147,7 +147,7 @@ export function Hero() {
           transition={{ duration: 0.7, delay: 1 }}
           className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground font-medium"
         >
-          {["No credit card", "Free forever", "30 AI generations/day"].map((item) => (
+          {["No credit card", "Free forever", "50 AI generations/day"].map((item) => (
             <span key={item} className="flex items-center gap-1.5">
               <Check className="w-3.5 h-3.5 text-emerald-500/80" />
               {item}

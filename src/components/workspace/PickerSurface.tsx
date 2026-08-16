@@ -13,9 +13,13 @@ interface PickerSurfaceProps {
 }
 
 export function PickerSurface({ label, onClose, className, children }: PickerSurfaceProps) {
-  const isMobile = useMediaQuery("(max-width: 767px)");
+  // Below xl the chat column can be too narrow for a left-anchored dropdown
+  // (the toolbar is a horizontal scroll container there), so render the
+  // picker as a bottom sheet — full-width, viewport-fixed, never clipped or
+  // pushed off-screen. Only at xl+ is there enough room for a true popover.
+  const isSheet = useMediaQuery("(max-width: 1279px)");
 
-  if (isMobile) {
+  if (isSheet) {
     return createPortal(
       <>
         <motion.div

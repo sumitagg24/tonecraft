@@ -1,3 +1,4 @@
+import { PDFParse } from "pdf-parse";
 import { logger } from "@/lib/logger";
 
 /**
@@ -83,13 +84,12 @@ export class VisionService {
       return { text: "", provider: "unavailable" };
     }
     try {
-      // Dynamic require wrapped to avoid static bundler resolution failure if optional module is missing
-      const req = eval("require");
-      const pdfParse = req("pdf-parse");
-      const data = await pdfParse(Buffer.from(bytes));
-      return { text: String(data?.text ?? "").slice(0, 50_000), provider: "openai" };
+      // Copy the ArrayBuffer so the pdf.js worker doesn't detach the caller's buffer.
+      const parser = new PDFParse({ data: new Uint8Array(bytes.slice(0)) });
+      const result = await parser.getText();
+      return { text: String(result?.text ?? "").slice(0, 50_000), provider: "openai" };
     } catch (error) {
-      logger.warn(`[Vision] pdf-parse unavailable: ${String(error)}`);
+      logger.warn(`[Vision] pdf-parse failed: ${String(error)}`);
       return { text: "", provider: "unavailable" };
     }
   }

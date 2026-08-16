@@ -1,9 +1,10 @@
 "use client";
 import { useState, useRef, useCallback, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Send, Loader2, X, ChevronDown, Sliders,
-  Globe, Square, Check, Wand2, Users, BookOpenCheck, Mic,
+  Globe, Square, Check, Wand2, Users, BookOpenCheck, Mic, Paperclip,
 } from "lucide-react";
 import { useChatStore } from "@/stores/chat-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
@@ -15,17 +16,21 @@ import { KnowledgePicker } from "./KnowledgePicker";
 import { PickerSurface } from "./PickerSurface";
 import type { ToolDefinition } from "@/components/tools/ToolDefinitions";
 import { api } from "@/lib/api-client";
-import { cn } from "@/lib/utils";
+import { cn, formatBytes } from "@/lib/utils";
 import { TONES, PLATFORMS } from "@/lib/constants";
 import { duration, ease } from "@/styles/motion";
 import { toast } from "sonner";
 import { useRecentTools } from "@/hooks/use-recent-tools";
+import type { PendingAttachment } from "@/hooks/use-chat";
 
 interface PremiumComposerProps {
   chatId: string;
-  onSend: (content: string, chatId: string, opts?: { knowledgeFileIds?: string[] }) => Promise<void>;
+  onSend: (content: string, chatId: string, opts?: { knowledgeFileIds?: string[]; attachments?: PendingAttachment[] }) => Promise<void>;
   onStop?: () => void;
 }
+
+const MAX_PENDING_ATTACHMENTS = 10;
+const MAX_ATTACHMENT_SIZE_MB = 25;
 
 export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps) {
   const [input, setInput] = useState("");
@@ -36,6 +41,9 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [recSeconds, setRecSeconds] = useState(0);
+  const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
+  const [uploadingAttachments, setUploadingAttachments] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -43,6 +51,11 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
   const recSecondsRef = useRef(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
+  const toneRef = useRef<HTMLDivElement>(null);
+  const personaRef = useRef<HTMLDivElement>(null);
+  const platformRef = useRef<HTMLDivElement>(null);
+  const toolRef = useRef<HTMLDivElement>(null);
+  const knowledgeRef = useRef<HTMLDivElement>(null);
   const isLoading = useChatStore((s) => s.isLoading);
   const selectedTone = useChatStore((s) => s.selectedTone);
   const context = useChatStore((s) => s.context);
@@ -85,14 +98,68 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
   }, [onStop]);
 
   const handleSubmit = useCallback(async () => {
+    // The message API requires non-empty content — attachments alone can't be
+    // sent, so keep staged attachments until the user types (or removes them).
     if (!input.trim() || isLoading) return;
     const content = input.trim();
+    const attachments = pendingAttachments;
     setInput("");
+    setPendingAttachments([]);
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
-    await onSend(content, chatId, knowledgeFileIds.length ? { knowledgeFileIds } : undefined);
-  }, [input, isLoading, chatId, onSend, knowledgeFileIds]);
+    await onSend(content, chatId, {
+      ...(knowledgeFileIds.length ? { knowledgeFileIds } : {}),
+      ...(attachments.length ? { attachments } : {}),
+    });
+  }, [input, isLoading, chatId, onSend, knowledgeFileIds, pendingAttachments]);
+
+  /** Upload selected files to R2 via /api/upload and stage them as attachments. */
+  const handleAttachFiles = useCallback(async (files: FileList | File[]) => {
+    const incoming = Array.from(files);
+    if (incoming.length === 0) return;
+    if (pendingAttachments.length + incoming.length > MAX_PENDING_ATTACHMENTS) {
+      toast.error(`You can attach up to ${MAX_PENDING_ATTACHMENTS} files per message`);
+      return;
+    }
+    const oversized = incoming.filter((f) => f.size > MAX_ATTACHMENT_SIZE_MB * 1024 * 1024);
+    if (oversized.length > 0) {
+      toast.error(`${oversized[0].name} is larger than ${MAX_ATTACHMENT_SIZE_MB}MB`);
+      return;
+    }
+    setUploadingAttachments(true);
+    try {
+      const uploaded: PendingAttachment[] = [];
+      for (const file of incoming) {
+        const fd = new FormData();
+        fd.append("file", file, file.name);
+        try {
+          const res = await api<{
+            key: string;
+            url: string | null;
+            fileName: string;
+            fileType: string;
+            fileSize: number;
+          }>("/api/upload", { method: "POST", body: fd });
+          uploaded.push({
+            key: res.key,
+            fileName: res.fileName,
+            fileType: res.fileType,
+            fileSize: res.fileSize,
+            url: res.url,
+          });
+        } catch (err) {
+          toast.error(`Failed to upload ${file.name}: ${err instanceof Error ? err.message : "upload error"}`);
+        }
+      }
+      if (uploaded.length > 0) {
+        setPendingAttachments((prev) => [...prev, ...uploaded]);
+      }
+    } finally {
+      setUploadingAttachments(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }, [pendingAttachments.length]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -301,12 +368,65 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
               aria-label="Message input"
             />
 
+            {/* Pending attachments — staged files upload to R2 on send */}
+            {pendingAttachments.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 px-3 pt-1.5">
+                {pendingAttachments.map((att) => (
+                  <span
+                    key={att.key}
+                    className="flex items-center gap-1.5 pl-2 pr-1 py-1 rounded-lg border border-border/25 bg-muted/20 text-micro text-muted-foreground/80"
+                    title={att.fileName}
+                  >
+                    <Paperclip className="w-3 h-3 shrink-0" />
+                    <span className="max-w-[160px] truncate">{att.fileName}</span>
+                    <span className="shrink-0 text-muted-foreground/50">
+                      {formatBytes(att.fileSize)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setPendingAttachments((prev) => prev.filter((p) => p.key !== att.key))}
+                      className="ml-0.5 p-1 rounded-md text-muted-foreground/50 hover:text-foreground hover:bg-muted/40 transition-all"
+                      aria-label={`Remove ${att.fileName}`}
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
             {/* Toolbar — left side scrolls horizontally on small screens so the
                 send button is always visible on the right (no more off-screen tap). */}
             <div ref={toolbarRef} className="flex items-center justify-between gap-2 px-2 pb-1.5 pt-0.5">
               {/* Scroll only on small screens — on md+ the pickers are anchored
                   dropdowns and must not be clipped by a scroll container. */}
-              <div className="flex items-center gap-0.5 flex-1 min-w-0 overflow-x-auto scrollbar-none overscroll-x-contain md:overflow-visible">
+              <div className="flex items-center gap-0.5 flex-1 min-w-0 overflow-x-auto scrollbar-none overscroll-x-contain">
+                {/* Attach files (Cloudflare R2) */}
+                <ToolbarButton
+                  onClick={() => fileInputRef.current?.click()}
+                  active={pendingAttachments.length > 0}
+                  disabled={isLoading || uploadingAttachments}
+                  label="Attach files"
+                >
+                  {uploadingAttachments ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Paperclip className={cn("w-4 h-4", pendingAttachments.length > 0 && "text-primary")} />
+                  )}
+                </ToolbarButton>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*,.pdf,.txt,.md,.html,.json,.csv"
+                  className="hidden"
+                  aria-hidden="true"
+                  tabIndex={-1}
+                  onChange={(e) => {
+                    if (e.target.files) void handleAttachFiles(e.target.files);
+                  }}
+                />
+
                 {/* Voice input */}
                 <ToolbarButton
                   onClick={toggleRecording}
@@ -327,7 +447,7 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
                 </ToolbarButton>
 
                 {/* Tone picker */}
-                <div className="relative">
+                <div ref={toneRef} className="relative">
                   <ToolbarButton
                     onClick={() => setOpenPicker(openPicker === "tone" ? null : "tone")}
                     active={openPicker === "tone"}
@@ -344,13 +464,15 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
                   </ToolbarButton>
                   <AnimatePresence>
                     {openPicker === "tone" && (
-                      <TonePicker onSelect={() => setOpenPicker(null)} onClose={() => setOpenPicker(null)} />
+                      <PickerAnchor triggerRef={toneRef}>
+                        <TonePicker onSelect={() => setOpenPicker(null)} onClose={() => setOpenPicker(null)} />
+                      </PickerAnchor>
                     )}
                   </AnimatePresence>
                 </div>
 
                 {/* Persona picker */}
-                <div className="relative">
+                <div ref={personaRef} className="relative">
                   <ToolbarButton
                     onClick={() => setOpenPicker(openPicker === "persona" ? null : "persona")}
                     active={openPicker === "persona"}
@@ -364,13 +486,15 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
                   </ToolbarButton>
                   <AnimatePresence>
                     {openPicker === "persona" && (
-                      <PersonaPicker onClose={() => setOpenPicker(null)} />
+                      <PickerAnchor triggerRef={personaRef}>
+                        <PersonaPicker onClose={() => setOpenPicker(null)} />
+                      </PickerAnchor>
                     )}
                   </AnimatePresence>
                 </div>
 
                 {/* Platform picker */}
-                <div className="relative">
+                <div ref={platformRef} className="relative">
                   <ToolbarButton
                     onClick={() => setOpenPicker(openPicker === "platform" ? null : "platform")}
                     active={openPicker === "platform"}
@@ -384,7 +508,8 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
                   </ToolbarButton>
                   <AnimatePresence>
                     {openPicker === "platform" && (
-                      <PickerSurface label="Platform" onClose={() => setOpenPicker(null)} className="w-[200px] bottom-full left-0 mb-1.5">
+                      <PickerAnchor triggerRef={platformRef}>
+                        <PickerSurface label="Platform" onClose={() => setOpenPicker(null)} className="w-[200px] bottom-full left-0 mb-1.5">
                         <div className="max-h-64 overflow-y-auto scrollbar-thin">
                           {PLATFORMS.map((platform) => {
                             const id = platform.name.toLowerCase();
@@ -406,12 +531,13 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
                           })}
                         </div>
                       </PickerSurface>
+                      </PickerAnchor>
                     )}
                   </AnimatePresence>
                 </div>
 
                 {/* Tool picker */}
-                <div className="relative">
+                <div ref={toolRef} className="relative">
                   <ToolbarButton
                     onClick={() => setOpenPicker(openPicker === "tool" ? null : "tool")}
                     active={openPicker === "tool"}
@@ -429,13 +555,15 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
                   </ToolbarButton>
                   <AnimatePresence>
                     {openPicker === "tool" && (
-                      <ToolPicker onSelect={applyTool} onClose={() => setOpenPicker(null)} loading={toolLoading} />
+                      <PickerAnchor triggerRef={toolRef}>
+                        <ToolPicker onSelect={applyTool} onClose={() => setOpenPicker(null)} loading={toolLoading} />
+                      </PickerAnchor>
                     )}
                   </AnimatePresence>
                 </div>
 
                 {/* Knowledge picker */}
-                <div className="relative">
+                <div ref={knowledgeRef} className="relative">
                   <ToolbarButton
                     onClick={() => setOpenPicker(openPicker === "knowledge" ? null : "knowledge")}
                     active={openPicker === "knowledge" || knowledgeFileIds.length > 0}
@@ -451,11 +579,13 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
                   </ToolbarButton>
                   <AnimatePresence>
                     {openPicker === "knowledge" && (
-                      <KnowledgePicker
-                        selected={knowledgeFileIds}
-                        onChange={setKnowledgeFileIds}
-                        onClose={() => setOpenPicker(null)}
-                      />
+                      <PickerAnchor triggerRef={knowledgeRef}>
+                        <KnowledgePicker
+                          selected={knowledgeFileIds}
+                          onChange={setKnowledgeFileIds}
+                          onClose={() => setOpenPicker(null)}
+                        />
+                      </PickerAnchor>
                     )}
                   </AnimatePresence>
                 </div>
@@ -654,5 +784,50 @@ function AdvancedControlsPanel() {
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Renders a picker popover in a portal anchored to its trigger button.
+ *
+ * The composer toolbar scrolls horizontally (overflow-x-auto) so the send
+ * button is never pushed off-screen or covered at narrow widths — but a
+ * scroll container clips absolutely-positioned descendants, which would cut
+ * off the picker dropdowns. Anchoring at a 0×0 fixed point at the trigger's
+ * top-left and portaling to <body> lets the pickers escape the clip while
+ * keeping their existing `bottom-full left-0` positioning intact.
+ */
+function PickerAnchor({
+  triggerRef,
+  children,
+}: {
+  triggerRef: React.RefObject<HTMLElement | null>;
+  children: React.ReactNode;
+}) {
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
+
+  useEffect(() => {
+    const update = () => {
+      const el = triggerRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      setPos({ left: r.left, top: r.top });
+    };
+    update();
+    window.addEventListener("resize", update);
+    // Capture-phase scroll catches the toolbar's own horizontal scroll too.
+    window.addEventListener("scroll", update, true);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+    };
+  }, [triggerRef]);
+
+  if (!pos) return null;
+  return createPortal(
+    <div className="fixed z-50" style={{ left: pos.left, top: pos.top, width: 0, height: 0 }}>
+      {children}
+    </div>,
+    document.body
   );
 }
