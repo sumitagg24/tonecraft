@@ -146,16 +146,16 @@ Sign in with Clerk, and you're on `/chat`. The shell rail + ⌘K palette navigat
 | `NEXT_PUBLIC_CLERK_SIGN_IN_URL` / `SIGN_UP_URL` | | `/sign-in`, `/sign-up` |
 | `NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL` / `AFTER_SIGN_UP_URL` | | Redirect after auth (`/chat`) |
 | `CLERK_WEBHOOK_SECRET` | | Clerk webhook verification |
-| AI provider API keys (`GROQ_API_KEY`, `OPENROUTER_API_KEY`, `GOOGLE_AI_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`) | ⚠️ | At least one required |
+| AI provider API keys (`GROQ_API_KEY`, `OPENROUTER_API_KEY`, `GOOGLE_AI_API_KEY`, `OPENAI_API_KEY`) | ⚠️ | At least one required |
 | `EMBEDDINGS_API_URL` / `EMBEDDINGS_API_KEY` / `EMBEDDINGS_MODEL` | | Embeddings for AI memory + knowledge retrieval (unset = deterministic hash fallback) |
 | `STT_MODEL` / `TTS_MODEL` / `TTS_VOICE` / `VISION_MODEL` | | Voice & vision model overrides (defaults via `OPENAI_API_KEY`) |
 | `UPSTASH_REDIS_REST_URL` | ⚠️ | Rate limiting (fails closed in prod when unset) |
 | `UPSTASH_REDIS_REST_TOKEN` | ⚠️ | Rate limiting |
 | `CRON_SECRET` | ⚠️ | Bearer secret for `/api/cron/*` workers |
-| `SLACK_CLIENT_ID` / `SLACK_CLIENT_SECRET` | | Real OAuth for Slack integration |
-| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | | Real OAuth for GitHub integration |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_FROM` | | SMTP transport for notification emails (queue worker) |
 | `SMTP_USER` / `SMTP_PASS` / `SMTP_SECURE` | | SMTP credentials (omit `SMTP_USER` for unauthenticated relays) |
+| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | | Browser push notifications (generate via `node scripts/generate-vapid-keys.js`; fails closed without) |
+| `NEXT_PUBLIC_SOCKET_URL` | | Socket.IO client URL (unset = localhost in dev) |
 | `R2_ACCOUNT_ID` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` / `R2_BUCKET` | ⚠️ | Cloudflare R2 — chat attachments + knowledge originals (upload route fails closed without it) |
 | `R2_PUBLIC_URL` | | Public bucket domain for direct-read links (unset = private downloads via `/api/files`) |
 | `ADMIN_EMAILS` | | Comma-separated global admin emails (feedback triage, `/admin/*`, collaboration maintenance) |

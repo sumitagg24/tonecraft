@@ -4,7 +4,7 @@ import { publicPageMetadata } from "@/lib/site";
 export const metadata: Metadata = publicPageMetadata({
   title: "Terms of Service — ToneCraft",
   description:
-    "The terms and conditions governing your use of ToneCraft — accounts, subscriptions, acceptable use, and liability.",
+    "ToneCraft Terms of Service: acceptable use, user responsibilities, subscriptions, payments, and limitation of liability.",
   path: "/terms",
 });
 

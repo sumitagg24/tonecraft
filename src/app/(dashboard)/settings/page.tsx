@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api-client";
+import { subscribePush, unsubscribePush } from "@/lib/push-client";
 import { toast } from "sonner";
 import type { Persona } from "@/types";
 
@@ -61,6 +62,20 @@ export default function SettingsPage() {
   const togglePref = useCallback(async (key: string, value: boolean) => {
     setNotifPrefs((prev) => ({ ...prev, [key]: value }));
     try {
+      // Enabling browser push requires an actual subscription (permission +
+      // PushManager) — set the preference only if the subscription succeeds.
+      if (key === "pushEnabled") {
+        if (value) {
+          const subscribed = await subscribePush();
+          if (!subscribed) {
+            setNotifPrefs((prev) => ({ ...prev, [key]: false }));
+            toast.error("Push not enabled — check browser permission or VAPID config");
+            return;
+          }
+        } else {
+          await unsubscribePush();
+        }
+      }
       await api("/api/notifications/preferences", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },

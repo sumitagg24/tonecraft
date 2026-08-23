@@ -4,7 +4,7 @@ import { publicPageMetadata } from "@/lib/site";
 export const metadata: Metadata = publicPageMetadata({
   title: "Privacy Policy — ToneCraft",
   description:
-    "How ToneCraft collects, uses, and protects your data — our privacy policy and data handling practices.",
+    "How ToneCraft collects, uses, and protects your data. Full privacy policy covering account data, usage data, encryption, and your rights.",
   path: "/privacy",
 });
 

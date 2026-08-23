@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { publicPageMetadata } from "@/lib/site";
 
 export const metadata: Metadata = publicPageMetadata({
-  title: "About — ToneCraft",
+  title: "About ToneCraft — Our Mission & Values",
   description:
-    "ToneCraft is an AI communication platform helping you express yourself perfectly across every platform and tone — our mission, story, and values.",
+    "Learn about ToneCraft: our mission to make AI-powered communication accessible, our focus on clarity and privacy, and the team behind the platform.",
   path: "/about",
 });
 

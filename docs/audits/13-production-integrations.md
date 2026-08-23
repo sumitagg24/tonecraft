@@ -74,7 +74,7 @@ HTTP layer is solid: `withApiHandler` (auth default true, zod validation, per-IP
 Remaining weaknesses (not yet fixed):
 
 - **`src/middleware/permissionMiddleware.ts`** — verified current (2026-08-17): `requireWorkspaceRole`/`requireProjectRole`/`checkWorkspaceRole`/`isWorkspaceMember` are all real, with the admin ≥ manager ≥ member hierarchy (`ROLE_RANK`); used by every workspace + admin route (all map `"none"`/`"denied"` → 403). The earlier "empty stub" claim was stale.
-- **Email + push notifications are no-ops** (`src/services/NotificationService.ts`): `sendEmail` enqueues to the placeholder handler; `sendPush` only logs (no web-push/VAPID). Only in-app + SSE work.
+- **Notifications are fully wired now**: in-app + SSE (realtime) always worked; **email** delivers via the queue worker's nodemailer SMTP transport (see Resolved #6); **push** delivers via web-push/VAPID (see Resolved #12). Only in-app + SSE work without the optional `SMTP_*`/`VAPID_*` keys — those fail closed in production rather than silently dropping.
 
 ---
 
@@ -92,9 +92,12 @@ Remaining weaknesses (not yet fixed):
 10. **Cron auth (F6)** — hardened `guardCronRequest`: when a request carries Vercel's `x-vercel-cron-schedule` header it must be a valid cron expression and the user agent must start with `vercel-cron/` (spoofed-header rejection); manual invocations with a valid bearer secret still pass. `vercel.json` gained the `$schema`. New tests in `security-guards.test.ts`. Note: the schedule header/UA checks are the production path — Vercel sends them automatically alongside the `CRON_SECRET` Authorization header (set `CRON_SECRET` as a Vercel project env var).
 11. **Feedback delivery** — the in-app feedback flow (TopBar button → `FeedbackDialog` → `POST /api/feedback` → `Feedback` table + admin triage at `/admin/feedback`, gated by `ADMIN_EMAILS`) is now documented end-to-end; submissions are emailed to `FEEDBACK_NOTIFICATION_EMAIL` via the queue's SMTP transport (recommended: create `feedback@tonecraft.app` and point the var at it).
 
+12. **Web Push notifications (F9)** — implemented end-to-end (2026-08-17): `src/lib/webpush.ts` (web-push/VAPID transport, fail-closed in production), `NotificationService.sendPush` now actually delivers to every stored subscription and prunes 404/410 (gone/expired) endpoints, `GET /api/notifications/vapid-key` (auth-gated public key), `DELETE /api/notifications/subscription` (ownership-scoped unsubscribe), client subscribe/unsubscribe wired into the settings push toggle via `src/lib/push-client.ts` (permission prompt + PushManager + persistence), `scripts/generate-vapid-keys.js` to mint `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY`/`VAPID_SUBJECT`, env docs in `.env.example`/`README.md`, and unit tests (`src/__tests__/webpush.test.ts`: dev skip / prod fail-closed / configured delivery / public-key accessor).
+
 ## Remaining priority list
 
 | # | Severity | Item | Location |
 |---|---|---|---|
-| 1 | P3 | Drop dead `ANTHROPIC_API_KEY` from env docs (Claude routes via OpenRouter) | `.env.example`, `README.md` |
-| 2 | P3 | Remove unused `redis` container from `docker-compose.yml` (app uses Upstash REST only) | `docker-compose.yml` |
+| 1 | ~~P3~~ ✅ | ~~Drop dead `ANTHROPIC_API_KEY` from env docs (Claude routes via OpenRouter)~~ — removed from `.env.example`, `README.md`, `startup-validation.ts` (2026-08-17) | |
+| 2 | ~~P3~~ ✅ | ~~Remove unused `redis` container from `docker-compose.yml` (app uses Upstash REST only)~~ — removed (2026-08-17) | |
+| 3 | ~~P2~~ ✅ | ~~Push notifications are a no-op (`sendPush` only logged, no web-push/VAPID)~~ — **Web Push implemented end-to-end** (2026-08-17): `src/lib/webpush.ts` (fail-closed VAPID transport), `NotificationService.sendPush` delivers + prunes 404/410 endpoints, `GET /api/notifications/vapid-key`, `DELETE /api/notifications/subscription`, client subscribe/unsubscribe wired into the settings push toggle (`src/lib/push-client.ts`), `scripts/generate-vapid-keys.js`, `VAPID_*` env docs, tests in `webpush.test.ts` | |
