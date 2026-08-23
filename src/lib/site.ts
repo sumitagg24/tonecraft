@@ -5,12 +5,12 @@ import type { Metadata } from "next";
  *
  * The production domain is configured via NEXT_PUBLIC_APP_URL (set in the
  * deploy environment). When unset, we fall back to the established canonical
- * marketing origin (https://tonecraft.app) — never to a temporary *.vercel.app
+ * marketing origin (https://tonecraft.site) — never to a temporary *.vercel.app
  * URL. Everything that emits absolute URLs (metadataBase, canonical tags, OG,
  * sitemap, robots, llms.txt, JSON-LD) reads from here so they can never drift.
  */
 export const SITE_URL =
-  (process.env.NEXT_PUBLIC_APP_URL ?? "https://tonecraft.app").replace(/\/+$/, "");
+  (process.env.NEXT_PUBLIC_APP_URL ?? "https://tonecraft.site").replace(/\/+$/, "");
 
 export const SITE_NAME = "ToneCraft";
 export const SITE_TITLE = "ToneCraft — AI Communication Platform";

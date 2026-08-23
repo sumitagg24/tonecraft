@@ -47,12 +47,12 @@ const nextConfig: NextConfig = {
                     // Paddle.js loads from cdn.paddle.com and dynamically injects the
                     // checkout overlay loader (https://*.paddle.com covers it). Paddle also
                     // injects its ProfitWell analytics script from public.profitwell.com.
-                    "script-src 'self' 'unsafe-inline' https://*.clerk.accounts.dev https://*.paddle.com https://public.profitwell.com",
+                    "script-src 'self' 'unsafe-inline' https://*.clerk.accounts.dev https://*.clerk.com https://*.paddle.com https://public.profitwell.com",
                     // Sentry Session Replay spawns its compression worker from a blob URL
                     // (worker-src falls back to script-src when unset, which blocked it).
                     "worker-src 'self' blob:",
                     // Paddle loads its checkout overlay stylesheet from sandbox-cdn/live-cdn.
-                    "style-src 'self' 'unsafe-inline' https://*.paddle.com",
+                    "style-src 'self' 'unsafe-inline' https://*.clerk.com https://*.paddle.com",
                     "img-src 'self' data: blob: https://images.unsplash.com https://lh3.googleusercontent.com https://avatars.githubusercontent.com https://img.clerk.com https://*.clerk.com https://*.clerk.accounts.dev https://*.r2.dev https://*.paddle.com",
                     "font-src 'self' data:",
                     // Paddle.js talks to api.paddle.com (live) / sandbox-api.paddle.com
@@ -62,7 +62,7 @@ const nextConfig: NextConfig = {
                     "media-src 'self' blob: data: https://*.r2.dev",
                     // Paddle hosted checkout renders in an overlay iframe served from
                     // checkout.paddle.com (live) / sandbox-checkout.paddle.com (sandbox).
-                    "frame-src 'self' https://*.clerk.accounts.dev https://*.paddle.com",
+                    "frame-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://*.paddle.com",
                     "object-src 'none'",
                     "base-uri 'self'",
                     "form-action 'self'",
