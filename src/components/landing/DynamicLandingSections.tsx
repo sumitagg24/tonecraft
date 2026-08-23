@@ -12,7 +12,7 @@ const Pricing = dynamic(() => import("@/components/landing/Pricing").then((m) =>
 const Roadmap = dynamic(() => import("@/components/landing/RoadmapSection").then((m) => ({ default: m.RoadmapSection })), { ssr: false });
 const FAQ = dynamic(() => import("@/components/landing/FAQ").then((m) => ({ default: m.FAQ })), { ssr: false });
 const CTA = dynamic(() => import("@/components/landing/CTA").then((m) => ({ default: m.CTA })), { ssr: false });
-const Footer = dynamic(() => import("@/components/landing/Footer").then((m) => ({ default: m.Footer })), { ssr: false });
+
 
 export function DynamicLandingSections() {
   return (
@@ -27,7 +27,6 @@ export function DynamicLandingSections() {
       <Roadmap />
       <FAQ />
       <CTA />
-      <Footer />
     </>
   );
 }
