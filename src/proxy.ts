@@ -54,6 +54,8 @@ function isPublicPath(pathname: string): boolean {
   );
 }
 
+const SIGN_IN_URL = process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL || "/sign-in";
+
 export default clerkMiddleware(async (auth, req: NextRequest) => {
   const { pathname } = req.nextUrl;
 
@@ -88,7 +90,16 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
   }
 
   if (!isPublicPath(pathname)) {
-    await auth.protect();
+    // WORKAROUND — Clerk bug #8302: auth.protect() in Next.js 16 proxy
+    // resolves signInUrl to "" (unavailable via process.env in the Node.js
+    // proxy runtime), so it redirects to the current page instead of /sign-in.
+    // We check the session ourselves and redirect manually.
+    const { userId } = await auth();
+    if (!userId) {
+      const signInUrl = new URL(SIGN_IN_URL, req.url);
+      signInUrl.searchParams.set("redirect_url", req.nextUrl.pathname);
+      return NextResponse.redirect(signInUrl);
+    }
   }
 });
 
