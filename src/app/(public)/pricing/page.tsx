@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Pricing } from "@/components/landing/Pricing";
-import { publicPageMetadata } from "@/lib/site";
+import { publicPageMetadata, SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = publicPageMetadata({
   title: "Pricing — ToneCraft AI Writing Plans",
@@ -8,6 +8,37 @@ export const metadata: Metadata = publicPageMetadata({
     "Start free with 50 AI generations a day. Upgrade to Pro for unlimited rewrites, custom personas, and a 16K context window — cancel anytime.",
   path: "/pricing",
 });
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebPage",
+      "@id": `${SITE_URL}/pricing/#webpage`,
+      url: `${SITE_URL}/pricing`,
+      name: "ToneCraft Pricing — AI Writing Plans",
+      isPartOf: { "@id": `${SITE_URL}/#website` },
+    },
+    {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "USD",
+      name: "ToneCraft Free",
+      description: "50 AI generations per day, all tone presets",
+      url: `${SITE_URL}/pricing`,
+      eligibleRegion: { "@type": "Country", name: "Worldwide" },
+    },
+    {
+      "@type": "Offer",
+      price: "6",
+      priceCurrency: "USD",
+      name: "ToneCraft Pro",
+      description: "Unlimited rewrites, custom personas, 16K context window",
+      url: `${SITE_URL}/pricing`,
+      eligibleRegion: { "@type": "Country", name: "Worldwide" },
+    },
+  ],
+};
 
 export default function PricingPage() {
   return (
@@ -20,6 +51,10 @@ export default function PricingPage() {
         </div>
         <Pricing />
       </div>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
     </main>
   );
 }

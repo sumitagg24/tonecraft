@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
-import { getSocketInstance } from "@/lib/socket";
+import { getRealtimeServer } from "@/lib/realtime";
 import { NotificationType, NotificationChannel } from "@prisma/client";
 import type { NotificationPreference } from "@prisma/client";
 import { queueService } from "@/services/QueueService";
@@ -151,16 +151,50 @@ export class NotificationService {
     }
   }
 
-  private async sendPush(userId: string, type: NotificationType, title: string, _body: string | null, _link: string | null, _metadata?: Record<string, unknown> | null): Promise<void> {
+  private async sendPush(userId: string, type: NotificationType, title: string, body: string | null, link: string | null, _metadata?: Record<string, unknown> | null): Promise<void> {
     try {
       const subs = await prisma.pushSubscription.findMany({
         where: { userId },
-        select: { endpoint: true, keys: true },
+        select: { endpoint: true, keys: true, id: true },
       });
 
       if (subs.length === 0) return;
 
-      logger.info("[NotificationService] Push notification queued", { userId, type, title, recipients: subs.length });
+      // Real delivery via web-push (VAPID). In production an unconfigured
+      // VAPID throws (fail closed) and is logged; dev skips with a warning.
+      const { sendWebPush } = await import("@/lib/webpush");
+      const payload = { title, body: body ?? undefined, url: link ?? undefined };
+
+      const dead: string[] = [];
+      let delivered = 0;
+      let lastError: unknown = null;
+      for (const sub of subs) {
+        try {
+          const keys = (sub.keys ?? {}) as Record<string, string>;
+          await sendWebPush({ endpoint: sub.endpoint, keys }, payload);
+          delivered += 1;
+        } catch (err) {
+          // 404/410 = endpoint gone — prune it so we stop hammering it.
+          // Anything else (network, VAPID misconfig) is logged and retried
+          // on the next notification.
+          if (isGoneError(err)) {
+            dead.push(sub.endpoint);
+          } else {
+            lastError = err;
+          }
+        }
+      }
+
+      if (dead.length > 0) {
+        await prisma.pushSubscription.deleteMany({ where: { endpoint: { in: dead } } });
+      }
+
+      if (delivered > 0 || dead.length > 0) {
+        logger.info("[NotificationService] Push delivered", { userId, type, title, delivered, pruned: dead.length });
+      }
+      if (lastError) {
+        throw lastError;
+      }
     } catch (err) {
       logger.error("[NotificationService] Push delivery failed", { userId, type }, err instanceof Error ? err : undefined);
     }
@@ -175,7 +209,7 @@ export class NotificationService {
     workspaceId?: string | null
   ): void {
     try {
-      const io = getSocketInstance();
+      const io = getRealtimeServer();
       if (io) {
         io.to(`user:${userId}`).emit("notification", {
           type,
@@ -376,3 +410,16 @@ export class NotificationService {
 }
 
 export const notificationService = new NotificationService();
+
+/**
+ * web-push throws `WebPushError` with statusCode 404 (endpoint gone) or
+ * 410 (subscription expired) when a push subscription is dead. Treat those
+ * as removable; everything else is a transient/configuration error.
+ */
+function isGoneError(err: unknown): boolean {
+  if (err && typeof err === "object") {
+    const code = (err as { statusCode?: number }).statusCode;
+    return code === 404 || code === 410;
+  }
+  return false;
+}

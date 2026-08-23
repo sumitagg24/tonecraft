@@ -4,6 +4,7 @@ import { verifyToken } from "@clerk/nextjs/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { canAccessProject, canAccessChat } from "@/lib/resource-access";
+import { setRealtimeServer } from "@/lib/realtime";
 
 let io: SocketIOServer | null = null;
 
@@ -56,8 +57,16 @@ export const GET = async () => {
       }
     });
 
+    // Publish the instance so services (e.g. NotificationService) can broadcast
+    // into rooms. Each connection joins its personal `user:<id>` room, which is
+    // what per-user notification broadcasts target.
+    setRealtimeServer(io);
+
     io.on("connection", (socket) => {
       const userId = socket.data.userId as string;
+
+      // Personal room for notification broadcasts (user:<dbUserId>).
+      socket.join(`user:${userId}`);
 
       socket.on("join-project", async (data: { projectId: string }) => {
         if (!(await canAccessProject(userId, data.projectId))) {

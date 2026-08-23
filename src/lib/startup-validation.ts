@@ -28,7 +28,8 @@ function getMissingCritical(): string[] {
 }
 
 function getMissingLLMKeys(): string[] {
-  const keys = ["GROQ_API_KEY", "OPENROUTER_API_KEY", "GOOGLE_AI_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY"];
+  // Note: no ANTHROPIC_API_KEY — Claude routes via OpenRouter (src/config/models.ts).
+  const keys = ["GROQ_API_KEY", "OPENROUTER_API_KEY", "GOOGLE_AI_API_KEY", "OPENAI_API_KEY"];
   return keys.filter((k) => !process.env[k]);
 }
 

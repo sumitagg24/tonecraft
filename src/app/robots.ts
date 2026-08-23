@@ -13,12 +13,27 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: "*",
-      allow: "/",
+      allow: [
+        "/",
+        "/features",
+        "/pricing",
+        "/solutions",
+        "/demo",
+        "/blog",
+        "/help",
+        "/about",
+        "/faq",
+        "/changelog",
+        "/roadmap",
+        "/status",
+        "/privacy",
+        "/terms",
+        "/llms.txt",
+      ],
       disallow: [
         // Authenticated application (never indexable).
         "/chat",
         "/tools",
-        "/docs",
         "/library",
         "/search",
         "/notifications",
@@ -33,6 +48,7 @@ export default function robots(): MetadataRoute.Robots {
         "/marketplace",
         "/organization",
         "/automations",
+        "/docs",
         // Admin — internal only.
         "/admin",
         // Account / onboarding / auth utility pages (no content value).
