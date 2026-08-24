@@ -21,10 +21,6 @@ import {
   AlertCircle,
   RefreshCw,
   Zap,
-  Activity,
-  CheckCircle2,
-  XCircle,
-  ExternalLink,
 } from "lucide-react";
 import { PRICING_TIERS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -36,27 +32,24 @@ import { toast } from "sonner";
 import type { InvoiceItem } from "@/app/api/billing/invoices/route";
 import type { PaymentHistoryItem } from "@/app/api/billing/history/route";
 
-interface BillingHealth {
-  provider: string;
-  environment: string;
-  overall: "ok" | "action_required";
-  env: { key: string; ok: boolean; hint?: string; description?: string }[];
-  paddle: { ok: boolean; error?: string; productCount?: number; description?: string };
-  prices: { priceId: string; label: string; envKey?: string; found: boolean; name?: string; description?: string }[];
-}
-
 interface UsageData {
-  usage: {
-    messagesSent: number;
-    tokensUsed: number;
-    filesUploaded: number;
-    storageUsed: number;
-  };
   plan: string;
-  limits: {
-    messagesPerDay: number;
-    messagesPerHour: number;
+  role: string;
+  credits: {
+    monthly: {
+      allocated: number | null;
+      used: number;
+      remaining: number | null;
+      unlimited: boolean;
+    };
+    daily: {
+      allocated: number | null;
+      used: number;
+      remaining: number | null;
+      unlimited: boolean;
+    };
   };
+  resetDate: string;
 }
 
 function BillingContent() {
@@ -81,13 +74,8 @@ function BillingContent() {
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyError, setHistoryError] = useState(false);
 
-  // Billing setup diagnostics
-  const [health, setHealth] = useState<BillingHealth | null>(null);
-  const [healthLoading, setHealthLoading] = useState(true);
-
-  // Live checkout probe (verifies the full Paddle payment path end-to-end)
-  const [checkoutTest, setCheckoutTest] = useState<{ ok: boolean; message: string; url?: string } | null>(null);
-  const [checkoutTesting, setCheckoutTesting] = useState(false);
+  // Paddle customer ID for Retain (pwCustomer) — fetched once after sign-in
+  const [paddleCustomerId, setPaddleCustomerId] = useState<string | null>(null);
 
   // Auto-start checkout when arriving from the landing pricing page (?plan=pro).
   // This is what "Upgrade to Pro → payments page" resolves to: the billing page
@@ -173,26 +161,21 @@ function BillingContent() {
     }
   }, [isSignedIn]);
 
-  // Fetch billing setup diagnostics
-  const fetchHealth = useCallback(async () => {
-    setHealthLoading(true);
-    try {
-      setHealth(await api<BillingHealth>("/api/billing/health"));
-    } catch {
-      setHealth(null);
-    } finally {
-      setHealthLoading(false);
-    }
-  }, []);
+  // Fetch Paddle customer ID for Retain (pwCustomer)
+  useEffect(() => {
+    if (!isSignedIn) return;
+    api<{ customerId: string }>("/api/billing/customer")
+      .then((data) => setPaddleCustomerId(data.customerId))
+      .catch(() => {}); // no customer yet — fine, pwCustomer is optional
+  }, [isSignedIn]);
 
   useEffect(() => {
     if (isSignedIn) {
       fetchUsage();
       fetchInvoices();
       fetchHistory();
-      fetchHealth();
     }
-  }, [isSignedIn, fetchUsage, fetchInvoices, fetchHistory, fetchHealth]);
+  }, [isSignedIn, fetchUsage, fetchInvoices, fetchHistory]);
 
   // Upgrade / Subscribe Flow — every paid plan (Pro and Enterprise) opens
   // Paddle's secure hosted checkout. `billingInterval` picks the monthly or
@@ -222,11 +205,15 @@ function BillingContent() {
         try {
           await openPaddleCheckout(transactionId, {
             fallbackUrl: url,
+            pwCustomer: paddleCustomerId ? { id: paddleCustomerId } : undefined,
             onSuccess: () => {
               toast.success("Subscription activated!");
               fetchUsage();
               fetchInvoices();
               fetchHistory();
+            },
+            onPaymentError: () => {
+              toast.error("Payment failed. Please check your card details and try again.");
             },
           });
           setLoading(null);
@@ -268,64 +255,6 @@ function BillingContent() {
     handleSubscribe(planParam === "enterprise" ? "Enterprise" : "Pro", intervalParam);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSignedIn, planParam, intervalParam]);
-
-  // Live end-to-end checkout probe — creates a real (unpaid) Paddle checkout
-  // for the Pro plan so the health card can confirm the full path works and
-  // surface the provider's exact error (e.g. missing default payment link).
-  const testCheckout = async () => {
-    if (!isSignedIn) return;
-    setCheckoutTesting(true);
-    setCheckoutTest(null);
-    try {
-      const { url, transactionId } = await api<{ url: string; transactionId?: string | null }>(
-        "/api/billing/checkout",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            plan: "Pro",
-            interval: "month",
-            currency: "USD",
-          }),
-        }
-      );
-      if (transactionId) {
-        try {
-          await openPaddleCheckout(transactionId, {
-            fallbackUrl: url,
-            onSuccess: () =>
-              setCheckoutTest({
-                ok: true,
-                message: "Checkout works — sandbox payment completed.",
-                url,
-              }),
-          });
-          setCheckoutTest({
-            ok: true,
-            message: "Checkout works — the Paddle payment overlay is open for the Pro plan.",
-            url,
-          });
-        } catch {
-          setCheckoutTest({
-            ok: true,
-            message: "Checkout works — a secure Paddle payment page was created for the Pro plan.",
-            url,
-          });
-        }
-      } else {
-        setCheckoutTest({
-          ok: true,
-          message: "Checkout works — a secure Paddle payment page was created for the Pro plan.",
-          url,
-        });
-      }
-    } catch (e) {
-      const message = e instanceof Error ? e.message : "Checkout creation failed.";
-      setCheckoutTest({ ok: false, message });
-    } finally {
-      setCheckoutTesting(false);
-    }
-  };
 
   const currentPlan = usageData?.plan?.toLowerCase() ?? "free";
   const isPro = currentPlan === "pro" || currentPlan === "enterprise";
@@ -463,260 +392,6 @@ function BillingContent() {
           })}
         </div>
 
-        {/* Billing Setup Diagnostics */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <div>
-              <CardTitle className="text-xl flex items-center gap-2">
-                <Activity className="w-5 h-5 text-primary" /> Billing Setup
-              </CardTitle>
-              <CardDescription>
-                One-click diagnostic of your payment provider configuration.
-              </CardDescription>
-            </div>
-            {!healthLoading && health && (
-              <Badge
-                variant="secondary"
-                className={cn(
-                  "text-xs font-medium",
-                  health.overall === "ok"
-                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-                    : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
-                )}
-              >
-                {health.overall === "ok" ? "All systems ready" : "Action required"}
-              </Badge>
-            )}
-          </CardHeader>
-          <CardContent>
-            {healthLoading ? (
-              <div className="space-y-2 animate-pulse">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="h-10 bg-muted/50 rounded-lg" />
-                ))}
-              </div>
-            ) : health ? (
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  <span>Provider</span>
-                  <Badge variant="outline" className="text-nano font-mono">{health.provider}</Badge>
-                  <span>Environment</span>
-                  <Badge variant="outline" className="text-nano font-mono">{health.environment}</Badge>
-                  <span>Your API key and prices must belong to the same environment — sandbox keys only work with sandbox prices.</span>
-                </div>
-
-                {/* ── Plain-language interpretation ───────────────── */}
-                {(() => {
-                  const passed =
-                    health.env.filter((c) => c.ok).length +
-                    (health.paddle.ok ? 1 : 0) +
-                    health.prices.filter((p) => p.found).length;
-                  const total = health.env.length + 1 + health.prices.length;
-                  const probeAlreadyPaid = checkoutTest?.message.includes("already active") ?? false;
-                  // Distinguish "monthly checkout is live" from "something
-                  // fundamental is broken": count failures among the core
-                  // (non-annual) checks only.
-                  const monthlyFailures =
-                    health.env.filter(
-                      (c) =>
-                        ["PADDLE_API_KEY", "PADDLE_PRICE_PRO", "PADDLE_PRICE_ENTERPRISE", "PADDLE_WEBHOOK_SECRET"].includes(c.key) &&
-                        !c.ok
-                    ).length +
-                    (health.paddle.ok ? 0 : 1) +
-                    health.prices.filter((p) => !p.label.includes("annual") && !p.found).length;
-                  return (
-                    <>
-                      <div
-                        className={cn(
-                          "rounded-xl border p-3.5 text-sm",
-                          health.overall === "ok"
-                            ? "bg-emerald-500/5 border-emerald-500/30 text-emerald-700 dark:text-emerald-300"
-                            : "bg-amber-500/5 border-amber-500/30 text-amber-700 dark:text-amber-300"
-                        )}
-                      >
-                        {health.overall === "ok" ? (
-                          <>
-                            <p className="font-semibold">All systems ready — checkout is live.</p>
-                            <p className="text-xs opacity-80 mt-1">
-                              {passed} of {total} checks pass. Clicking Upgrade on any plan (Pro or Enterprise) will open
-                              Paddle&apos;s secure hosted checkout immediately.
-                            </p>
-                          </>
-                        ) : monthlyFailures === 0 ? (
-                          <>
-                            <p className="font-semibold">
-                              Monthly checkout is live — {passed} of {total} checks pass.
-                            </p>
-                            <p className="text-xs opacity-80 mt-1">
-                              The remaining steps enable the Annual (20% off) toggle: create yearly prices in Catalog →
-                              Products and set the PADDLE_PRICE_*_ANNUAL env vars shown below.
-                            </p>
-                          </>
-                        ) : (
-                          <>
-                            <p className="font-semibold">
-                              {passed} of {total} checks pass — complete the highlighted steps below.
-                            </p>
-                            <p className="text-xs opacity-80 mt-1">
-                              Each failed check shows the exact Paddle dashboard path to fix it. When everything passes,
-                              this banner turns green and checkout opens normally.
-                            </p>
-                          </>
-                        )}
-                      </div>
-
-                      {/* ── Live end-to-end probe ──────────────────── */}
-                      <div className="rounded-lg border border-border/30 p-3">
-                        <div className="flex items-center justify-between gap-3 flex-wrap">
-                          <div className="min-w-0">
-                            <p className="text-xs font-mono font-medium">Live checkout probe</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              Creates a real (unpaid) Paddle checkout for the Pro plan to verify the full payment path —
-                              this is exactly what happens when a user clicks Upgrade.
-                            </p>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={testCheckout}
-                            disabled={checkoutTesting || loading !== null || checkoutTest?.ok === true}
-                            className="shrink-0"
-                          >
-                            {checkoutTesting ? (
-                              <>
-                                <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
-                                Testing...
-                              </>
-                            ) : checkoutTest?.ok ? (
-                              "Probe passed"
-                            ) : (
-                              "Test checkout"
-                            )}
-                          </Button>
-                        </div>
-                        {checkoutTest && (
-                          <div
-                            className={cn(
-                              "mt-2.5 rounded-lg border p-2.5 text-xs",
-                              probeAlreadyPaid
-                                ? "border-sky-500/30 bg-sky-500/5 text-sky-700 dark:text-sky-300"
-                                : checkoutTest.ok
-                                  ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-700 dark:text-emerald-300"
-                                  : "border-destructive/30 bg-destructive/5 text-destructive"
-                            )}
-                          >
-                            <p className="font-medium">
-                              {probeAlreadyPaid
-                                ? "Already on a paid plan"
-                                : checkoutTest.ok
-                                  ? "Success"
-                                  : "Checkout failed"}
-                            </p>
-                            <p className="mt-0.5 opacity-90">
-                              {probeAlreadyPaid
-                                ? "You already have an active subscription, so a new checkout isn't needed — this confirms the billing setup is working."
-                                : checkoutTest.message}
-                            </p>
-                            {checkoutTest.url && (
-                              <a
-                                href={checkoutTest.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="mt-1.5 inline-flex items-center gap-1 font-semibold underline underline-offset-2 hover:opacity-80"
-                              >
-                                Open the test checkout page
-                                <ExternalLink className="w-3 h-3" />
-                              </a>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </>
-                  );
-                })()}
-
-                <div className="space-y-1.5">
-                  {health.env.map((c) => (
-                    <div key={c.key} className="flex items-start gap-2.5 rounded-lg border border-border/30 p-2.5">
-                      {c.ok ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
-                      )}
-                      <div className="min-w-0">
-                        <p className="text-xs font-mono font-medium">{c.key}</p>
-                        {c.description && (
-                          <p className="text-xs text-muted-foreground mt-0.5">{c.description}</p>
-                        )}
-                        {!c.ok && c.hint && (
-                          <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
-                            Fix: {c.hint}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="flex items-start gap-2.5 rounded-lg border border-border/30 p-2.5">
-                  {health.paddle.ok ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                  ) : (
-                    <XCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
-                  )}
-                  <div className="min-w-0">
-                    <p className="text-xs font-mono font-medium">Paddle API connectivity</p>
-                    {health.paddle.description && (
-                      <p className="text-xs text-muted-foreground mt-0.5">{health.paddle.description}</p>
-                    )}
-                    {health.paddle.ok ? (
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Connected — {health.paddle.productCount ?? 0} active product(s) found
-                      </p>
-                    ) : (
-                      <p className="text-xs text-destructive mt-0.5">{health.paddle.error}</p>
-                    )}
-                  </div>
-                </div>
-
-                {health.prices.map((p) => (
-                  <div key={p.priceId} className="flex items-start gap-2.5 rounded-lg border border-border/30 p-2.5">
-                    {p.found ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                    ) : (
-                      <XCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
-                    )}
-                    <div className="min-w-0">
-                      <p className="text-xs font-mono font-medium">
-                        {p.label} price <span className="text-muted-foreground">({p.priceId})</span>
-                      </p>
-                      {p.description && (
-                        <p className="text-xs text-muted-foreground mt-0.5">{p.description}</p>
-                      )}
-                      {p.found ? (
-                        <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">
-                          {p.name ?? "Active price in your account"}
-                        </p>
-                      ) : (
-                        <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
-                          Fix: not found in this {health.environment} account — create it under Catalog → Products with a
-                          subscription price, then set PADDLE_PRICE_{p.envKey ?? p.label.split(" ")[0].toUpperCase()}.
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-
-
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Unable to reach billing diagnostics. Try again in a moment.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
         {/* Current Usage Section */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
@@ -751,32 +426,25 @@ function BillingContent() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="p-4 rounded-xl border border-border/60 bg-card hover:border-border transition-colors">
                   <p className="text-2xl font-bold">
-                    {usageData.usage.messagesSent} /{" "}
-                    {usageData.limits.messagesPerDay === Infinity || currentPlan === "pro" || currentPlan === "enterprise"
-                      ? "∞"
-                      : usageData.limits.messagesPerDay}
+                    {usageData.credits.monthly.used} / {usageData.credits.monthly.unlimited ? "∞" : usageData.credits.monthly.allocated ?? 0}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">Messages Sent</p>
+                  <p className="text-xs text-muted-foreground mt-1">Credits Used</p>
                 </div>
                 <div className="p-4 rounded-xl border border-border/60 bg-card hover:border-border transition-colors">
                   <p className="text-2xl font-bold">
-                    {usageData.usage.tokensUsed >= 1000
-                      ? `${(usageData.usage.tokensUsed / 1000).toFixed(0)}K`
-                      : usageData.usage.tokensUsed}
+                    {usageData.credits.monthly.unlimited ? "∞" : usageData.credits.monthly.remaining ?? 0}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">Tokens Used</p>
+                  <p className="text-xs text-muted-foreground mt-1">Credits Remaining</p>
                 </div>
                 <div className="p-4 rounded-xl border border-border/60 bg-card hover:border-border transition-colors">
                   <p className="text-2xl font-bold">
-                    {usageData.usage.filesUploaded} / {isPro ? "∞" : "10"}
+                    {usageData.credits.daily.used} / {usageData.credits.daily.unlimited ? "∞" : usageData.credits.daily.allocated ?? 0}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">Files Uploaded</p>
+                  <p className="text-xs text-muted-foreground mt-1">Daily Usage</p>
                 </div>
                 <div className="p-4 rounded-xl border border-border/60 bg-card hover:border-border transition-colors">
-                  <p className="text-2xl font-bold">
-                    {(usageData.usage.storageUsed / 1024 / 1024).toFixed(1)} MB / {isPro ? "5 GB font-normal" : "100 MB"}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">Storage Used</p>
+                  <p className="text-2xl font-bold capitalize">{usageData.plan}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Current Plan</p>
                 </div>
               </div>
             ) : (
