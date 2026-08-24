@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { SignUp } from "@clerk/nextjs";
 import { Logo } from "@/components/shared/Logo";
 import { safeRedirectUrl } from "@/lib/utils";
+import { ClerkSignUp } from "@/components/auth/ClerkSignUp";
 
 export const metadata: Metadata = {
   title: "Sign up — ToneCraft",
@@ -21,7 +21,7 @@ export default async function SignUpPage({
       {/* fallbackRedirectUrl: the browser URL's own redirect_url param takes
           precedence (Clerk honors it automatically); this covers the case where
           pricing CTAs deep-link straight to checkout after sign-up. */}
-      <SignUp fallbackRedirectUrl={safeRedirectUrl(redirect_url)} />
+      <ClerkSignUp fallbackRedirectUrl={safeRedirectUrl(redirect_url)} />
     </div>
   );
 }
