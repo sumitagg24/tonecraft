@@ -1,5 +1,6 @@
-import { ok, fail, withApiHandler } from "@/lib/withApiHandler";
+import { ok, fail, forbidden, withApiHandler } from "@/lib/withApiHandler";
 import { auditLogService } from "@/services/AuditLogService";
+import { permissionMiddleware } from "@/middleware/permissionMiddleware";
 import { z } from "zod";
 
 const listSchema = z.object({
@@ -30,9 +31,23 @@ function parseDate(str: string | null): Date | undefined {
 
 export const GET = api.GET(async (ctx) => {
   const sp = ctx.request.nextUrl.searchParams;
+
+  // Security: users can only query their own audit logs.
+  const requestedActorId = sp.get("actorId") ?? undefined;
+  if (requestedActorId && requestedActorId !== ctx.user.id) {
+    return forbidden();
+  }
+
+  // Security: if a workspace is specified, verify membership.
+  const workspaceId = sp.get("workspaceId") ?? undefined;
+  if (workspaceId) {
+    const isMember = await permissionMiddleware.isWorkspaceMember(workspaceId, ctx.user.id);
+    if (!isMember) return forbidden();
+  }
+
   const parsed = listSchema.safeParse({
-    workspaceId: sp.get("workspaceId") ?? undefined,
-    actorId: sp.get("actorId") ?? undefined,
+    workspaceId,
+    actorId: ctx.user.id,
     resource: sp.get("resource") ?? undefined,
     action: sp.get("action") ?? undefined,
     page: sp.get("page") ?? undefined,

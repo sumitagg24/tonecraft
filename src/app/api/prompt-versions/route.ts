@@ -7,6 +7,11 @@ const api = withApiHandler({});
 export const GET = api.GET(async (ctx) => {
   const promptId = ctx.request.nextUrl.searchParams.get("promptId");
   if (!promptId) return fail("VALIDATION_ERROR", "promptId query parameter is required");
+
+  // Security: verify the prompt belongs to the caller.
+  const prompt = await promptService.getPrompt(promptId, ctx.user.id);
+  if (!prompt) return notFound();
+
   const versions = await promptService.listVersions(promptId);
   return ok(versions);
 });
