@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { AppShell } from "@/components/shell/AppShell";
 import { PageTransitionWrapper } from "@/components/shared/PageTransitionWrapper";
+import { RealtimeConnection } from "@/components/realtime/RealtimeConnection";
 
 // The entire authenticated application must never appear in search results.
 // robots.txt also disallows these paths, but this is the defense-in-depth
@@ -21,6 +22,7 @@ export default function DashboardLayout({
 }) {
   return (
     <AppShell>
+      <RealtimeConnection />
       <PageTransitionWrapper className="h-full">
         {children}
       </PageTransitionWrapper>
