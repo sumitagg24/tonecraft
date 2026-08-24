@@ -113,28 +113,21 @@ downloads/
 .DS_Store
 Thumbs.db
 
-# AI agent directories
+# AI agent directories and config
 .agents/
 .claude/
 .windsurf/
-
-# AI planning / temporary files
-plans/
-
-# Cursor
+.freebuff/
 .cursor/
-
-# VS Code
 .vscode/
-
-# JetBrains
 .idea/
 .aider*
-
-# Kilo agent runtime state
 .kilo/
 kilo_memory_save
-.env*
+AGENTS.md
+CLAUDE.md
+skills-lock.json
+plans/
 
-# Freebuff agent runtime state
-.freebuff/
+# env files (catch-all after explicit ignores)
+.env*
