@@ -254,12 +254,22 @@ export class ProviderRouter {
     // hardcoded PROVIDERS array (with retired model IDs) has been removed.
     const planConfig = plan ? getPlanConfig(plan) : getPlanConfig(PlanTier.FREE);
 
-    // Explicit model requested
+    // Explicit model requested — enforce server-side model access restrictions.
+    // Free users cannot use pro-tier models, regardless of what the client sends.
     if (modelId && modelId !== "auto") {
       const entry = modelRegistry.getModelById(modelId);
       if (entry && modelRegistry.isAvailable(entry.id)) {
-        const fallback = modelRegistry.resolveFallbackChain(planConfig, modelId);
-        return this.toProviderConfigs([entry, ...fallback]);
+        // Server-side model tier enforcement: deny pro models to free users
+        if (entry.tier === "pro" && planConfig.modelTier !== "pro") {
+          logger.warn("[ProviderRouter] Free user attempted to use pro model, falling back", {
+            userId: options.userId,
+            requestedModel: modelId,
+          });
+          // Fall through to auto-resolution instead of granting access
+        } else {
+          const fallback = modelRegistry.resolveFallbackChain(planConfig, modelId);
+          return this.toProviderConfigs([entry, ...fallback]);
+        }
       }
       return this.toProviderConfigs(modelRegistry.resolveFallbackChain(planConfig, modelId));
     }
