@@ -97,8 +97,8 @@ export const PRICING_TIERS: PricingTier[] = [
     price: 6,
     cta: "Upgrade to Pro",
     priceId: {
-      month: process.env.NEXT_PUBLIC_PADDLE_PRICE_PRO ?? "pri_01kzhetdtpjhtkw6k4x64cf1k5",
-      year: process.env.NEXT_PUBLIC_PADDLE_PRICE_PRO_ANNUAL ?? "pri_01kzheteb5y81vfx2swdqn7c8e",
+      month: process.env.NEXT_PUBLIC_PADDLE_PRICE_PRO ?? "pri_01kznmkkfqz0xsmqyawck8pmmf",
+      year: process.env.NEXT_PUBLIC_PADDLE_PRICE_PRO_ANNUAL ?? "pri_01kznmkm31zrfgwnhwykdam8zq",
     },
   },
   {
@@ -116,8 +116,8 @@ export const PRICING_TIERS: PricingTier[] = [
     price: 15,
     cta: "Get Advanced",
     priceId: {
-      month: process.env.NEXT_PUBLIC_PADDLE_PRICE_ADVANCED ?? "pri_01kzhete3g386j4t48jja0gf7q",
-      year: process.env.NEXT_PUBLIC_PADDLE_PRICE_ADVANCED_ANNUAL ?? "pri_01kzhetezh6cshkafkkk5h2d41",
+      month: process.env.NEXT_PUBLIC_PADDLE_PRICE_ADVANCED ?? "pri_01kznmkms8yc74sw01gbb8scej",
+      year: process.env.NEXT_PUBLIC_PADDLE_PRICE_ADVANCED_ANNUAL ?? "pri_01kznmknc9j33qqms485ytq858",
     },
   },
 ];

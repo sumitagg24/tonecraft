@@ -6,18 +6,18 @@
  * toggle on the pricing page sends `interval=year`, which selects the annual
  * price — typically 12 × monthly × 0.8, i.e. "20% off").
  *
- * Env vars override the monthly fallbacks, which mirror the sandbox prices
- * created for local development. Annual prices have no fallback — they must
- * be created in the Paddle catalog and set via the env vars below, otherwise
- * the Annual toggle reports a clear setup error.
+ * Env vars override the monthly fallbacks, which mirror the live prices.
+ * Annual prices have no fallback — they must be created in the Paddle catalog
+ * and set via the env vars below, otherwise the Annual toggle reports a clear
+ * setup error.
  */
 
 export type BillingInterval = "month" | "year";
 export type BillingCurrency = "USD";
 
 const FALLBACK_PRICES: Record<string, string | undefined> = {
-  "Pro:month:USD": "pri_01kzhetdtpjhtkw6k4x64cf1k5",
-  "Enterprise:month:USD": "pri_01kzhete3g386j4t48jja0gf7q",
+  "Pro:month:USD": "pri_01kznmkkfqz0xsmqyawck8pmmf",
+  "Enterprise:month:USD": "pri_01kznmkms8yc74sw01gbb8scej",
 };
 
 const PRICE_ENV: Record<string, string | undefined> = {

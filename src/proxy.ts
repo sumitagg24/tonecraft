@@ -15,6 +15,7 @@ const PUBLIC_PATHS: ReadonlyArray<string> = [
   "/about",
   "/privacy",
   "/terms",
+  "/refunds",
   "/blog",
   "/help",
   "/demo",

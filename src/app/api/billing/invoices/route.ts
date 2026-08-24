@@ -77,7 +77,7 @@ export const GET = api.GET(async (ctx) => {
     currency: t.currencyCode ?? "USD",
     status: mapInvoiceStatus(t.status),
     pdfUrl: t.invoiceId
-      ? `https://sandbox.paddle.com/invoice/${t.invoiceId}`
+      ? `${process.env.NEXT_PUBLIC_PADDLE_ENV === "production" ? "https://www.paddle.com" : "https://sandbox.paddle.com"}/invoice/${t.invoiceId}`
       : undefined,
     description:
       typeof t.customData?.plan === "string"
