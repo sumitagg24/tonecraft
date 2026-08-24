@@ -11,6 +11,7 @@ import { duration } from "@/styles/motion";
 import { NAV_SECTIONS, NAV_ITEMS, isNavItemActive, type NavItem } from "./nav-items";
 import { useEnabledFeatures } from "@/hooks/use-enabled-features";
 import { Logo } from "@/components/shared/Logo";
+import { CreditCounter } from "./CreditCounter";
 import {
   Plus, Command, PanelLeftClose, PanelLeftOpen,
 } from "lucide-react";
@@ -146,6 +147,7 @@ export function NavigationRail({ variant, onNavigate }: NavigationRailProps) {
 
       {/* Global actions */}
       <div className="shrink-0 px-3 py-3 border-t border-border/30 flex flex-col gap-1.5">
+        <CreditCounter collapsed={collapsed} />
         <button
           onClick={handleNewChat}
           className={cn(
