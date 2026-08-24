@@ -124,7 +124,7 @@ describe("Paddle webhook — payment_succeeded", () => {
           paymentProvider: "paddle",
           status: "active",
         }),
-        update: { status: "active" },
+        update: { status: "active", scheduledChange: null },
       })
     );
 

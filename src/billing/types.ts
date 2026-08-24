@@ -53,10 +53,29 @@ export interface SubscriptionInfo {
   metadata: Record<string, string>;
 }
 
+export type ProrationBillingMode =
+  | "prorated_immediately"
+  | "prorated_next_billing_period"
+  | "full_immediately"
+  | "full_next_billing_period"
+  | "do_not_bill";
+
 export interface SubscriptionChangeInput {
   subscriptionId: string;
   newPriceId: string;
-  prorationBillingMode?: "prorated" | "full_immediately" | "do_not_bill";
+  prorationBillingMode: ProrationBillingMode;
+}
+
+export interface SubscriptionPreviewResult {
+  immediateTransaction: {
+    total: string;
+    currencyCode: string;
+  } | null;
+  recurringTransactionDetails: {
+    total: string;
+    currencyCode: string;
+  } | null;
+  nextBilledAt: string | null;
 }
 
 export interface RefundInput {
@@ -65,8 +84,15 @@ export interface RefundInput {
   reason: string;
 }
 
+export interface PortalSessionDeepLink {
+  subscriptionId: string;
+  cancelUrl?: string;
+  updatePaymentMethodUrl?: string;
+}
+
 export interface PortalSessionResult {
   url: string;
+  deepLinks?: PortalSessionDeepLink[];
 }
 
 export interface ProductInfo {

@@ -35,8 +35,9 @@ export class NoopPaymentProvider implements PaymentProvider {
     return { type: "subscription.updated", data: {} };
   }
 
-  async cancelSubscription(subscriptionId: string): Promise<void> {
+  async cancelSubscription(subscriptionId: string, effectiveFrom?: "next_billing_period" | "immediately"): Promise<void> {
     void subscriptionId;
+    void effectiveFrom;
   }
 
   async getSubscription(subscriptionId: string): Promise<SubscriptionInfo> {
@@ -53,20 +54,28 @@ export class NoopPaymentProvider implements PaymentProvider {
     };
   }
 
-  async upgradeSubscription(input: SubscriptionChangeInput): Promise<void> {
+  async updateSubscription(input: SubscriptionChangeInput): Promise<void> {
     void input;
   }
 
-  async downgradeSubscription(input: SubscriptionChangeInput): Promise<void> {
+  async previewSubscriptionUpdate(
+    input: SubscriptionChangeInput,
+  ): Promise<import("../../types").SubscriptionPreviewResult> {
     void input;
+    return {
+      immediateTransaction: null,
+      recurringTransactionDetails: null,
+      nextBilledAt: null,
+    };
   }
 
   async refundTransaction(input: RefundInput): Promise<void> {
     void input;
   }
 
-  async createPortalSession(customerId: string): Promise<PortalSessionResult> {
+  async createPortalSession(customerId: string, subscriptionIds?: string[]): Promise<PortalSessionResult> {
     void customerId;
+    void subscriptionIds;
     return { url: "" };
   }
 

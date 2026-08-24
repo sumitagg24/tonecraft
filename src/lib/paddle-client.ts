@@ -1,132 +1,143 @@
 /**
  * Client-side Paddle.js integration for hosted checkout.
  *
- * Paddle v2 loads from their CDN, is initialized with the *public* client
- * token (NEXT_PUBLIC_PADDLE_CLIENT_TOKEN), and can open a checkout overlay
- * for an API-created transaction via Paddle.Checkout.open({ transactionId }).
- * This avoids redirecting users to the raw checkout URL (which is built from
- * the account's "default payment link" and may be a bare host).
+ * Uses the official @paddle/paddle-js SDK with initializePaddle().
+ * Checkout opens via transaction ID (server-created) — the server validates
+ * the user's subscription status and sets the price, so the client can't
+ * tamper with amounts.
+ *
+ * @see paddle-checkout-web skill for the full pattern.
  */
 
-interface PaddleEnvironment {
-  set: (environment: "sandbox" | "production") => void;
-}
+import { initializePaddle, type Paddle, type PaddleEventData } from "@paddle/paddle-js";
 
-interface PaddleCheckout {
-  open: (options: PaddleCheckoutOptions) => void;
-}
+let paddleInstance: Paddle | null = null;
+let paddlePromise: Promise<Paddle> | null = null;
 
-interface PaddleCheckoutOptions {
-  transactionId: string;
-  settings?: {
-    displayMode: "overlay" | "inline";
-    theme?: "light" | "dark";
-    allowCurrencyChange?: boolean;
-  };
-  eventCallback?: (event: PaddleEvent) => void;
-}
+// Global event handler — set during initialization so checkout events
+// (completed, error, payment-error) are handled even if openPaddleCheckout
+// isn't the one that opened the checkout.
+let globalEventHandler: ((event: PaddleEventData) => void) | null = null;
 
-interface PaddleEvent {
-  name: string;
-  data?: Record<string, unknown>;
-}
+/**
+ * Initialize Paddle.js using the official SDK. Singleton — only initializes
+ * once per page load. Environment is auto-detected from the client token
+ * prefix (test_ → sandbox, live_ → production).
+ *
+ * The optional `pwCustomer` parameter enables Paddle Retain (dunning /
+ * payment recovery) by associating the session with the Paddle customer ID.
+ */
+export function loadPaddle(opts?: {
+  pwCustomer?: { id: string };
+  eventCallback?: (event: PaddleEventData) => void;
+}): Promise<Paddle> {
+  if (paddleInstance) return Promise.resolve(paddleInstance);
+  if (paddlePromise) return paddlePromise;
 
-interface PaddleInstance {
-  Environment: PaddleEnvironment;
-  Checkout: PaddleCheckout;
-  Initialize: (options: { token: string }) => Promise<void>;
-}
-
-declare global {
-  interface Window {
-    Paddle?: PaddleInstance;
+  const token = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
+  if (!token) {
+    return Promise.reject(
+      new Error("Missing NEXT_PUBLIC_PADDLE_CLIENT_TOKEN"),
+    );
   }
-}
 
-let paddlePromise: Promise<PaddleInstance> | null = null;
+  // Environment follows the CLIENT TOKEN, not NODE_ENV: sandbox tokens
+  // (test_…) only work against the sandbox environment, so a production
+  // deploy with a test token must still use "sandbox".
+  const environment = token.startsWith("test_") ? "sandbox" : "production";
 
-export function loadPaddle(): Promise<PaddleInstance> {
-  if (!paddlePromise) {
-    paddlePromise = new Promise<PaddleInstance>((resolve, reject) => {
-      if (typeof window === "undefined") {
-        reject(new Error("Paddle.js is client-only"));
-        return;
-      }
-      if (window.Paddle) {
-        resolve(window.Paddle);
-        return;
-      }
-      const script = document.createElement("script");
-      script.src = "https://cdn.paddle.com/paddle/v2/paddle.js";
-      script.async = true;
-      script.onload = () => {
-        if (window.Paddle) {
-          resolve(window.Paddle);
-        } else {
-          paddlePromise = null; // allow retry on next call
-          reject(new Error("Paddle.js loaded but window.Paddle is undefined"));
-        }
-      };
-      script.onerror = () => {
-        paddlePromise = null; // allow retry on next call
-        reject(new Error("Failed to load Paddle.js"));
-      };
-      document.head.appendChild(script);
-    }).then(async (Paddle) => {
-      const token = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
-      try {
-        // Environment follows the CLIENT TOKEN, not NODE_ENV: sandbox tokens
-        // (test_…) only work against the sandbox environment, so a production
-        // deploy with a test token must still use "sandbox".
-        Paddle.Environment.set(token?.startsWith("test_") ? "sandbox" : "production");
-      } catch {
-        // environment already set — fine
-      }
-      if (token) {
-        // Paddle.Initialize() returns a Promise — Checkout.open() must wait
-        // for it or the overlay may never render (observed on first load).
-        try {
-          await Paddle.Initialize({ token });
-        } catch {
-          // already initialized or init failed — Checkout.open will surface it.
-        }
-      }
-      return Paddle;
-    });
+  if (opts?.eventCallback) {
+    globalEventHandler = opts.eventCallback;
   }
+
+  paddlePromise = initializePaddle({
+    token,
+    environment: environment as "sandbox" | "production",
+    ...(opts?.pwCustomer?.id
+      ? { pwCustomer: { id: opts.pwCustomer.id } }
+      : {}),
+    eventCallback: (event) => {
+      globalEventHandler?.(event);
+    },
+  }).then((p) => {
+    if (!p) throw new Error("Paddle.Initialize returned null");
+    paddleInstance = p;
+    return p;
+  });
+
   return paddlePromise;
 }
 
 /**
- * Open Paddle's hosted checkout overlay for a transaction. If the overlay
- * fails to load, `fallbackUrl` (the transaction's hosted checkout URL) is
- * navigated to so the user still reaches a payment page instead of a dead
- * "contact support" overlay.
+ * Open Paddle checkout for a transaction (server-created).
+ * The server validates subscription status and sets the price.
  */
 export async function openPaddleCheckout(
   transactionId: string,
-  opts?: { onSuccess?: () => void; onError?: () => void; fallbackUrl?: string }
+  opts?: {
+    onSuccess?: () => void;
+    onError?: () => void;
+    onPaymentError?: () => void;
+    fallbackUrl?: string;
+    pwCustomer?: { id: string };
+  },
 ): Promise<void> {
-  const Paddle = await loadPaddle();
-  Paddle.Checkout.open({
-    transactionId,
-    // NOTE: allowCurrencyChange must NOT be set — the checkout service returns
-    // a 400 (validation.no_validation_set) unless the account has currency
-    // change validation configured, which would blank the overlay.
-    settings: { displayMode: "overlay" },
-    eventCallback: (event: PaddleEvent) => {
-      // Event names are dotted ("checkout.completed", "checkout.error") per
-      // https://developer.paddle.com/paddle-js/events. A dashed name never
-      // matches, so the success callback silently never fired.
-      if (event?.name === "checkout.completed") {
+  const paddle = await loadPaddle({
+    pwCustomer: opts?.pwCustomer,
+    eventCallback: (event) => {
+      if (event.name === "checkout.completed") {
         opts?.onSuccess?.();
-      } else if (event?.name === "checkout.error") {
-        // Overlay could not be opened (unapproved domain / missing default
-        // payment link / env mismatch). Send the user to Paddle's hosted
-        // checkout instead of leaving them on an error frame.
+      } else if (event.name === "checkout.error") {
         opts?.onError?.();
         if (opts?.fallbackUrl) window.location.assign(opts.fallbackUrl);
+      } else if (event.name === "checkout.payment.error" || event.name === "checkout.payment.failed") {
+        opts?.onPaymentError?.();
       }
     },
+  });
+
+  paddle.Checkout.open({
+    transactionId,
+    settings: { displayMode: "overlay" },
+  });
+}
+
+/**
+ * Open Paddle checkout directly by price ID (no server transaction needed).
+ * Uses one-page overlay checkout with customer email prefill.
+ *
+ * @see paddle-checkout-web skill — "Overlay checkout — the minimum viable integration"
+ */
+export async function openPaddleCheckoutByPrice(
+  priceId: string,
+  opts?: {
+    onSuccess?: () => void;
+    onError?: () => void;
+    onPaymentError?: () => void;
+    customerEmail?: string;
+    pwCustomer?: { id: string };
+  },
+): Promise<void> {
+  const paddle = await loadPaddle({
+    pwCustomer: opts?.pwCustomer,
+    eventCallback: (event) => {
+      if (event.name === "checkout.completed") {
+        opts?.onSuccess?.();
+      } else if (event.name === "checkout.error") {
+        opts?.onError?.();
+      } else if (event.name === "checkout.payment.error" || event.name === "checkout.payment.failed") {
+        opts?.onPaymentError?.();
+      }
+    },
+  });
+
+  paddle.Checkout.open({
+    items: [{ priceId, quantity: 1 }],
+    settings: {
+      displayMode: "overlay",
+      variant: "one-page",
+      successUrl: "/welcome",
+    },
+    ...(opts?.customerEmail ? { customer: { email: opts.customerEmail } } : {}),
   });
 }
