@@ -106,20 +106,25 @@ export const POST = api.POST(async (ctx, body) => {
         prorationBillingMode: prorationMode,
       });
 
+      // Resolve the new plan name from the price ID
+      const newPlanName =
+        raw.newPriceId === (process.env.DODO_PRODUCT_BASIC || "")
+          ? "basic"
+          : raw.newPriceId === (process.env.DODO_PRODUCT_PRO || "")
+            ? "pro"
+            : "enterprise";
+
       return ok({
         preview: true,
         immediateCharge: preview.immediateTransaction
-          ? "$" + String(Number(0) / 100)
+          ? "$" + preview.immediateTransaction.total
           : null,
         recurringPrice: preview.recurringTransactionDetails
-          ? "$" + String(Number(0) / 100)
+          ? "$" + preview.recurringTransactionDetails.total
           : null,
         nextBilledAt: preview.nextBilledAt,
         currentPlan: user.subscription.plan,
-        newPlan:
-          raw.newPriceId === (process.env.DODO_PRODUCT_PRO || "")
-            ? "pro"
-            : "advanced",
+        newPlan: newPlanName,
         prorationMode,
       });
     }

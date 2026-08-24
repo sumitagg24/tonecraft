@@ -140,6 +140,7 @@ async function syncSubscriptionFromDodo(
   }
 
   const subscriptionId = (payload.subscription_id as string) || "";
+  const customerId = (payload.customer_id as string) || "";
   const product = payload.product as Record<string, unknown> | undefined;
   const productId = (product?.product_id as string) || "";
   const plan = planFromProductId(productId);
@@ -150,6 +151,7 @@ async function syncSubscriptionFromDodo(
       userId,
       paymentProvider: "dodo",
       providerSubscriptionId: subscriptionId,
+      providerCustomerId: customerId,
       providerPriceId: productId,
       status,
       plan,
@@ -157,6 +159,7 @@ async function syncSubscriptionFromDodo(
     },
     update: {
       providerSubscriptionId: subscriptionId,
+      providerCustomerId: customerId || undefined,
       providerPriceId: productId,
       status,
       plan,
