@@ -34,10 +34,16 @@ export const POST = api.POST(async (ctx, body) => {
   
   const isMember = await permissionMiddleware.isWorkspaceMember(id, ctx.user.id);
   if (!isMember) return fail("FORBIDDEN", "You are not a member of this workspace", 403);
+
+  // Security: always use the authenticated user's ID, never trust client-supplied userId.
+  // Validate amount is positive — reject negative or zero usage.
+  if (typeof usageData.amount !== "number" || usageData.amount <= 0) {
+    return fail("VALIDATION_ERROR", "Usage amount must be a positive number");
+  }
   
   try {
     const usage = await usageService.trackUsage(
-      usageData.userId || ctx.user.id,
+      ctx.user.id,
       usageData.type,
       usageData.amount
     );
