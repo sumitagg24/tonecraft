@@ -244,6 +244,43 @@ function getPublicIpLimiter() {
   return _publicIpLimiter;
 }
 
+// ── Demo rate limiting ────────────────────────────────────────────────
+// 3 transforms per IP per 24 hours for the public landing-page demo.
+// Prevents the demo from being used as a free AI bypass.
+
+const DEMO_LIMIT = 3;
+
+let _demoLimiter: Ratelimit | null = null;
+function getDemoLimiter() {
+  if (!_demoLimiter) {
+    _demoLimiter = new Ratelimit({
+      redis: getRedis(),
+      limiter: Ratelimit.slidingWindow(DEMO_LIMIT, "24 h"),
+      analytics: true,
+      prefix: "ratelimit:demo",
+    });
+  }
+  return _demoLimiter;
+}
+
+/**
+ * Demo endpoint guard — 3 transforms per IP per 24 hours.
+ * Returns remaining count so the client can display "1 / 3 free demos".
+ */
+export async function checkDemoLimit(ip: string): Promise<RateLimitCheck> {
+  if (!CONFIGURED) {
+    // Dev fallback: allow unlimited so local work is not blocked
+    return { allowed: true, limit: DEMO_LIMIT, window: "day", remaining: DEMO_LIMIT };
+  }
+  const { success, remaining } = await getDemoLimiter().limit(ip || "unknown");
+  return {
+    allowed: success,
+    limit: DEMO_LIMIT,
+    window: "day",
+    remaining: remaining ?? 0,
+  };
+}
+
 let _authedIpLimiter: Ratelimit | null = null;
 function getAuthedIpLimiter() {
   if (!_authedIpLimiter) {

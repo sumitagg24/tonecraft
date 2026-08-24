@@ -8,7 +8,6 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 const DEMO_LIMIT = 3;
-const DEMO_STORAGE_KEY = "tonecraft:landing:demosUsed";
 
 const DEMO_TONES = [
   { id: "professional", label: "Professional" },
@@ -100,56 +99,82 @@ export function InteractiveDemo() {
   const [output, setOutput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationsUsed, setGenerationsUsed] = useState(0);
+  const [remaining, setRemaining] = useState(DEMO_LIMIT);
   const [lastAction, setLastAction] = useState<string | null>(null);
+  const [limitError, setLimitError] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
   }, []);
 
-  useEffect(() => {
-    const stored = Number(localStorage.getItem(DEMO_STORAGE_KEY) || "0");
-    setGenerationsUsed(stored);
-  }, []);
+  const isLimitReached = generationsUsed >= DEMO_LIMIT || remaining <= 0;
 
-  const isLimitReached = generationsUsed >= DEMO_LIMIT;
+  /** Call the server-side demo endpoint with rate limiting. */
+  const callDemoApi = useCallback(
+    async (body: { input: string; tone?: string; action?: string }): Promise<string | null> => {
+      try {
+        const res = await fetch("/api/demo/transform", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const json = await res.json();
+        if (!res.ok) {
+          if (json.error?.code === "DEMO_LIMIT_REACHED") {
+            setLimitError(json.error.message);
+            setRemaining(0);
+            setGenerationsUsed(DEMO_LIMIT);
+          }
+          return null;
+        }
+        // Update remaining count from server
+        if (typeof json.remaining === "number") {
+          setRemaining(json.remaining);
+          setGenerationsUsed(DEMO_LIMIT - json.remaining);
+        }
+        return json.data?.result ?? null;
+      } catch {
+        // API unreachable — fall back to client-side transform
+        return null;
+      }
+    },
+    [],
+  );
 
-  const incrementGenerations = useCallback(() => {
-    const next = generationsUsed + 1;
-    setGenerationsUsed(next);
-    localStorage.setItem(DEMO_STORAGE_KEY, String(next));
-  }, [generationsUsed]);
-
-  const handleGenerate = useCallback(() => {
+  const handleGenerate = useCallback(async () => {
     if (isGenerating || isLimitReached || !input.trim()) return;
     setLastAction(null);
-    incrementGenerations();
-    const result = rewrite(input, tone);
-    setOutput("");
+    setLimitError(null);
     setIsGenerating(true);
-    if (intervalRef.current) clearInterval(intervalRef.current);
+    setOutput("");
 
-    const finish = () => {
-      setOutput(result);
-      setIsGenerating(false);
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
+    // Call server-side endpoint (enforces 3/IP/24h)
+    const result = await callDemoApi({ input, tone });
+
+    // Fallback to client-side if API is unreachable
+    const finalResult = result ?? rewrite(input, tone);
+    setOutput("");
 
     if (prefersReduced) {
-      setTimeout(finish, 400);
+      setOutput(finalResult);
+      setIsGenerating(false);
       return;
     }
 
+    if (intervalRef.current) clearInterval(intervalRef.current);
     let i = 0;
     intervalRef.current = setInterval(() => {
       i += 3;
-      if (i >= result.length) {
-        finish();
+      if (i >= finalResult.length) {
+        setOutput(finalResult);
+        setIsGenerating(false);
+        if (intervalRef.current) clearInterval(intervalRef.current);
       } else {
-        setOutput(result.slice(0, i));
+        setOutput(finalResult.slice(0, i));
       }
     }, 16);
-  }, [input, tone, isGenerating, prefersReduced, isLimitReached, incrementGenerations]);
+  }, [input, tone, isGenerating, prefersReduced, isLimitReached, callDemoApi]);
 
   const handleReset = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
@@ -159,35 +184,45 @@ export function InteractiveDemo() {
 
   /** One-click platform / transform actions applied to the current text. */
   const handleQuickAction = useCallback(
-    (action: QuickActionId) => {
+    async (action: QuickActionId) => {
       if (isGenerating) return;
       const base = (output || input).trim();
       if (!base) return;
+      if (isLimitReached) {
+        setLimitError("You've used all 3 free demo transformations. Sign up to continue.");
+        return;
+      }
       setLastAction(QUICK_ACTIONS.find((a) => a.id === action)?.label ?? null);
-      const result = applyAction(base, action);
-      setOutput("");
+      setLimitError(null);
       setIsGenerating(true);
+      setOutput("");
+
+      // Call server-side endpoint (counts against limit)
+      const result = await callDemoApi({ input: base, action });
+
+      // Fallback to client-side if API unreachable
+      const finalResult = result ?? applyAction(base, action);
+      setOutput("");
+
       if (prefersReduced) {
-        setTimeout(() => {
-          setOutput(result);
-          setIsGenerating(false);
-        }, 250);
+        setOutput(finalResult);
+        setIsGenerating(false);
         return;
       }
       let i = 0;
       if (intervalRef.current) clearInterval(intervalRef.current);
       intervalRef.current = setInterval(() => {
         i += 5;
-        if (i >= result.length) {
-          setOutput(result);
+        if (i >= finalResult.length) {
+          setOutput(finalResult);
           setIsGenerating(false);
           if (intervalRef.current) clearInterval(intervalRef.current);
         } else {
-          setOutput(result.slice(0, i));
+          setOutput(finalResult.slice(0, i));
         }
       }, 16);
     },
-    [input, output, isGenerating, prefersReduced]
+    [input, output, isGenerating, prefersReduced, isLimitReached, callDemoApi]
   );
 
   return (
@@ -289,7 +324,7 @@ export function InteractiveDemo() {
                 <span className="text-xs text-muted-foreground/60">Press Ctrl + Enter</span>
                 <span className="text-xs text-muted-foreground/40">·</span>
                 <span className="text-xs text-muted-foreground/60">
-                  {generationsUsed}/{DEMO_LIMIT} free demos
+                  {isLimitReached ? "0" : remaining}/{DEMO_LIMIT} free demos
                 </span>
               </div>
               <div className="flex gap-2">
@@ -324,6 +359,17 @@ export function InteractiveDemo() {
                 )}
               </div>
             </div>
+            {limitError && (
+              <div className="mt-4 rounded-xl bg-amber-500/10 border border-amber-500/20 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
+                <div className="flex items-center gap-2">
+                  <Lock className="w-4 h-4 shrink-0" />
+                  <span>{limitError}</span>
+                </div>
+                <Link href="/sign-up?redirect_url=%2Fchat" className="mt-2 inline-block text-xs font-medium underline underline-offset-2 hover:no-underline">
+                  Create a free account →
+                </Link>
+              </div>
+            )}
           </div>
           </div>
         </motion.div>
