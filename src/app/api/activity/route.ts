@@ -1,5 +1,6 @@
-import { ok, withApiHandler } from "@/lib/withApiHandler";
+import { ok, forbidden, withApiHandler } from "@/lib/withApiHandler";
 import { activityService } from "@/services/ActivityService";
+import { canAccessProject } from "@/lib/resource-access";
 import { z } from "zod";
 
 const listSchema = z.object({
@@ -30,10 +31,22 @@ export const GET = getApi.GET(async (ctx) => {
   const url = new URL(ctx.request.url);
   const fromDate = url.searchParams.get("fromDate");
   const toDate = url.searchParams.get("toDate");
+  const requestedUserId = url.searchParams.get("userId") || undefined;
+
+  // Security: users can only query their own activity (or their project's).
+  if (requestedUserId && requestedUserId !== ctx.user.id) {
+    return forbidden();
+  }
+
+  const projectId = url.searchParams.get("projectId") || undefined;
+  if (projectId && !(await canAccessProject(ctx.user.id, projectId))) {
+    return forbidden();
+  }
+
   const filter = {
     projectId: url.searchParams.get("projectId") || undefined,
     chatId: url.searchParams.get("chatId") || undefined,
-    userId: url.searchParams.get("userId") || undefined,
+    userId: ctx.user.id,
     type: url.searchParams.get("type") || undefined,
     page: Number(url.searchParams.get("page")) || 1,
     perPage: Number(url.searchParams.get("perPage")) || 20,
@@ -45,6 +58,10 @@ export const GET = getApi.GET(async (ctx) => {
 });
 
 export const POST = postApi.POST(async (ctx, body) => {
-  const activity = await activityService.record(body as Parameters<typeof activityService.record>[0]);
+  // Security: always use the authenticated user's ID, never trust client-supplied userId.
+  const activity = await activityService.record({
+    ...(body as Parameters<typeof activityService.record>[0]),
+    userId: ctx.user.id,
+  });
   return ok(activity, 201);
 });
