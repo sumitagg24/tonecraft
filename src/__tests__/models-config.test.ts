@@ -128,15 +128,15 @@ describe("ModelRegistry", () => {
 
 describe("credit allowances", () => {
   it("grows the monthly allowance with the plan tier", () => {
-    expect(getMonthlyCredits(PlanTier.FREE)).toBe(5000);
-    expect(getMonthlyCredits(PlanTier.PRO)).toBe(50000);
+    expect(getMonthlyCredits(PlanTier.FREE)).toBe(100);
+    expect(getMonthlyCredits(PlanTier.PRO)).toBe(2000);
     expect(getMonthlyCredits(PlanTier.ENTERPRISE)).toBe(Infinity);
     expect(getMonthlyCredits("platinum" as PlanTier)).toBe(0);
   });
 
   it("only allows rollover above the free tier", () => {
     expect(getRolloverMax(PlanTier.FREE)).toBe(0);
-    expect(getRolloverMax(PlanTier.PRO)).toBe(100000);
+    expect(getRolloverMax(PlanTier.PRO)).toBe(500);
     expect(getRolloverMax(PlanTier.ENTERPRISE)).toBe(Infinity);
     expect(getRolloverMax("platinum" as PlanTier)).toBe(0);
   });
@@ -148,6 +148,6 @@ describe("credit allowances", () => {
   });
 
   it("grants the same trial credits to everyone", () => {
-    expect(getTrialCredits()).toBe(10000);
+    expect(getTrialCredits()).toBe(500);
   });
 });

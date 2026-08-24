@@ -1,32 +1,92 @@
-import { ok, withApiHandler } from "@/lib/withApiHandler";
+import { NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { capabilities } from "@/lib/capabilities";
-import { auditLogService } from "@/services/AuditLogService";
+import { planService } from "@/services/PlanService";
+import { usageGuard } from "@/services/UsageGuard";
+import { getMonthlyCredits, getDailyCredits, isUnlimited } from "@/config/credits";
 
-const api = withApiHandler();
+/**
+ * GET /api/usage — returns the current user's usage summary.
+ * Used by the frontend to display "63 / 100 credits remaining".
+ */
+export async function GET() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized" } },
+      { status: 401 },
+    );
+  }
 
-export const GET = api.GET(async (ctx) => {
-  const usage = await prisma.usage.findUnique({
-    where: { userId: ctx.user.id },
+  const userId = session.user.id;
+
+  const [plan, usage, user] = await Promise.all([
+    planService.getPlan(userId),
+    prisma.usage.findUnique({ where: { userId } }),
+    prisma.user.findUnique({ where: { id: userId }, select: { role: true } }),
+  ]);
+
+  const isOwner = user?.role === "OWNER";
+  const monthlyCredits = getMonthlyCredits(plan.tier);
+  const dailyCredits = getDailyCredits(plan.tier);
+  const unlimited = isOwner || isUnlimited(plan.tier);
+
+  // Compute daily usage (respect stale reset)
+  const today = new Date();
+  const dayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const dailyUsed = usage && usage.lastDailyReset.getTime() >= dayStart.getTime()
+    ? usage.dailyMessages
+    : 0;
+
+  const monthlyUsed = usage?.creditsUsed ?? 0;
+  const monthlyRemaining = unlimited ? Infinity : Math.max(0, monthlyCredits - monthlyUsed);
+  const dailyRemaining = unlimited ? Infinity : Math.max(0, dailyCredits - dailyUsed);
+
+  // Compute reset date (end of current month or subscription period)
+  const sub = await prisma.subscription.findUnique({
+    where: { userId },
+    select: { currentPeriodEnd: true },
   });
-  const plan = await capabilities.require({ userId: ctx.user.id });
 
-  void auditLogService.record("api.request", "usage", {
-    actorId: ctx.user.id,
-    metadata: { endpoint: "usage", method: "GET" },
-  });
+  const resetDate = sub?.currentPeriodEnd
+    ?? new Date(today.getFullYear(), today.getMonth() + 1, 1);
 
-  return ok({
-    usage: usage || {
-      messagesSent: 0,
-      tokensUsed: 0,
-      filesUploaded: 0,
-      storageUsed: 0,
+  // Recent usage events (last 10)
+  const recentEvents = await prisma.usageEvent.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    take: 10,
+    select: {
+      id: true,
+      operation: true,
+      model: true,
+      credits: true,
+      allowed: true,
+      createdAt: true,
     },
-    plan: plan.tier,
-    limits: {
-      messagesPerDay: plan.limits.messagesPerDay,
-      messagesPerHour: plan.limits.messagesPerHour,
+  });
+
+  return NextResponse.json({
+    success: true,
+    data: {
+      plan: plan.tier,
+      role: user?.role ?? "USER",
+      credits: {
+        monthly: {
+          allocated: unlimited ? null : monthlyCredits,
+          used: monthlyUsed,
+          remaining: unlimited ? null : monthlyRemaining,
+          unlimited,
+        },
+        daily: {
+          allocated: unlimited ? null : dailyCredits,
+          used: dailyUsed,
+          remaining: unlimited ? null : dailyRemaining,
+          unlimited,
+        },
+      },
+      resetDate: resetDate.toISOString(),
+      recentEvents,
     },
   });
-});
+}

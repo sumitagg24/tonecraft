@@ -14,6 +14,7 @@ import { auditLogService } from "@/services/AuditLogService";
 import { logger } from "@/lib/logger";
 import { type PlanTier, getPlanConfig } from "@/config/plans";
 import { CODE_PATTERN } from "@/lib/capabilities";
+import { calculateCreditCost, intentToOperation, type OperationType } from "@/config/credits";
 
 export class AIEngine {
   private providerRouter: ProviderRouter;
@@ -71,10 +72,20 @@ export class AIEngine {
 
     // Check credits before execution
     if (options.userId && options.plan) {
-      const minCost = minCreditCost(options.plan, options.modelId);
-      const canProceed = await usageGuard.canAfford(options.userId, minCost);
-      if (!canProceed) {
-        throw new Error("Insufficient credits");
+      const operation = intentToOperation(options.intent ?? "custom");
+      const minCost = calculateCreditCost(
+        options.modelId && options.modelId !== "auto" ? modelRegistry.getCreditCost(options.modelId) : undefined,
+        operation,
+      );
+      const usageResult = await usageGuard.check(options.userId, minCost);
+      if (!usageResult.allowed) {
+        throw new AIEngineError(
+          {
+            errorCode: (usageResult.code ?? "insufficient_credits") as import("./AIEngineError").AIErrorCode,
+            status: 402,
+          },
+          new Error(usageResult.reason),
+        );
       }
     }
 
@@ -122,14 +133,16 @@ export class AIEngine {
 
     // Deduct credits after success
     if (options.userId && options.plan) {
-      // Fallback engines (e.g. tonecraft-local-v1) aren't in the model registry
-      // — charge the default 1 credit rather than crashing the request (the
-      // stream() path below already uses the same ?? 1 convention).
-      const cost = modelRegistry.getCreditCost(providerResult.model) ?? 1;
+      const operation = intentToOperation(options.intent ?? "custom");
+      const cost = calculateCreditCost(
+        modelRegistry.getCreditCost(providerResult.model),
+        operation,
+      );
       await usageGuard.record({
         userId: options.userId,
         modelId: providerResult.model,
         credits: cost,
+        operation,
       });
     }
 
@@ -198,10 +211,14 @@ export class AIEngine {
 
     // Check credits before execution
     if (options.userId && options.plan) {
-      const minCost = minCreditCost(options.plan, options.modelId);
-      const canProceed = await usageGuard.canAfford(options.userId, minCost);
-      if (!canProceed) {
-        yield { type: "error", message: "Insufficient credits" };
+      const operation = intentToOperation(options.intent ?? "custom");
+      const minCost = calculateCreditCost(
+        options.modelId && options.modelId !== "auto" ? modelRegistry.getCreditCost(options.modelId) : undefined,
+        operation,
+      );
+      const usageResult = await usageGuard.check(options.userId, minCost);
+      if (!usageResult.allowed) {
+        yield { type: "error", message: usageResult.reason ?? "Insufficient credits" };
         return;
       }
     }
@@ -233,11 +250,16 @@ export class AIEngine {
 
       // Deduct credits after successful stream completion
       if (options.userId && options.plan) {
-        const cost = modelRegistry.getCreditCost(finalModel) ?? 1;
+        const operation = intentToOperation(options.intent ?? "custom");
+        const cost = calculateCreditCost(
+          modelRegistry.getCreditCost(finalModel),
+          operation,
+        );
         await usageGuard.record({
           userId: options.userId,
           modelId: finalModel,
           credits: cost,
+          operation,
         });
       }
 
@@ -350,14 +372,6 @@ export class AIEngine {
   }
 }
 
-function minCreditCost(plan: PlanTier, modelId?: string): number {
-  if (modelId && modelId !== "auto") {
-    const cost = modelRegistry.getCreditCost(modelId);
-    if (cost !== undefined) return cost;
-  }
-  const models = modelRegistry.resolve(getPlanConfig(plan));
-  const costs = models.map((m) => m.creditCost).filter((c) => c > 0);
-  return costs.length > 0 ? Math.min(...costs) : 1;
-}
+
 
 export const aiEngine = new AIEngine();

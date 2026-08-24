@@ -7,159 +7,120 @@ datasource db {
 }
 
 model User {
-  id                String                  @id @default(cuid())
-  clerkId           String                  @unique
-  name              String?
-  email             String                  @unique
-  image             String?
-  preferredLanguage String                  @default("english")
-  defaultTone       String                  @default("professional")
-  createdAt         DateTime                @default(now())
-  updatedAt         DateTime                @updatedAt
-  autoSave          Boolean                 @default(true)
-  creativityLevel   Int?                    @default(70)
-  preferredModel    String?                 @default("auto")
-  preferredPlatform String?                 @default("email")
-  preferredStyle    String?                 @default("standard")
-  responseLength    String?                 @default("medium")
-  streamingEnabled  Boolean                 @default(true)
-  defaultPersonaId  String?
-  chats             Chat[]
-  personas          Persona[]
-  subscription      Subscription?
-  usage             Usage?
-  usageRecords      UsageRecord[]
-  projects          Project[]
-  projectMembership ProjectMember[]
-  prompts           Prompt[]
-  knowledgeFiles    KnowledgeFile[]
-  drafts            Draft[]
-  notifications     Notification[]
-  notificationPrefs NotificationPreference?
-  shareLinks        ShareLink[]
-  exportJobs        ExportJob[]
-  bookmarks         Bookmark[]
-  comments          Comment[]
-  promptCollections PromptCollection[]
-  promptShares      PromptShare[]
-  promptRatings     PromptRating[]
-  promptVersions    PromptVersion[]         @relation("PromptVersionCreator")
-  collectionShares  PromptCollectionShare[]
-  sharedWithPrompts PromptShare[]           @relation("PromptSharedWith")
-  promptHistories   PromptHistory[]
-  workspaces        Workspace[]
-  workspaceMembers  WorkspaceMember[]
-  sentInvites       WorkspaceInvite[]       @relation("SentInvites")
-  activityFeeds     ActivityFeed[]
-  activities        Activity[]
-  snapshots         VersionSnapshot[]
-  presences         Presence[]
-  typingIndicators  TypingIndicator[]
-  operations        DocumentOperation[]
-  auditLogs         AuditLog[]              @relation("AuditActor")
-  pushSubscriptions PushSubscription[]
-  documents         Document[]
-  notes             Note[]
-  tasks             Task[]
-  calendarEvents    CalendarEvent[]
-  agents            Agent[]
-  agentRuns         AgentRun[]
-  automations       Automation[]
-  integrations      Integration[]
-  ownedOrganizations Organization[]    @relation("OrgOwner")
-  organizationMembers OrganizationMember[] @relation("OrgMember")
-  marketplaceListings MarketplaceListing[]
-  listingReviews      ListingReview[]
-  listingDownloads    ListingDownload[]
+  id                  String                  @id @default(cuid())
+  clerkId             String                  @unique
+  name                String?
+  email               String                  @unique
+  image               String?
+  role                UserRole                @default(USER)
+  preferredLanguage   String                  @default("english")
+  defaultTone         String                  @default("professional")
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+  autoSave            Boolean                 @default(true)
+  creativityLevel     Int?                    @default(70)
+  preferredModel      String?                 @default("auto")
+  preferredPlatform   String?                 @default("email")
+  preferredStyle      String?                 @default("standard")
+  responseLength      String?                 @default("medium")
+  streamingEnabled    Boolean                 @default(true)
+  defaultPersonaId    String?
+  activities          Activity[]
+  activityFeeds       ActivityFeed[]
+  agents              Agent[]
+  agentRuns           AgentRun[]
+  auditLogs           AuditLog[]              @relation("AuditActor")
+  automations         Automation[]
+  bookmarks           Bookmark[]
+  calendarEvents      CalendarEvent[]
+  chats               Chat[]
+  comments            Comment[]
+  following           CreatorFollow[]         @relation("CreatorFollower")
+  followers           CreatorFollow[]         @relation("CreatorFollowing")
   creatorProfile      CreatorProfile?
-  following           CreatorFollow[]    @relation("CreatorFollower")
-  followers           CreatorFollow[]    @relation("CreatorFollowing")
+  documents           Document[]
+  operations          DocumentOperation[]
+  drafts              Draft[]
+  exportJobs          ExportJob[]
   feedback            Feedback[]
-
-  // NOTE: no redundant @@index on clerkId/email — @unique already builds them.
-}
-
-// ════════════════════════════════════════════════════════════════════
-// Phase 20 — User feedback
-// Submissions from the in-app feedback dialog. Status is triaged by the
-// platform admin on /admin/feedback; optional screenshots are NOT stored here
-// (Postgres keeps only the reference; media lives in Cloudflare R2).
-// ════════════════════════════════════════════════════════════════════
-
-enum FeedbackCategory {
-  bug
-  feature_request
-  general
-  other
-}
-
-enum FeedbackStatus {
-  NEW
-  REVIEWED
-  RESOLVED
+  integrations        Integration[]
+  knowledgeFiles      KnowledgeFile[]
+  listingDownloads    ListingDownload[]
+  listingReviews      ListingReview[]
+  marketplaceListings MarketplaceListing[]
+  notes               Note[]
+  notifications       Notification[]
+  notificationPrefs   NotificationPreference?
+  ownedOrganizations  Organization[]          @relation("OrgOwner")
+  organizationMembers OrganizationMember[]    @relation("OrgMember")
+  personas            Persona[]
+  presences           Presence[]
+  projects            Project[]
+  projectMembership   ProjectMember[]
+  prompts             Prompt[]
+  promptCollections   PromptCollection[]
+  collectionShares    PromptCollectionShare[]
+  promptHistories     PromptHistory[]
+  promptRatings       PromptRating[]
+  sharedWithPrompts   PromptShare[]           @relation("PromptSharedWith")
+  promptShares        PromptShare[]
+  promptVersions      PromptVersion[]         @relation("PromptVersionCreator")
+  pushSubscriptions   PushSubscription[]
+  shareLinks          ShareLink[]
+  subscription        Subscription?
+  tasks               Task[]
+  typingIndicators    TypingIndicator[]
+  usage               Usage?
+  usageEvents         UsageEvent[]
+  usageRecords        UsageRecord[]
+  snapshots           VersionSnapshot[]
+  workspaces          Workspace[]
+  sentInvites         WorkspaceInvite[]       @relation("SentInvites")
+  workspaceMembers    WorkspaceMember[]
 }
 
 model Feedback {
-  id        String           @id @default(cuid())
-  userId    String
-  category  FeedbackCategory @default(general)
-  rating    Int?             // 1–5, optional
-  message   String
-  page      String?          // where the user was when submitting
-  status    FeedbackStatus   @default(NEW)
+  id         String           @id @default(cuid())
+  userId     String
+  category   FeedbackCategory @default(general)
+  rating     Int?
+  message    String
+  page       String?
+  status     FeedbackStatus   @default(NEW)
   reviewedAt DateTime?
-  reviewedBy String?         // admin User id who last changed status
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewedBy String?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
   @@index([status, createdAt])
   @@index([category, status])
 }
 
-// ════════════════════════════════════════════════════════════════════
-// Phase 14 — AI Marketplace
-// Users publish prompts, agents, workflows, personas, and templates.
-// ════════════════════════════════════════════════════════════════════
-
-enum ListingKind {
-  prompt
-  agent
-  workflow
-  persona
-  template
-}
-
-enum ListingStatus {
-  draft
-  published
-  archived
-}
-
 /// A published (or draft) marketplace item — the asset itself is stored as
 /// structured `content` JSON (prompt text, agent config, workflow steps…).
 model MarketplaceListing {
-  id            String        @id @default(cuid())
+  id            String            @id @default(cuid())
   kind          ListingKind
   title         String
   description   String?
   content       Json
-  tags          String[]      @default([])
-  license       String        @default("cc-by-4.0")
-  priceCredits  Int           @default(0)
-  status        ListingStatus @default(draft)
+  tags          String[]          @default([])
+  license       String            @default("cc-by-4.0")
+  priceCredits  Int               @default(0)
+  status        ListingStatus     @default(draft)
   authorId      String
-  ratingAgg     Float         @default(0)
-  ratingCount   Int           @default(0)
-  downloadCount Int           @default(0)
-  trendingScore Float         @default(0)
-  featured      Boolean       @default(false)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  author        User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  reviews       ListingReview[]
+  ratingAgg     Float             @default(0)
+  ratingCount   Int               @default(0)
+  downloadCount Int               @default(0)
+  trendingScore Float             @default(0)
+  featured      Boolean           @default(false)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
   downloads     ListingDownload[]
+  reviews       ListingReview[]
+  author        User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   @@index([kind, status])
   @@index([authorId])
@@ -171,15 +132,15 @@ model MarketplaceListing {
 
 /// Star rating + optional written review on a listing (one per user).
 model ListingReview {
-  id        String            @id @default(cuid())
+  id        String             @id @default(cuid())
   listingId String
   userId    String
   rating    Int
   review    String?
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
   listing   MarketplaceListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([listingId, userId])
   @@index([listingId, rating])
@@ -187,12 +148,12 @@ model ListingReview {
 
 /// A recorded install of a listing (drives download counts + creator stats).
 model ListingDownload {
-  id        String            @id @default(cuid())
+  id        String             @id @default(cuid())
   listingId String
   userId    String
-  createdAt DateTime          @default(now())
+  createdAt DateTime           @default(now())
   listing   MarketplaceListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([listingId, userId])
   @@index([listingId, createdAt])
@@ -226,19 +187,6 @@ model CreatorFollow {
   @@index([followingId])
 }
 
-// ════════════════════════════════════════════════════════════════════
-// Phase 17 — AI Memory System
-// Long-term memory scoped to a user, workspace, team, or agent, plus a
-// lightweight knowledge graph over memory items.
-// ════════════════════════════════════════════════════════════════════
-
-enum MemoryOwnerType {
-  user
-  workspace
-  team
-  agent
-}
-
 /// A discrete remembered fact. `embedding` is a Json float array produced by
 /// `src/lib/embeddings.ts`; `metadata` carries source/tone/importance hints.
 model MemoryItem {
@@ -247,8 +195,8 @@ model MemoryItem {
   ownerId        String
   content        String
   embedding      Json?
-  metadata       Json? // { source: 'chat'|'explicit'|'knowledge'|'agent', tone?, projectId?, tags? }
-  importance     Int             @default(50) // 0–100, bumped by recall
+  metadata       Json?
+  importance     Int             @default(50)
   lastAccessedAt DateTime        @default(now())
   createdAt      DateTime        @default(now())
   linksFrom      MemoryLink[]    @relation("MemoryLinkFrom")
@@ -261,19 +209,18 @@ model MemoryItem {
 
 /// Knowledge-graph edge between two memory items ("relates to", "causes", …).
 model MemoryLink {
-  id          String     @id @default(cuid())
-  fromId      String
-  toId        String
-  relation    String     @default("relates_to")
-  createdAt   DateTime   @default(now())
-  from        MemoryItem @relation("MemoryLinkFrom", fields: [fromId], references: [id], onDelete: Cascade)
-  to          MemoryItem @relation("MemoryLinkTo", fields: [toId], references: [id], onDelete: Cascade)
+  id        String     @id @default(cuid())
+  fromId    String
+  toId      String
+  relation  String     @default("relates_to")
+  createdAt DateTime   @default(now())
+  from      MemoryItem @relation("MemoryLinkFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  to        MemoryItem @relation("MemoryLinkTo", fields: [toId], references: [id], onDelete: Cascade)
 
   @@unique([fromId, toId, relation])
   @@index([toId])
 }
 
-// ════════════════════════════════════════════════════════════════════
 model Chat {
   id               String            @id @default(cuid())
   userId           String
@@ -288,15 +235,15 @@ model Chat {
   language         String?
   platform         String?
   projectId        String?
-  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  project          Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  messages         Message[]
-  drafts           Draft[]
-  shareLinks       ShareLink[]
-  exportJobs       ExportJob[]
   activities       Activity[]
-  typingIndicators TypingIndicator[]
+  project          Project?          @relation(fields: [projectId], references: [id])
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  drafts           Draft[]
+  exportJobs       ExportJob[]
+  messages         Message[]
   presences        Presence[]
+  shareLinks       ShareLink[]
+  typingIndicators TypingIndicator[]
 
   @@index([userId, updatedAt])
   @@index([userId, isPinned])
@@ -322,11 +269,11 @@ model Message {
   isEdited    Boolean            @default(false)
   parentId    String?
   attachments Attachment[]
+  comments    Comment[]
   chat        Chat               @relation(fields: [chatId], references: [id], onDelete: Cascade)
   parent      Message?           @relation("MessageChain", fields: [parentId], references: [id])
   children    Message[]          @relation("MessageChain")
   knowledge   MessageKnowledge[]
-  comments    Comment[]
 
   @@index([chatId, createdAt])
   @@index([chatId, feedback])
@@ -355,16 +302,16 @@ model Persona {
   icon             String?
   color            String   @default("#6366F1")
   isDefault        Boolean  @default(false)
-  tone             String   @default("professional")
-  temperature      Int?     @default(70)
-  emojiUsage       String   @default("subtle")
-  writingStyle     String   @default("standard")
-  platformDefaults Json?
-  isFavorite       Boolean  @default(false)
-  projectId        String?
   createdAt        DateTime @default(now())
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emojiUsage       String   @default("subtle")
+  isFavorite       Boolean  @default(false)
+  platformDefaults Json?
+  projectId        String?
+  temperature      Int?     @default(70)
+  tone             String   @default("professional")
+  writingStyle     String   @default("standard")
   project          Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([projectId])
@@ -400,11 +347,11 @@ model UsageRecord {
   success     Boolean    @default(true)
   error       String?
   createdAt   DateTime   @default(now())
-  workspaceId String?
   projectId   String?
+  workspaceId String?
+  project     Project?   @relation(fields: [projectId], references: [id])
   user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace   Workspace? @relation(fields: [workspaceId], references: [id])
-  project     Project?   @relation(fields: [projectId], references: [id])
 
   @@index([userId, createdAt])
   @@index([userId, provider])
@@ -432,45 +379,30 @@ model Subscription {
 model Workspace {
   id             String            @id @default(cuid())
   userId         String
-  organizationId String?
-  teamId         String?
   name           String
   description    String?
   color          String            @default("#6366F1")
   visibility     Visibility        @default(public)
   modes          WorkspaceModes[]  @default([chat])
-  members        WorkspaceMember[]
-  invites        WorkspaceInvite[]
-  projects       Project[]
-  archives       ActivityFeed[]
-  usageRecords   UsageRecord[]
   settings       Json              @default("{}")
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
-  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organization   Organization?     @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  team           Team?             @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  organizationId String?
+  teamId         String?
+  archives       ActivityFeed[]
+  projects       Project[]
   prompts        Prompt[]
+  usageRecords   UsageRecord[]
+  organization   Organization?     @relation(fields: [organizationId], references: [id])
+  team           Team?             @relation(fields: [teamId], references: [id])
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invites        WorkspaceInvite[]
+  members        WorkspaceMember[]
 
   @@index([userId])
   @@index([visibility])
   @@index([organizationId])
   @@index([teamId])
-}
-
-enum Visibility {
-  public
-  private
-  shared
-}
-
-enum WorkspaceModes {
-  chat
-  focus
-  writer
-  split
-  compact
-  minimal
 }
 
 model WorkspaceMember {
@@ -479,18 +411,12 @@ model WorkspaceMember {
   userId      String
   role        MemberRole @default(member)
   createdAt   DateTime   @default(now())
-  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId, userId])
   @@index([userId, workspaceId])
   @@index([workspaceId, role])
-}
-
-enum MemberRole {
-  member
-  manager
-  admin
 }
 
 model WorkspaceInvite {
@@ -502,21 +428,14 @@ model WorkspaceInvite {
   expiresAt   DateTime?
   status      InviteStatus @default(pending)
   createdAt   DateTime     @default(now())
-  sentBy      User?        @relation("SentInvites", fields: [sentById], references: [id], onDelete: SetNull)
   sentById    String?
   projectIds  String[]     @default([])
+  sentBy      User?        @relation("SentInvites", fields: [sentById], references: [id])
   workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId, email])
   @@index([workspaceId, expiresAt])
   @@index([email])
-}
-
-enum InviteStatus {
-  pending
-  accepted
-  rejected
-  expired
 }
 
 model ActivityFeed {
@@ -526,52 +445,40 @@ model ActivityFeed {
   type        ActivityType @default(members_invite)
   payload     Json
   createdAt   DateTime     @default(now())
-  workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([workspaceId, createdAt])
   @@index([userId])
   @@index([type])
 }
 
-enum ActivityType {
-  members_invite
-  members_remove
-  project_create
-  project_update
-  project_delete
-  members_status
-  typing
-  chat_message
-  presence_update
-}
-
 model Project {
   id             String          @id @default(cuid())
   userId         String
-  workspaceId    String?
   name           String
   emoji          String?
   color          String          @default("#6366F1")
   description    String?
   parentId       String?
-  parent         Project?        @relation("ProjectTree", fields: [parentId], references: [id])
-  children       Project[]       @relation("ProjectTree")
   archived       Boolean         @default(false)
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
-  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  workspace      Workspace?      @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
-  chats          Chat[]
-  personas       Persona[]
-  prompts        Prompt[]
-  knowledgeFiles KnowledgeFile[]
-  members        ProjectMember[]
-  usageRecords   UsageRecord[]
-  shareLinks     ShareLink[]
-  exportJobs     ExportJob[]
+  workspaceId    String?
   activities     Activity[]
+  chats          Chat[]
+  exportJobs     ExportJob[]
+  knowledgeFiles KnowledgeFile[]
+  personas       Persona[]
   presences      Presence[]
+  parent         Project?        @relation("ProjectTree", fields: [parentId], references: [id])
+  children       Project[]       @relation("ProjectTree")
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace      Workspace?      @relation(fields: [workspaceId], references: [id])
+  members        ProjectMember[]
+  prompts        Prompt[]
+  shareLinks     ShareLink[]
+  usageRecords   UsageRecord[]
 
   @@index([userId, parentId])
   @@index([userId, archived])
@@ -602,19 +509,19 @@ model Prompt {
   isFavorite      Boolean                @default(false)
   isArchived      Boolean                @default(false)
   projectId       String?
-  workspaceId     String?
   createdAt       DateTime               @default(now())
   updatedAt       DateTime               @updatedAt
-  user            User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  project         Project?               @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  workspace       Workspace?             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId     String?
   bookmarks       Bookmark[]
-  versions        PromptVersion[]
-  ratings         PromptRating[]
-  tags            PromptTag[]
-  shares          PromptShare[]
+  project         Project?               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user            User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace       Workspace?             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   collectionItems PromptCollectionItem[]
   histories       PromptHistory[]
+  ratings         PromptRating[]
+  shares          PromptShare[]
+  tags            PromptTag[]
+  versions        PromptVersion[]
 
   @@index([userId, category])
   @@index([projectId])
@@ -633,8 +540,8 @@ model PromptVersion {
   variables   Json?
   createdBy   String
   createdAt   DateTime @default(now())
-  prompt      Prompt   @relation(fields: [promptId], references: [id], onDelete: Cascade)
   user        User     @relation("PromptVersionCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  prompt      Prompt   @relation(fields: [promptId], references: [id], onDelete: Cascade)
 
   @@unique([promptId, version])
   @@index([promptId])
@@ -678,8 +585,8 @@ model PromptShare {
   expiresAt    DateTime?
   createdAt    DateTime  @default(now())
   prompt       Prompt    @relation(fields: [promptId], references: [id], onDelete: Cascade)
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   sharedWith   User      @relation("PromptSharedWith", fields: [sharedWithId], references: [id], onDelete: Cascade)
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([promptId])
   @@index([sharedWithId])
@@ -739,8 +646,8 @@ model PromptHistory {
   action       String
   metadata     Json?
   createdAt    DateTime          @default(now())
-  prompt       Prompt?           @relation(fields: [promptId], references: [id], onDelete: Cascade)
   collection   PromptCollection? @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  prompt       Prompt?           @relation(fields: [promptId], references: [id], onDelete: Cascade)
   user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([promptId])
@@ -762,9 +669,9 @@ model KnowledgeFile {
   error        String?
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
-  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  project      Project?           @relation(fields: [projectId], references: [id], onDelete: Cascade)
   chunks       KnowledgeChunk[]
+  project      Project?           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   job          KnowledgeJob?
   messageLinks MessageKnowledge[]
 
@@ -800,45 +707,24 @@ model MessageKnowledge {
   messageId String
   fileId    String
   createdAt DateTime      @default(now())
-  message   Message       @relation(fields: [messageId], references: [id], onDelete: Cascade)
   file      KnowledgeFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  message   Message       @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
   @@index([messageId])
   @@index([fileId])
 }
 
-enum NotificationType {
-  generation_finished
-  credits_low
-  team_invite
-  knowledge_indexed
-  export_completed
-  export_failed
-  mention
-  comment
-  subscription
-  digest
-  system
-}
-
-enum NotificationChannel {
-  in_app
-  email
-  push
-  realtime
-}
-
 model Notification {
   id        String              @id @default(cuid())
   userId    String
-  type      NotificationType
-  channel   NotificationChannel @default(in_app)
   title     String
   body      String?
   link      String?
   readAt    DateTime?
-  metadata  Json?
   createdAt DateTime            @default(now())
+  channel   NotificationChannel @default(in_app)
+  metadata  Json?
+  type      NotificationType
   user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, readAt])
@@ -851,38 +737,38 @@ model NotificationPreference {
   id                 String   @id @default(cuid())
   userId             String   @unique
   emailEnabled       Boolean  @default(true)
-  pushEnabled        Boolean  @default(false)
   inAppEnabled       Boolean  @default(true)
-  realtimeEnabled    Boolean  @default(true)
-  dailyDigest        Boolean  @default(false)
   generationComplete Boolean  @default(true)
   creditsLow         Boolean  @default(true)
   knowledgeReady     Boolean  @default(true)
   exportReady        Boolean  @default(true)
   invite             Boolean  @default(true)
   comment            Boolean  @default(true)
+  updatedAt          DateTime @updatedAt
+  dailyDigest        Boolean  @default(false)
   mention            Boolean  @default(true)
+  pushEnabled        Boolean  @default(false)
+  realtimeEnabled    Boolean  @default(true)
   subscription       Boolean  @default(true)
   system             Boolean  @default(true)
-  updatedAt          DateTime @updatedAt
   user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model AuditLog {
   id             String        @id @default(cuid())
   actorId        String?
-  actor          User?         @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
   action         String
   resource       String
   resourceId     String?
   workspaceId    String?
-  organizationId String?
   targetId       String?
   ip             String?
   userAgent      String?
   metadata       Json?
   createdAt      DateTime      @default(now())
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  organizationId String?
+  actor          User?         @relation("AuditActor", fields: [actorId], references: [id])
+  organization   Organization? @relation(fields: [organizationId], references: [id])
 
   @@index([workspaceId, createdAt])
   @@index([organizationId, createdAt])
@@ -914,8 +800,8 @@ model Draft {
   language  String?
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
-  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   chat      Chat?          @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   versions  DraftVersion[]
 
   @@unique([userId, chatId])
@@ -942,11 +828,9 @@ model ShareLink {
   expiresAt DateTime?
   revoked   Boolean   @default(false)
   createdAt DateTime  @default(now())
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   chat      Chat?     @relation(fields: [chatId], references: [id], onDelete: Cascade)
   project   Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  // NOTE: no redundant @@index on token — @unique already provides it.
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model ExportJob {
@@ -960,9 +844,9 @@ model ExportJob {
   error     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   chat      Chat?    @relation(fields: [chatId], references: [id], onDelete: Cascade)
   project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
 }
@@ -974,8 +858,8 @@ model Comment {
   content   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([messageId, createdAt])
 }
@@ -988,8 +872,8 @@ model Bookmark {
   promptId  String?
   label     String?
   createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   prompt    Prompt?  @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
 }
@@ -1004,9 +888,9 @@ model Activity {
   description String?
   metadata    Json?
   createdAt   DateTime @default(now())
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  project     Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
   chat        Chat?    @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  project     Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
   @@index([projectId, createdAt])
@@ -1028,9 +912,9 @@ model VersionSnapshot {
   sizeBytes     Int
   isAuto        Boolean           @default(false)
   parentId      String?
+  createdAt     DateTime          @default(now())
   parent        VersionSnapshot?  @relation("SnapshotTree", fields: [parentId], references: [id])
   children      VersionSnapshot[] @relation("SnapshotTree")
-  createdAt     DateTime          @default(now())
   user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([resourceType, resourceId, version])
@@ -1051,9 +935,9 @@ model Presence {
   selectionEnd   Int?
   currentPath    String?
   lastSeen       DateTime @default(now()) @updatedAt
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  project        Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
   chat           Chat?    @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  project        Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, projectId, chatId])
   @@index([projectId, lastSeen])
@@ -1067,8 +951,8 @@ model TypingIndicator {
   isTyping  Boolean  @default(true)
   startedAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, chatId])
   @@index([chatId, updatedAt])
@@ -1106,17 +990,13 @@ model DocumentOperation {
   @@index([resourceType, resourceId, createdAt])
 }
 
-// ============================================================
-// Phase 10 — Productivity Suite
-// ============================================================
-
 model Document {
   id        String   @id @default(cuid())
   userId    String
   title     String   @default("Untitled")
   content   String   @default("")
   emoji     String?
-  status    String   @default("draft") // draft | published | archived
+  status    String   @default("draft")
   pinned    Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1140,18 +1020,6 @@ model Note {
   @@index([userId, updatedAt])
 }
 
-enum TaskStatus {
-  todo
-  in_progress
-  done
-}
-
-enum TaskPriority {
-  low
-  medium
-  high
-}
-
 model Task {
   id          String       @id @default(cuid())
   userId      String
@@ -1170,17 +1038,17 @@ model Task {
 }
 
 model CalendarEvent {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   userId      String
   title       String
   description String?
   startAt     DateTime
   endAt       DateTime?
-  allDay      Boolean  @default(false)
-  color       String   @default("#6366F1")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  allDay      Boolean   @default(false)
+  color       String    @default("#6366F1")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, startAt])
 }
@@ -1203,18 +1071,18 @@ model Agent {
 }
 
 model AgentRun {
-  id         String  @id @default(cuid())
+  id         String   @id @default(cuid())
   agentId    String
   userId     String
   input      String
   output     String?
-  status     String  @default("queued") // queued | running | completed | failed
-  steps      Json? // chained agent step results
+  status     String   @default("queued")
+  steps      Json?
   error      String?
   durationMs Int?
   createdAt  DateTime @default(now())
-  agent      Agent   @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent      Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([agentId, createdAt])
   @@index([userId, createdAt])
@@ -1225,66 +1093,45 @@ model Automation {
   userId      String
   name        String
   description String?
-  trigger     String    @default("daily") // daily | weekly | custom
+  trigger     String    @default("daily")
   cron        String?
   prompt      String
   enabled     Boolean   @default(true)
-  // Claimed by the background worker while executing (prevents double runs).
-  running     Boolean   @default(false)
   lastRunAt   DateTime?
   nextRunAt   DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  running     Boolean   @default(false)
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, enabled])
   @@index([enabled, nextRunAt, running])
 }
 
-enum IntegrationService {
-  google_drive
-  notion
-  github
-  slack
-  discord
-  gmail
-  calendar
-}
-
 model Integration {
-  id          String              @id @default(cuid())
+  id          String             @id @default(cuid())
   userId      String
   service     IntegrationService
-  status      String              @default("not_connected") // not_connected | connecting | connected | error
+  status      String             @default("not_connected")
   config      Json?
   error       String?
   connectedAt DateTime?
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, service])
   @@index([userId, status])
 }
 
-// Phase 12 — background queue for slow work (emails, exports, notifications,
-// analytics). Claimed atomically by the /api/cron/queue worker, same pattern
-// as the automation `running` lock.
-enum QueueStatus {
-  pending
-  processing
-  succeeded
-  failed
-}
-
 model QueueItem {
   id          String      @id @default(cuid())
-  type        String // email | export | notification | analytics | embedding
+  type        String
   payload     Json
   status      QueueStatus @default(pending)
   attempts    Int         @default(0)
   maxAttempts Int         @default(5)
-  availableAt DateTime    @default(now()) // delayed until here (retry backoff)
+  availableAt DateTime    @default(now())
   lockedAt    DateTime?
   processedAt DateTime?
   lastError   String?
@@ -1295,13 +1142,9 @@ model QueueItem {
   @@index([type, status])
 }
 
-// Phase 20 — webhook event dedupe. Claims each inbound webhook by provider +
-// event id so a replay (Paddle/Svix redelivery, manual re-post) can't double-
-// process the same event. `processed` flips to true only after the handler
-// succeeds; a crash mid-processing leaves it false so the retry re-runs.
 model WebhookEvent {
   id          String    @id @default(cuid())
-  provider    String // "paddle" | "clerk"
+  provider    String
   eventId     String
   type        String?
   processed   Boolean   @default(false)
@@ -1312,54 +1155,33 @@ model WebhookEvent {
   @@index([provider, createdAt])
 }
 
-// Phase 12 — runtime feature-flag overrides. Lets operators toggle features
-// (deep-research, agents, automation, marketplace…) without deploying.
-// `key` matches FeatureKey in src/config/features.ts.
 model FeatureOverride {
-  key       String    @id
+  key       String   @id
   enabled   Boolean
   note      String?
   updatedBy String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-}
-
-// ════════════════════════════════════════════════════════════════════
-// Phase 13 — Enterprise
-// Hierarchy: Organization (Company) → Team → Workspace → Project
-// ════════════════════════════════════════════════════════════════════
-
-enum OrgRole {
-  owner
-  admin
-  manager
-  member
-}
-
-enum DataResidency {
-  us
-  eu
-  asia
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 /// A company. The top of the enterprise hierarchy. Owns teams + workspaces.
 model Organization {
-  id           String              @id @default(cuid())
-  name         String
-  slug         String              @unique
-  ownerId      String
-  plan         String              @default("enterprise")
-  dataResidency DataResidency      @default(us)
-  branding     Json                @default("{}") // logoUrl, primaryColor, accentColor, customDomain…
-  sso          Json                @default("{}") // providers, enforcedDomains, saml metadata
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
-  owner        User                @relation("OrgOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  members      OrganizationMember[]
-  teams        Team[]
-  workspaces   Workspace[]
-  security     SecurityPolicy?
-  auditLogs    AuditLog[]
+  id            String               @id @default(cuid())
+  name          String
+  slug          String               @unique
+  ownerId       String
+  plan          String               @default("enterprise")
+  dataResidency DataResidency        @default(us)
+  branding      Json                 @default("{}")
+  sso           Json                 @default("{}")
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  auditLogs     AuditLog[]
+  owner         User                 @relation("OrgOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members       OrganizationMember[]
+  security      SecurityPolicy?
+  teams         Team[]
+  workspaces    Workspace[]
 
   @@index([ownerId])
   @@index([plan])
@@ -1399,17 +1221,179 @@ model Team {
 
 /// Org-level security policy (password policy, 2FA, session timeout, device limits).
 model SecurityPolicy {
-  id                  String       @id @default(cuid())
-  organizationId      String       @unique
-  minPasswordLength   Int          @default(8)
-  requireUppercase    Boolean      @default(true)
-  requireNumber       Boolean      @default(true)
-  requireSymbol       Boolean      @default(false)
-  enforce2fa          Boolean      @default(false)
-  sessionTimeoutMinutes Int        @default(60)
-  maxDevices          Int          @default(5)
-  passwordExpiryDays  Int?
-  ipAllowlist         String[]     @default([])
-  updatedAt           DateTime     @updatedAt
-  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id                    String       @id @default(cuid())
+  organizationId        String       @unique
+  minPasswordLength     Int          @default(8)
+  requireUppercase      Boolean      @default(true)
+  requireNumber         Boolean      @default(true)
+  requireSymbol         Boolean      @default(false)
+  enforce2fa            Boolean      @default(false)
+  sessionTimeoutMinutes Int          @default(60)
+  maxDevices            Int          @default(5)
+  passwordExpiryDays    Int?
+  ipAllowlist           String[]     @default([])
+  updatedAt             DateTime     @updatedAt
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+enum FeedbackCategory {
+  bug
+  feature_request
+  general
+  other
+}
+
+enum FeedbackStatus {
+  NEW
+  REVIEWED
+  RESOLVED
+}
+
+enum ListingKind {
+  prompt
+  agent
+  workflow
+  persona
+  template
+}
+
+enum ListingStatus {
+  draft
+  published
+  archived
+}
+
+enum MemoryOwnerType {
+  user
+  workspace
+  team
+  agent
+}
+
+enum Visibility {
+  public
+  private
+  shared
+}
+
+enum WorkspaceModes {
+  chat
+  focus
+  writer
+  split
+  compact
+  minimal
+}
+
+enum MemberRole {
+  member
+  manager
+  admin
+}
+
+enum InviteStatus {
+  pending
+  accepted
+  rejected
+  expired
+}
+
+enum ActivityType {
+  members_invite
+  members_remove
+  project_create
+  project_update
+  project_delete
+  members_status
+  typing
+  chat_message
+  presence_update
+}
+
+enum NotificationType {
+  generation_finished
+  credits_low
+  team_invite
+  knowledge_indexed
+  export_completed
+  export_failed
+  mention
+  comment
+  subscription
+  digest
+  system
+}
+
+enum NotificationChannel {
+  in_app
+  email
+  push
+  realtime
+}
+
+enum TaskStatus {
+  todo
+  in_progress
+  done
+}
+
+enum TaskPriority {
+  low
+  medium
+  high
+}
+
+enum IntegrationService {
+  google_drive
+  notion
+  github
+  slack
+  discord
+  gmail
+  calendar
+}
+
+enum QueueStatus {
+  pending
+  processing
+  succeeded
+  failed
+}
+
+enum OrgRole {
+  owner
+  admin
+  manager
+  member
+}
+
+enum DataResidency {
+  us
+  eu
+  asia
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  OWNER
+}
+
+model UsageEvent {
+  id          String   @id @default(cuid())
+  userId      String
+  operation   String
+  model       String?
+  credits     Int
+  allowed     Boolean
+  reason      String?
+  requestId   String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, createdAt])
+  @@index([createdAt])
 }
