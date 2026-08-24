@@ -26,7 +26,7 @@ import { PRICING_TIERS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api-client";
 import { formatMoney } from "@/lib/currency";
-import { openPaddleCheckout } from "@/lib/paddle-client";
+// Dodo Payments: checkout URL is returned from /api/billing/checkout
 import { useUser } from "@clerk/nextjs";
 import { toast } from "sonner";
 import type { InvoiceItem } from "@/app/api/billing/invoices/route";
@@ -74,15 +74,11 @@ function BillingContent() {
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyError, setHistoryError] = useState(false);
 
-  // Paddle customer ID for Retain (pwCustomer) — fetched once after sign-in
-  const [paddleCustomerId, setPaddleCustomerId] = useState<string | null>(null);
 
   // Auto-start checkout when arriving from the landing pricing page (?plan=pro).
   // This is what "Upgrade to Pro → payments page" resolves to: the billing page
-  // immediately opens Paddle's secure checkout.
   const planParam = searchParams.get("plan");
   // Billing interval: ?interval=year arrives from the landing page's Annual
-  // toggle and selects the annual (20% off) Paddle price in the checkout.
   const intervalParam = searchParams.get("interval") === "year" ? "year" : "month";
   // Local toggle state — synced from the URL after mount to avoid a
   // server/client hydration mismatch on the toggle UI.
@@ -161,11 +157,9 @@ function BillingContent() {
     }
   }, [isSignedIn]);
 
-  // Fetch Paddle customer ID for Retain (pwCustomer)
   useEffect(() => {
     if (!isSignedIn) return;
     api<{ customerId: string }>("/api/billing/customer")
-      .then((data) => setPaddleCustomerId(data.customerId))
       .catch(() => {}); // no customer yet — fine, pwCustomer is optional
   }, [isSignedIn]);
 
@@ -178,8 +172,6 @@ function BillingContent() {
   }, [isSignedIn, fetchUsage, fetchInvoices, fetchHistory]);
 
   // Upgrade / Subscribe Flow — every paid plan (Pro and Enterprise) opens
-  // Paddle's secure hosted checkout. `billingInterval` picks the monthly or
-  // annual (20% off) Paddle price. Checkout always uses the USD price.
   const handleSubscribe = async (
     planName: string,
     billingInterval: "month" | "year" = "month"
@@ -200,28 +192,7 @@ function BillingContent() {
           }),
         }
       );
-      // Preferred: open the Paddle.js hosted checkout overlay in-place.
-      if (transactionId) {
-        try {
-          await openPaddleCheckout(transactionId, {
-            fallbackUrl: url,
-            pwCustomer: paddleCustomerId ? { id: paddleCustomerId } : undefined,
-            onSuccess: () => {
-              toast.success("Subscription activated!");
-              fetchUsage();
-              fetchInvoices();
-              fetchHistory();
-            },
-            onPaymentError: () => {
-              toast.error("Payment failed. Please check your card details and try again.");
-            },
-          });
-          setLoading(null);
-          return;
-        } catch {
-          // Paddle.js failed to load — fall back to navigating to the URL.
-        }
-      }
+      // Redirect to Dodo Payments hosted checkout
       window.location.assign(url);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Checkout failed");
@@ -244,20 +215,20 @@ function BillingContent() {
   };
 
   useEffect(() => {
-    if (!isSignedIn || !planParam || (planParam !== "pro" && planParam !== "enterprise") || autoTriggered.current) return;
+    if (!isSignedIn || !planParam || (planParam !== "pro" && planParam !== "enterprise" && planParam !== "basic") || autoTriggered.current) return;
     const current = usagePlanRef.current?.toLowerCase();
     if (!current) return; // wait for the current plan to load first (ref is null/undefined before /api/usage resolves)
     autoTriggered.current = true;
     // Users already on a paid plan should go to the portal, not a duplicate checkout.
-    if (current === "pro" || current === "enterprise") {
+    if (current === "pro" || current === "enterprise" || current === "basic") {
       return;
     }
-    handleSubscribe(planParam === "enterprise" ? "Enterprise" : "Pro", intervalParam);
+    handleSubscribe(planParam === "enterprise" ? "Advanced" : planParam === "basic" ? "Basic" : "Pro", intervalParam);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSignedIn, planParam, intervalParam]);
 
   const currentPlan = usageData?.plan?.toLowerCase() ?? "free";
-  const isPro = currentPlan === "pro" || currentPlan === "enterprise";
+  const isPaid = currentPlan === "pro" || currentPlan === "enterprise" || currentPlan === "basic";
 
   return (
     <div className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
@@ -298,11 +269,12 @@ function BillingContent() {
           </div>
         </div>
 
-        {/* Pricing Tiers Cards (3-column grid) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Pricing Tiers Cards (4-column grid) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {PRICING_TIERS.map((tier) => {
             const isCurrentPlan =
-              (tier.name === "Starter" && currentPlan === "free") ||
+              (tier.name === "Free" && currentPlan === "free") ||
+              (tier.name === "Basic" && currentPlan === "basic") ||
               (tier.name === "Pro" && currentPlan === "pro") ||
               (tier.name === "Advanced" && currentPlan === "enterprise");
 
@@ -497,7 +469,7 @@ function BillingContent() {
                   <tbody className="divide-y divide-border/30">
                     {invoices.map((inv) => (
                       <tr key={inv.id} className="hover:bg-muted/10">
-                        <td className="py-3 px-3 font-medium">{inv.number}</td>
+                        <td className="py-3 px-3 font-medium">{inv.invoiceNumber}</td>
                         <td className="py-3 px-3 text-muted-foreground">{inv.date}</td>
                         <td className="py-3 px-3">{inv.amount}</td>
                         <td className="py-3 px-3">
@@ -604,8 +576,8 @@ function BillingContent() {
           </CardContent>
         </Card>
 
-        {/* Manage Subscription Card (Pro users) */}
-        {isPro && (
+        {/* Manage Subscription Card (paid users) */}
+        {isPaid && (
           <Card className="border-primary/30 bg-primary/5">
             <CardHeader>
               <CardTitle className="text-xl">Manage Subscription</CardTitle>

@@ -57,9 +57,9 @@ const HTTP_PROVIDERS: HttpProviderConfig[] = [
     authType: "bearer",
   },
   {
-    name: "paddle",
-    envVar: "PADDLE_API_KEY",
-    url: "https://api.paddle.com/2.0/products",
+    name: "dodo",
+    envVar: "DODO_PAYMENTS_API_KEY",
+    url: "https://live.dodopayments.com/products",
     authType: "bearer",
   },
 ];
@@ -242,12 +242,12 @@ class ProviderHealthService {
     }
 
     let url = config.url;
-    // Paddle has separate live/sandbox hosts — hit the one matching the key
+    // Dodo has separate live/test hosts — hit the one matching the key
     // (sandbox keys start with `pdl_sdbx_`), otherwise the probe always fails.
-    if (config.name === "paddle") {
+    if (config.name === "dodo") {
       const isSandbox = apiKey.startsWith("pdl_sdbx_");
-      const base = isSandbox ? "https://sandbox-api.paddle.com" : "https://api.paddle.com";
-      // Paddle Billing API (v1 of the current API) — the legacy `/2.0/` paths 404.
+      const base = isSandbox ? "https://test.dodopayments.com" : "https://live.dodopayments.com";
+      // Dodo Payments API
       url = `${base}/products`;
     }
     const urlObj = new URL(url);
@@ -308,7 +308,7 @@ class ProviderHealthService {
     return this.checkHttpProvider(HTTP_PROVIDERS[3], force);
   }
 
-  async checkPaddle(force = false): Promise<HealthDetail> {
+  async checkDodo(force = false): Promise<HealthDetail> {
     return this.checkHttpProvider(HTTP_PROVIDERS[4], force);
   }
 

@@ -4,9 +4,9 @@ import { prisma } from "@/lib/prisma";
 const api = withApiHandler();
 
 /**
- * GET /api/billing/customer — returns the current user's Paddle customer ID.
- * Used client-side to populate pwCustomer in Paddle.Initialize() for Retain
- * (dunning / payment recovery). Only the Paddle customer ID (ctm_...) is
+ * GET /api/billing/customer — returns the current user's Dodo customer ID.
+ * Used client-side for customer identification
+ * Only the Dodo customer ID is
  * exposed — never internal IDs or emails.
  */
 export const GET = api.GET(async (ctx) => {

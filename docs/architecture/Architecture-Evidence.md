@@ -75,14 +75,14 @@ const built = this.contextBuilder.build({
 
 ---
 
-## 4. Billing Architecture & Paddle Integration
+## 4. Billing Architecture & Dodo Payments Integration
 
 ### Status: Implemented
 
-**Decision**: Billing uses **Paddle** exclusively for subscriptions; token usage is tracked internally.
+**Decision**: Billing uses **Dodo Payments** exclusively for subscriptions; token usage is tracked internally.
 
 **Evidence**:
-- **Paddle Provider**: `src/billing/providers/paddle/PaddleProvider.ts`
+- **Dodo Provider**: `src/billing/providers/dodo/DodoProvider.ts`
 - **Payment Provider Interface**: `src/billing/PaymentProvider.ts`
 - **Billing Service**: `src/billing/BillingService.ts`
 - **Usage Guard**: `src/services/UsageGuard.ts`
@@ -287,7 +287,7 @@ if (options.userId && options.plan) {
 | Routing | Implemented | `src/app/(dashboard)/...` |
 | AI Engine | Implemented | `src/engine/AIEngine.ts` |
 | Provider Router | Partial | `src/engine/ProviderRouter.ts`, `src/lib/capabilities.ts` |
-| Billing | Implemented | `src/billing/providers/paddle/PaddleProvider.ts` |
+| Billing | Implemented | `src/billing/providers/dodo/DodoProvider.ts` |
 | Auth | Implemented | `src/hooks/useAccount.ts`, `src/middleware/auth.ts` |
 | Projects | Implemented | `src/services/ProjectService.ts` |
 | Personas | Implemented | `src/services/PersonaService.ts` |

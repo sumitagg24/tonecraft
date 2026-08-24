@@ -1,6 +1,6 @@
 # Production Readiness Audit — 12
 
-Date: 2026-08-02 · Scope: launch-day readiness for ToneCraft. Assumes the app ships on Next.js 16 (Vercel), Neon Postgres, R2 storage, Clerk auth, Paddle billing, Upstash rate limiting, and AI providers (Groq/Google/OpenRouter). Read-only — nothing modified. Cross-references audits 05 (error handling), 06 (security), 09 (DB), 10 (AI), 11 (testing).
+Date: 2026-08-02 · Scope: launch-day readiness for ToneCraft. Assumes the app ships on Next.js 16 (Vercel), Neon Postgres, R2 storage, Clerk auth, Dodo Payments billing, Upstash rate limiting, and AI providers (Groq/Google/OpenRouter). Read-only — nothing modified. Cross-references audits 05 (error handling), 06 (security), 09 (DB), 10 (AI), 11 (testing).
 
 **TL;DR:** the app is *feature-complete but not launch-complete*. The blocking items are almost all in security (audit 06), error paths (audit 05), and the absence of any error monitoring/CI/tests (audit 11). Below is the launch checklist, priority-ordered.
 
@@ -11,7 +11,7 @@ Date: 2026-08-02 · Scope: launch-day readiness for ToneCraft. Assumes the app s
 | # | Item | Evidence / where | Fix |
 |---|---|---|---|
 | 0.1 | **Fix message IDOR (C1–C3)** — any authenticated user can edit/delete/continue any message by id; `continue` even exfiltrates victim content | `src/app/api/messages/[messageId]/route.ts`, `continue/route.ts`, `MessageRepository.update/updateFeedback` (audit 06 C1–C3) | Scope all message ops by `chat.userId` (ownership predicate); add regression tests |
-| 0.2 | **Unblock Paddle webhook** — `/api/billing/webhook` is behind the auth proxy, so paid subscriptions never activate | `src/proxy.ts` PUBLIC_PATHS vs `billing/webhook/route.ts` (audit 06 H1) | Whitelist `/api/billing/webhook` (Paddle signature check is the auth); verify end-to-end with a test event |
+| 0.2 | **Unblock Dodo webhook** — `/api/billing/webhook` is behind the auth proxy, so paid subscriptions never activate | `src/proxy.ts` PUBLIC_PATHS vs `billing/webhook/route.ts` (audit 06 H1) | Whitelist `/api/billing/webhook` (Dodo signature check is the auth); verify end-to-end with a test event |
 | 0.3 | **Rate-limit every LLM-costly path** — regenerate/continue/tools have no cap; free accounts can burn unlimited provider spend | `checkMessageLimit` only in `chats/[chatId]/messages` (audit 06 H2) | Call `checkMessageLimit` in regenerate/continue/tools; hoist into `AIEngine` if possible; add upload/knowledge caps |
 | 0.4 | **Upload validation** — MIME comes from the client (spoofable), no content sniff, no per-day/storage caps enforced, knowledge upload accepts any file | `src/app/api/upload/route.ts`, `knowledge/route.ts` (audit 06 H3/M5) | Magic-byte sniffing, inert-type allowlist, enforce `maxFilesPerDay`/`maxStorageMB` |
 | 0.5 | **Error-handling P0s** — `createChat` throws with no catch at 8 call sites (unhandled rejections); ~30 handlers have no try/catch (raw HTML 500s); silent `.catch` loaders show empty states on failure | audit 05 P0-1…P0-6, P3-1 | `withApiHandler` wrapper (audit 08-R4) + catch in hooks + error states in loaders |
@@ -49,7 +49,7 @@ Date: 2026-08-02 · Scope: launch-day readiness for ToneCraft. Assumes the app s
 
 - **Secrets**: `.env*` fully gitignored; no tracked secrets; only `NEXT_PUBLIC_*` are APP_URL + Clerk keys (public by design); provider keys server-only.
 - **XSS posture**: markdown renders without `rehype-raw` (raw HTML escaped); `urlTransform` blocks `javascript:`/`data:`; the only `dangerouslySetInnerHTML` is a static theme script. Keep `rehype-raw` **out** (or pair with DOMPurify).
-- **Auth**: Clerk webhook verified via svix; Paddle via SDK unmarshal (once unblocked — 0.2).
+- **Auth**: Clerk webhook verified via svix; Dodo via Standard Webhooks (once unblocked — 0.2).
 - **Env template**: `.env.example` is complete (30+ vars) and the repo is clean (`git ls-files` shows only `.env.example`).
 - **SEO foundation**: metadata, OG, Twitter cards, manifest, fonts via `next/font` (no CLS).
 - **Perf foundation**: `next/font`, lazy landing sections, tokenized design system.
@@ -57,7 +57,7 @@ Date: 2026-08-02 · Scope: launch-day readiness for ToneCraft. Assumes the app s
 
 ## The 7-day launch sprint (if it must ship Friday)
 
-1. **Day 1:** 0.1 IDOR fix + 0.2 Paddle webhook + 0.5 `withApiHandler` (auth+try/catch). Wire `tsc --noEmit` + lint into CI.
+1. **Day 1:** 0.1 IDOR fix + 0.2 Dodo webhook + 0.5 `withApiHandler` (auth+try/catch). Wire `tsc --noEmit` + lint into CI.
 2. **Day 2:** 0.3 rate limits + 0.4 upload validation.
 3. **Day 3:** 0.6 Sentry (wizard) + 0.7 security headers/CSP.
 4. **Day 4:** 0.8 env fail-fast + 0.9 backups (Neon PITR on, R2 lifecycle, restore drill).

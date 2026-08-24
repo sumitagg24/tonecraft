@@ -386,7 +386,7 @@ export default function AnalyticsPage() {
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {data.subscription?.plan === "pro"
                         ? "Unlimited messages and 16K context window active."
-                        : "50 messages per day free limit active."}
+                        : "15 messages per day free limit active."}
                     </p>
                   </div>
                 </div>

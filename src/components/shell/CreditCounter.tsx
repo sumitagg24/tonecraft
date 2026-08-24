@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
 import { useCredits } from "@/hooks/use-credits";
 import { cn } from "@/lib/utils";
-import { openPaddleCheckout } from "@/lib/paddle-client";
 import { toast } from "sonner";
 import { Zap, Infinity, ArrowUpRight, Loader2 } from "lucide-react";
 
@@ -68,18 +67,8 @@ export function CreditCounter({ collapsed = false }: CreditCounterProps) {
       });
       const json = await res.json();
       if (!json.success) throw new Error(json.error?.message ?? "Checkout failed");
-      const { url, transactionId } = json.data ?? json;
-      if (transactionId) {
-        await openPaddleCheckout(transactionId, {
-          fallbackUrl: url,
-          onSuccess: () => {
-            toast.success("Subscription activated!");
-          },
-          onPaymentError: () => {
-            toast.error("Payment failed. Please check your card details and try again.");
-          },
-        });
-      } else if (url) {
+      const { url } = json.data ?? json;
+      if (url) {
         window.location.assign(url);
       }
     } catch (e) {

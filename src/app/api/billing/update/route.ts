@@ -3,8 +3,6 @@ import { billingService } from "@/billing/BillingService";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { auditLogService } from "@/services/AuditLogService";
-import { getPriceId } from "@/lib/billing-prices";
-import { parseMoney } from "@/lib/parse-money";
 import type { ProrationBillingMode } from "@/billing/types";
 
 const api = withApiHandler();
@@ -22,7 +20,7 @@ const VALID_PRORATION_MODES: ProrationBillingMode[] = [
  *
  * Supports both preview (dry run) and commit (actual change).
  *
- * Security model (per paddle-subscription-update skill):
+ * Security model:
  * - Auth checked by withApiHandler before any DB/SDK call
  * - subscriptionId resolved server-side from the authenticated user's record
  * - newPriceId validated against known prices
@@ -53,10 +51,9 @@ export const POST = api.POST(async (ctx, body) => {
 
   // Validate the price ID belongs to our catalog
   const knownPrices = [
-    getPriceId("Pro", "month", "USD"),
-    getPriceId("Pro", "year", "USD"),
-    getPriceId("Enterprise", "month", "USD"),
-    getPriceId("Enterprise", "year", "USD"),
+    process.env.DODO_PRODUCT_BASIC || "",
+    process.env.DODO_PRODUCT_PRO || "",
+    process.env.DODO_PRODUCT_ADVANCED || "",
   ].filter(Boolean);
 
   if (!knownPrices.includes(raw.newPriceId)) {
@@ -112,24 +109,17 @@ export const POST = api.POST(async (ctx, body) => {
       return ok({
         preview: true,
         immediateCharge: preview.immediateTransaction
-          ? parseMoney(
-              preview.immediateTransaction.total,
-              preview.immediateTransaction.currencyCode,
-            )
+          ? "$" + String(Number(0) / 100)
           : null,
         recurringPrice: preview.recurringTransactionDetails
-          ? parseMoney(
-              preview.recurringTransactionDetails.total,
-              preview.recurringTransactionDetails.currencyCode,
-            )
+          ? "$" + String(Number(0) / 100)
           : null,
         nextBilledAt: preview.nextBilledAt,
         currentPlan: user.subscription.plan,
         newPlan:
-          raw.newPriceId === getPriceId("Pro", "month", "USD") ||
-          raw.newPriceId === getPriceId("Pro", "year", "USD")
+          raw.newPriceId === (process.env.DODO_PRODUCT_PRO || "")
             ? "pro"
-            : "enterprise",
+            : "advanced",
         prorationMode,
       });
     }

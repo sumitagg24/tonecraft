@@ -103,7 +103,7 @@ The API is already well-partitioned and supports the proposed IA:
 /api/search                                              → Search (SearchService)
 /api/preferences                                         → Account → Appearance
 /api/usage · /api/usage/stats                            → Account → Usage
-/api/billing/checkout · /portal · /webhook               → Account → Billing (Paddle)
+/api/billing/checkout · /portal · /webhook               → Account → Billing (Dodo Payments)
 /api/user · /api/user/profile · /api/user/onboarding     → Account → Profile
 /api/user/delete                                         → Account → Danger
 /api/tools                                               → Tools capability metadata

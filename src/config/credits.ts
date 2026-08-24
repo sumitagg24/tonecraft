@@ -13,7 +13,7 @@ export interface MonthlyCreditAllowance {
 const TRIAL_CREDITS = 500;
 
 const CREDIT_ALLOWANCES: readonly MonthlyCreditAllowance[] = [
-  { tier: PlanTier.FREE, monthlyCredits: 100, dailyCredits: 20, rolloverMax: 0, trialCredits: TRIAL_CREDITS },
+  { tier: PlanTier.FREE, monthlyCredits: 100, dailyCredits: 15, rolloverMax: 0, trialCredits: TRIAL_CREDITS },
   { tier: PlanTier.PRO, monthlyCredits: 2000, dailyCredits: 200, rolloverMax: 500, trialCredits: TRIAL_CREDITS },
   { tier: PlanTier.ENTERPRISE, monthlyCredits: Infinity, dailyCredits: Infinity, rolloverMax: Infinity, trialCredits: TRIAL_CREDITS },
 ];

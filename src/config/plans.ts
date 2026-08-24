@@ -48,8 +48,8 @@ const FREE_PLAN: PlanConfig = {
   label: "Free",
   priceCents: 0,
   limits: {
-    messagesPerDay: 50,
-    messagesPerHour: 10,
+    messagesPerDay: 15,
+    messagesPerHour: 5,
     maxTokensPerMessage: 2000,
     maxFileSize: 5 * 1024 * 1024,
     maxFilesPerDay: 5,

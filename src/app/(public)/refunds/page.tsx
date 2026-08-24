@@ -96,7 +96,7 @@ export default function RefundsPage() {
           <div className="glass-panel rounded-2xl p-8">
             <h2 className="text-2xl font-bold mb-4">Proration Policy</h2>
             <p className="text-muted-foreground leading-relaxed">
-              When you upgrade or downgrade your plan mid-cycle, Paddle calculates
+              When you upgrade or downgrade your plan mid-cycle, Dodo Payments calculates
               a prorated credit for the unused portion of your current plan and
               applies it to the new plan. No full-price refund is issued for
               downgrades — the adjustment appears on your next invoice.

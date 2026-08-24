@@ -4,7 +4,7 @@ import { publicPageMetadata } from "@/lib/site";
 export const metadata: Metadata = publicPageMetadata({
   title: "ToneCraft System Status — Service Health",
   description:
-    "Real-time status of ToneCraft services: PostgreSQL, Redis, Clerk Auth, Paddle Billing, and AI backends.",
+    "Real-time status of ToneCraft services: PostgreSQL, Redis, Clerk Auth, Dodo Payments, and AI backends.",
   path: "/status",
 });
 

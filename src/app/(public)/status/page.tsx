@@ -24,20 +24,20 @@ const ICONS: Record<string, React.ElementType> = {
   database: Database,
   redis: Server,
   clerk: Activity,
-  paddle: Activity,
+  dodo: Activity,
 };
 
 const LABELS: Record<string, string> = {
   database: "PostgreSQL",
   redis: "Redis (Upstash)",
   clerk: "Clerk Auth",
-  paddle: "Paddle Billing",
+  dodo: "Dodo Payments",
 };
 
 // AI backends are intentionally aggregated — we never disclose which third-party
 // model infrastructure powers the writing engine.
 const AI_PROVIDER_KEYS = ["groq", "gemini", "openrouter"];
-const FALLBACK_NAMES = ["database", "redis", "ai", "clerk", "paddle"];
+const FALLBACK_NAMES = ["database", "redis", "ai", "clerk", "dodo"];
 
 function StatusPill({ status }: { status: ProviderStatus["status"] }) {
   const styles = {

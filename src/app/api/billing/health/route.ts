@@ -1,13 +1,12 @@
 import { ok, withApiHandler } from "@/lib/withApiHandler";
 import { billingService } from "@/billing/BillingService";
 import { logger } from "@/lib/logger";
-import { getPriceId, PLAN_PRICE_MAP } from "@/lib/billing-prices";
 
 const api = withApiHandler();
 
 /**
  * GET /api/billing/health
- * One-click diagnostic for the Paddle setup: env vars present, API key
+ * One-click diagnostic for the Dodo Payments setup: env vars present, API key
  * connectivity, and whether the configured price IDs exist in the account.
  */
 export const GET = api.GET(async () => {
@@ -16,47 +15,35 @@ export const GET = api.GET(async () => {
 
   const envChecks = [
     {
-      key: "PADDLE_API_KEY",
-      ok: Boolean(process.env.PADDLE_API_KEY),
-      description: "Authenticates requests to the Paddle Billing API.",
-      hint: "Paddle dashboard → Developer tools → Authentication",
+      key: "DODO_PAYMENTS_API_KEY",
+      ok: Boolean(process.env.DODO_PAYMENTS_API_KEY),
+      description: "Authenticates requests to the Dodo Payments API.",
+      hint: "Dodo dashboard → Developer → API Keys",
     },
     {
-      key: "PADDLE_PRICE_PRO",
-      ok: Boolean(process.env.PADDLE_PRICE_PRO),
-      description: "The price ID Paddle charges for the Pro plan.",
+      key: "DODO_PRODUCT_PRO",
+      ok: Boolean(process.env.DODO_PRODUCT_PRO),
+      description: "The product ID for the Pro plan.",
       hint: "Catalog → Products → Prices (id starts with pri_)",
     },
     {
-      key: "PADDLE_PRICE_ENTERPRISE",
-      ok: Boolean(process.env.PADDLE_PRICE_ENTERPRISE),
-      description: "The price ID Paddle charges for the Enterprise plan.",
+      key: "DODO_PRODUCT_ADVANCED",
+      ok: Boolean(process.env.DODO_PRODUCT_ADVANCED),
+      description: "The product ID for the Advanced plan.",
       hint: "Catalog → Products → Prices (id starts with pri_)",
     },
     {
-      key: "PADDLE_PRICE_PRO_ANNUAL",
-      ok: Boolean(process.env.PADDLE_PRICE_PRO_ANNUAL),
-      description: "The price ID for the Pro annual plan (used by the Annual toggle — 20% off).",
-      hint: "Catalog → Products → Pro → create a yearly price, then set this env var",
-    },
-    {
-      key: "PADDLE_PRICE_ENTERPRISE_ANNUAL",
-      ok: Boolean(process.env.PADDLE_PRICE_ENTERPRISE_ANNUAL),
-      description: "The price ID for the Enterprise annual plan (used by the Annual toggle — 20% off).",
-      hint: "Catalog → Products → Enterprise → create a yearly price, then set this env var",
-    },
-    {
-      key: "PADDLE_WEBHOOK_SECRET",
-      ok: Boolean(process.env.PADDLE_WEBHOOK_SECRET),
-      description: "Verifies webhook events so subscriptions sync automatically.",
-      hint: "Developer tools → Notifications → destination secret (pdl_ntfset_)",
+      key: "DODO_PAYMENTS_WEBHOOK_KEY",
+      ok: Boolean(process.env.DODO_PAYMENTS_WEBHOOK_KEY),
+      description: "Verifies incoming webhook signatures.",
+      hint: "Dodo dashboard → Developer → Webhooks",
     },
   ];
 
-  const proPriceId = PLAN_PRICE_MAP.Pro;
-  const entPriceId = PLAN_PRICE_MAP.Enterprise;
+  const proPriceId = process.env.DODO_PRODUCT_PRO || "";
+  const entPriceId = process.env.DODO_PRODUCT_ADVANCED || "";
 
-  let paddle: { ok: boolean; error?: string; productCount?: number; description?: string } = {
+  let dodo: { ok: boolean; error?: string; productCount?: number; description?: string } = {
     ok: false,
     error: "Not checked",
   };
@@ -71,17 +58,17 @@ export const GET = api.GET(async () => {
 
   try {
     const products = await billingService.listProducts();
-    paddle = {
+    dodo = {
       ok: true,
       productCount: products.length,
-      description: "Reaches the Paddle Billing API and lists your active products — confirms the key belongs to this environment.",
+      description: "Reaches the Dodo Payments API and lists your active products — confirms the key belongs to this environment.",
     };
   } catch (err) {
-    logger.error("Billing health: Paddle API unreachable", { error: String(err) });
-    paddle = { ok: false, error: err instanceof Error ? err.message : String(err) };
+    logger.error("Billing health: Dodo API unreachable", { error: String(err) });
+    dodo = { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
 
-  if (paddle.ok) {
+  if (dodo.ok) {
     try {
       const all = await billingService.listPrices();
       const priceMap = new Map(all.map((p) => [p.id, p]));
@@ -100,7 +87,7 @@ export const GET = api.GET(async () => {
         },
       ];
       // Annual prices are optional — only checked when configured via env.
-      const proAnnual = getPriceId("Pro", "year");
+      const proAnnual = process.env.DODO_PRODUCT_PRO || "";
       if (proAnnual) {
         priceConfigs.push({
           priceId: proAnnual,
@@ -109,7 +96,7 @@ export const GET = api.GET(async () => {
           description: "The price that appears in the Pro annual checkout (Annual toggle — 20% off).",
         });
       }
-      const entAnnual = getPriceId("Enterprise", "year");
+      const entAnnual = process.env.DODO_PRODUCT_ADVANCED || "";
       if (entAnnual) {
         priceConfigs.push({
           priceId: entAnnual,
@@ -138,14 +125,14 @@ export const GET = api.GET(async () => {
   const allEnvOk = envChecks.every((c) => c.ok);
   const allPricesFound = prices.length > 0 && prices.every((p) => p.found);
   const overall =
-    allEnvOk && paddle.ok && allPricesFound ? "ok" : "action_required";
+    allEnvOk && dodo.ok && allPricesFound ? "ok" : "action_required";
 
   return ok({
     provider: billingService.getProviderName(),
     environment,
     overall,
     env: envChecks,
-    paddle,
+    dodo,
     prices,
   });
 });

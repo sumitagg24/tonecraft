@@ -8,13 +8,13 @@ import { checkMessageLimit } from "@/lib/ratelimit";
 const api = withApiHandler();
 
 /**
- * POST /api/billing/portal — mint a Paddle customer portal session URL.
+ * POST /api/billing/portal — create a customer portal session URL.
  *
  * The portal lets users self-service: view invoices, update payment methods,
  * cancel subscriptions. This route creates a fresh, one-time-use session URL
  * and returns it — never cache or reuse portal URLs.
  *
- * Security model (per paddle-customer-portal skill):
+ * Security model:
  * - Auth checked by withApiHandler before any DB/SDK call
  * - customerId resolved server-side from the authenticated user (never from input)
  * - Returns only the URL, not the raw session object

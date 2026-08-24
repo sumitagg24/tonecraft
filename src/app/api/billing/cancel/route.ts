@@ -9,7 +9,7 @@ const api = withApiHandler();
 /**
  * POST /api/billing/cancel — cancel the authenticated user's subscription.
  *
- * Security model (per paddle-subscription-cancel skill):
+ * Security model:
  * - Auth checked by withApiHandler before any DB/SDK call
  * - subscriptionId resolved server-side from the authenticated user's record
  *   (never from client input) — prevents canceling another user's subscription

@@ -1,11 +1,13 @@
 # Production Cutover Guide
 
-Move ToneCraft from development/sandbox to production across **Clerk**, **Paddle**,
+> **SUPERSEDED**: This document references Paddle which is no longer used. The billing provider has been migrated to Dodo Payments. See `docs/architecture/ADR/002-Paddle-billing.md` for the migration decision.
+
+Move ToneCraft from development/sandbox to production across **Clerk**, **Dodo Payments**,
 **Vercel**, **Cloudflare R2**, and the **LLM providers**.
 
 > **Ground rule:** every key below has a dev/sandbox twin and a production twin.
 > Sandbox keys (`pk_test_`, `sk_test_`, `pdl_sdbx_`, `test_…`) **only** work in
-> sandbox; live keys (`pk_live_`, `sk_live_`, `pdl_live_`) **only** work in live.
+> sandbox; live keys (`pk_live_`, `sk_live_`, `dodo_live_`) **only** work in live.
 > Mixing them causes "contact support" checkout failures, dev-mode badges, and
 > 401s. The app code auto-detects environment from the key prefix, so there is
 > **no code change needed** — only the values must be swapped.
@@ -19,11 +21,11 @@ Move ToneCraft from development/sandbox to production across **Clerk**, **Paddle
 | Clerk | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | `pk_test_…` | `pk_live_…` |
 | Clerk | `CLERK_SECRET_KEY` | `sk_test_…` | `sk_live_…` |
 | Clerk | `CLERK_WEBHOOK_SECRET` | dev/placeholder | `whsec_…` from PROD webhook |
-| Paddle | `PADDLE_API_KEY` | sandbox | **`pdl_live_…` ✅ (you provided; works)** |
-| Paddle | `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` / `PADDLE_CLIENT_TOKEN` | `test_…` | live token (no `test_`) — not yet provided |
-| Paddle | `PADDLE_WEBHOOK_SECRET` | sandbox | **live `pdl_ntfset_…` ✅ (setup script printed it)** |
-| Paddle | `PADDLE_PRICE_*` (4) | sandbox `pri_…` | **live `pri_…` ✅ created (see Step 2)** |
-| Paddle | Onboarding | — | **❌ checkouts not enabled — must finish onboarding (Step 2.1)** |
+| Dodo | `DODO_PAYMENTS_API_KEY` | sandbox | **`dodo_live_…` ✅ (you provided; works)** |
+| Dodo | `NEXT_PUBLIC_DODO_CLIENT_TOKEN` / `DODO_PAYMENTS_API_KEY` | `test_…` | live token (no `test_`) — not yet provided |
+| Dodo | `DODO_PAYMENTS_WEBHOOK_KEY` | sandbox | **live `whsec_…` ✅ (setup script printed it)** |
+| Dodo | `DODO_PRODUCT_*` (4) | sandbox `pri_…` | **live `pri_…` ✅ created (see Step 2)** |
+| Dodo | Onboarding | — | **❌ checkouts not enabled — must finish onboarding (Step 2.1)** |
 | App | `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` | `https://tonecraft-psi.vercel.app` |
 | LLM | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` | placeholders | real keys (or delete — GROQ/OpenRouter/Google already set) |
 
@@ -49,30 +51,30 @@ Everything else (`DATABASE_URL`, `DIRECT_URL`, Upstash, `CRON_SECRET`, Sentry,
    mark the instance as production (removes the dev-mode banner and 100-user cap).
    This is the step that removes **"Development mode"** from `/sign-up`.
 
-## Step 2 — Paddle (vendor.paddle.com)
+## Step 2 — Dodo Payments (dodopayments.com)
 
 > ✅ **Done Aug 10 2026** with the live key: products (`Pro`, `Enterprise`),
 > all 4 prices, and the production webhook are **already created** in the live
 > account by `scripts/setup-live-paddle.js`. You only need to:
 > 1. Paste the env values printed below into Vercel (Step 4).
-> 2. Finish **Paddle onboarding** (see step 2.1) — **this is the current blocker**.
+> 2. Finish **Dodo Payments setup** (see step 2.1) — **this is the current blocker**.
 > 3. Swap the API-key permissions to least-privilege (see step 2.2).
 
 **Live account (provisioned):**
 
 | Env var | Live value |
 |---|---|
-| `PADDLE_PRICE_PRO` | `pri_01kznmkkfqz0xsmqyawck8pmmf` ($6.00/mo) |
-| `PADDLE_PRICE_PRO_ANNUAL` | `pri_01kznmkm31zrfgwnhwykdam8zq` ($57.60/yr) |
-| `PADDLE_PRICE_ENTERPRISE` | `pri_01kznmkms8yc74sw01gbb8scej` ($15.00/mo) |
-| `PADDLE_PRICE_ENTERPRISE_ANNUAL` | `pri_01kznmknc9j33qqms485ytq858` ($144.00/yr) |
-| `PADDLE_WEBHOOK_SECRET` | live `pdl_ntfset_…` (printed by the setup script — copy it into Vercel) |
-| `PADDLE_API_KEY` | `pdl_live_…` (the key you already have) |
+| `DODO_PRODUCT_PRO` | `pri_01kznmkkfqz0xsmqyawck8pmmf` ($6.00/mo) |
+| `DODO_PRODUCT_PRO_ANNUAL` | `pri_01kznmkm31zrfgwnhwykdam8zq` ($57.60/yr) |
+| `DODO_PRODUCT_ENTERPRISE` | `pri_01kznmkms8yc74sw01gbb8scej` ($15.00/mo) |
+| `DODO_PRODUCT_ENTERPRISE_ANNUAL` | `pri_01kznmknc9j33qqms485ytq858` ($144.00/yr) |
+| `DODO_PAYMENTS_WEBHOOK_KEY` | live `whsec_…` (printed by the setup script — copy it into Vercel) |
+| `DODO_PAYMENTS_API_KEY` | `dodo_live_…` (the key you already have) |
 
 To re-run provisioning (idempotent — skips what exists):
-`PADDLE_API_KEY=pdl_live_… node scripts/setup-live-paddle.js`
+`DODO_PAYMENTS_API_KEY=dodo_live_… node scripts/setup-live-paddle.js`
 
-### 2.1 — Finish Paddle onboarding (BLOCKER: checkouts disabled)
+### 2.1 — Finish Dodo Payments setup (BLOCKER: checkouts disabled)
 
 The live account currently returns `transaction_checkout_not_enabled`
 ("Checkouts aren't enabled for this account… haven't fully completed the Paddle
@@ -118,8 +120,8 @@ listed below — switch **OFF** everything not listed (each group:
 ### 2.3 — Client-side token + domain
 
 1. **Developer Tools → Paddle.js** → copy the **live client token** (does **not**
-   start with `test_`) → `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` and
-   `PADDLE_CLIENT_TOKEN`. Add your domain under **Allowed domains**.
+   start with `test_`) → `NEXT_PUBLIC_DODO_CLIENT_TOKEN` and
+   `DODO_PAYMENTS_API_KEY`. Add your domain under **Allowed domains**.
 2. **Checkout → Default payment link** → point at `https://tonecraft-psi.vercel.app`.
 
 > **Note:** file storage (chat attachments via R2/Backblaze B2) was **removed**
@@ -156,7 +158,7 @@ Run the verifier from the project root (values from `.env.local`):
 ```bash
 node scripts/production-cutover.js
 # once a live Paddle key is configured:
-PADDLE_API_KEY=pdl_live_… node scripts/production-cutover.js --verify-paddle
+DODO_PAYMENTS_API_KEY=dodo_live_… node scripts/production-cutover.js --verify-paddle
 ```
 
 Expected: all `✅`, live prices `FOUND … [active]`. Then on the live site:

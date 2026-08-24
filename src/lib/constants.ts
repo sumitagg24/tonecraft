@@ -28,12 +28,21 @@ export const TONES: { id: string; label: string; description: string; color: str
 ];
 
 export const FREE_TIER_LIMITS = {
-  messagesPerDay: 50,
-  messagesPerHour: 10,
+  messagesPerDay: 15,
+  messagesPerHour: 5,
   maxTokensPerMessage: 2000,
   maxFileSize: 5 * 1024 * 1024,
-  maxFilesPerDay: 5,
+  maxFilesPerDay: 3,
   contextWindow: 4096,
+} as const;
+
+export const BASIC_TIER_LIMITS = {
+  messagesPerDay: 100,
+  messagesPerHour: 30,
+  maxTokensPerMessage: 8000,
+  maxFileSize: 10 * 1024 * 1024,
+  maxFilesPerDay: 20,
+  contextWindow: 8192,
 } as const;
 
 export const PRO_TIER_LIMITS = {
@@ -46,7 +55,7 @@ export const PRO_TIER_LIMITS = {
 } as const;
 
 export interface PricingTier {
-  name: "Starter" | "Pro" | "Advanced";
+  name: "Free" | "Basic" | "Pro" | "Advanced";
   description: string;
   features: string[];
   popular: boolean;
@@ -55,33 +64,49 @@ export interface PricingTier {
   cta: string;
 }
 
-const STARTER_MONTH = process.env.NEXT_PUBLIC_PADDLE_PRICE_STARTER;
-const STARTER_YEAR = process.env.NEXT_PUBLIC_PADDLE_PRICE_STARTER_ANNUAL;
+const BASIC_MONTH = process.env.NEXT_PUBLIC_DODO_PRODUCT_BASIC;
+const BASIC_YEAR = process.env.NEXT_PUBLIC_DODO_PRODUCT_BASIC_ANNUAL;
 
-/** Starter is only shown when its price IDs are set in env vars.
- *  This means it appears in sandbox (where the env vars are set)
- *  but not in live (where we didn't create a Starter product). */
-const STARTER_TIER: PricingTier | null =
-  STARTER_MONTH && STARTER_YEAR
+/** Free tier is always shown — no product ID needed. */
+const FREE_TIER: PricingTier = {
+  name: "Free",
+  description: "Try ToneCraft with no commitment",
+  features: [
+    "15 AI generations per day",
+    "All tone presets",
+    "4K context window",
+    "3 file uploads/day",
+    "Community support",
+  ],
+  popular: false,
+  price: 0,
+  cta: "Get Started Free",
+  priceId: { month: "", year: "" },
+};
+
+/** Basic is shown when its price IDs are set in env vars. */
+const BASIC_TIER: PricingTier | null =
+  BASIC_MONTH
     ? {
-        name: "Starter",
-        description: "For individuals getting started",
+        name: "Basic",
+        description: "For casual users who need more",
         features: [
-          "50 AI generations per day",
+          "100 AI generations per day",
           "All tone presets",
-          "4K context window",
-          "5 file uploads/day",
-          "Basic support",
+          "8K context window",
+          "20 file uploads/day",
+          "Email support",
         ],
         popular: false,
-        price: 4,
-        cta: "Get Started",
-        priceId: { month: STARTER_MONTH, year: STARTER_YEAR },
+        price: 2,
+        cta: "Get Basic",
+        priceId: { month: BASIC_MONTH, year: BASIC_YEAR || BASIC_MONTH },
       }
     : null;
 
 export const PRICING_TIERS: PricingTier[] = [
-  ...(STARTER_TIER ? [STARTER_TIER] : []),
+  FREE_TIER,
+  ...(BASIC_TIER ? [BASIC_TIER] : []),
   {
     name: "Pro",
     description: "For power users and professionals",
@@ -94,11 +119,11 @@ export const PRICING_TIERS: PricingTier[] = [
       "Priority support",
     ],
     popular: true,
-    price: 6,
+    price: 5,
     cta: "Upgrade to Pro",
     priceId: {
-      month: process.env.NEXT_PUBLIC_PADDLE_PRICE_PRO ?? "pri_01kznmkkfqz0xsmqyawck8pmmf",
-      year: process.env.NEXT_PUBLIC_PADDLE_PRICE_PRO_ANNUAL ?? "pri_01kznmkm31zrfgwnhwykdam8zq",
+      month: process.env.NEXT_PUBLIC_DODO_PRODUCT_PRO ?? "pdt_0Nm5y3LY8QbNS0RIGUwz0",
+      year: process.env.NEXT_PUBLIC_DODO_PRODUCT_PRO ?? "pdt_0Nm5y3LY8QbNS0RIGUwz0",
     },
   },
   {
@@ -113,11 +138,11 @@ export const PRICING_TIERS: PricingTier[] = [
       "Dedicated support",
     ],
     popular: false,
-    price: 15,
+    price: 12,
     cta: "Get Advanced",
     priceId: {
-      month: process.env.NEXT_PUBLIC_PADDLE_PRICE_ADVANCED ?? "pri_01kznmkms8yc74sw01gbb8scej",
-      year: process.env.NEXT_PUBLIC_PADDLE_PRICE_ADVANCED_ANNUAL ?? "pri_01kznmknc9j33qqms485ytq858",
+      month: process.env.NEXT_PUBLIC_DODO_PRODUCT_ADVANCED ?? "pdt_0Nm60XQmclvBBW1ySbG5A",
+      year: process.env.NEXT_PUBLIC_DODO_PRODUCT_ADVANCED ?? "pdt_0Nm60XQmclvBBW1ySbG5A",
     },
   },
 ];

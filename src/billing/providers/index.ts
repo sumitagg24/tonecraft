@@ -1,24 +1,24 @@
 import type { PaymentProvider } from "../PaymentProvider";
 import { NoopPaymentProvider } from "./noop/NoopPaymentProvider";
-import { PaddleProvider } from "./paddle/PaddleProvider";
+import { DodoProvider } from "./dodo/DodoProvider";
 
-export type ProviderName = "noop" | "paddle";
+export type ProviderName = "noop" | "dodo";
 
 /**
  * Lazily-constructed providers, cached after first use.
  *
- * IMPORTANT: providers must NOT be constructed at module scope — the Paddle
- * client constructor throws when PADDLE_API_KEY is absent, and next build
+ * IMPORTANT: providers must NOT be constructed at module scope — the provider
+ * client constructor throws when DODO_PAYMENTS_API_KEY is absent, and next build
  * collects page data for routes that import this module (e.g.
  * /api/billing/webhook). Deferring construction keeps importing safe while
- * PADDLE_API_KEY remains required the moment a billing method actually runs.
+ * DODO_PAYMENTS_API_KEY remains required the moment a billing method actually runs.
  */
 const providerCache = new Map<string, PaymentProvider>();
 
 function createProvider(name: string): PaymentProvider {
   switch (name) {
-    case "paddle":
-      return new PaddleProvider();
+    case "dodo":
+      return new DodoProvider();
     case "noop":
       return new NoopPaymentProvider();
     default:

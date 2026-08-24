@@ -117,7 +117,7 @@ const GUIDES: GuideSection[] = [
         <GuideHeading>1. Create your account</GuideHeading>
         <p className="text-sm leading-relaxed text-foreground/80">
           Head to the <strong>Sign Up</strong> page and create a free account — no credit card required.
-          Your free plan includes <strong>50 AI generations per day</strong>, the full prompt library,
+          Your free plan includes <strong>15 AI generations per day</strong>, the full prompt library,
           knowledge base, and workspace tools.
         </p>
         <GuideHeading>2. Open the studio</GuideHeading>
@@ -461,7 +461,7 @@ const GUIDES: GuideSection[] = [
         <GuideHeading>Free</GuideHeading>
         <GuideList
           items={[
-            "50 AI generations per day — enough for daily writing.",
+            "15 AI generations per day — enough for daily writing.",
             "Full prompt library, knowledge base (100 MB), and workspace tools.",
             "Personal workspace with projects and notes.",
           ]}
@@ -486,7 +486,7 @@ const GUIDES: GuideSection[] = [
         <p className="text-sm leading-relaxed text-foreground/80">
           Open <strong>Billing</strong> from Settings. You'll see your current plan, live usage, invoices,
           and payment history. Pro subscribers can open the <strong>Customer Portal</strong> to update
-          payment methods or cancel. Upgrade buttons open a secure checkout handled by Paddle; after a
+          payment methods or cancel. Upgrade buttons open a secure checkout handled by Dodo Payments; after a
           successful payment you're upgraded instantly.
         </p>
         <Tip>
@@ -550,9 +550,9 @@ const GUIDES: GuideSection[] = [
         </p>
         <GuideHeading>Why is checkout not opening?</GuideHeading>
         <p className="text-sm leading-relaxed text-foreground/80">
-          Checkout is handled by Paddle. If you see a billing error message, it includes the exact reason
+          Checkout is handled by Dodo Payments. If you see a billing error message, it includes the exact reason
           from the payment provider — usually a sandbox vs. live environment mismatch. Confirm you're
-          testing against the right Paddle environment, then try again.
+          testing against the right Dodo environment, then try again.
         </p>
         <GuideHeading>Where did my conversation go?</GuideHeading>
         <p className="text-sm leading-relaxed text-foreground/80">

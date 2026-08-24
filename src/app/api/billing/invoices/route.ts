@@ -1,15 +1,14 @@
 import { ok, withApiHandler } from "@/lib/withApiHandler";
 import { prisma } from "@/lib/prisma";
-import { Paddle, Environment } from "@paddle/paddle-node-sdk";
-import { parseMoney } from "@/lib/parse-money";
+import { logger } from "@/lib/logger";
 
 export interface InvoiceItem {
   id: string;
-  number: string;
+  invoiceNumber: string;
   date: string;
   amount: string;
   currency: string;
-  status: "paid" | "pending" | "refunded";
+  status: "paid" | "pending" | "failed";
   pdfUrl?: string;
   description: string;
 }
@@ -17,21 +16,17 @@ export interface InvoiceItem {
 const api = withApiHandler();
 
 /**
- * GET /api/billing/invoices — real Paddle invoices for the authenticated
- * user. Uses paddle.transactions.list() with the mandatory customerId
- * filter. Only returns transactions that have been billed/paid (not
- * draft/ready states).
- *
- * @see paddle-billing-history skill for the customerId security guarantee.
+ * GET /api/billing/invoices — invoice history for the authenticated user.
+ * Uses Dodo Payments API to list payments as invoices.
  */
 export const GET = api.GET(async (ctx) => {
-  // 1. Get the user's Paddle customer ID.
   const user = await prisma.user.findUnique({
     where: { id: ctx.user.id },
     select: {
       subscription: {
         select: {
           providerCustomerId: true,
+          plan: true,
         },
       },
     },
@@ -41,65 +36,55 @@ export const GET = api.GET(async (ctx) => {
     return ok({ invoices: [] });
   }
 
-  // 2. Initialize Paddle SDK.
-  const apiKey = process.env.PADDLE_API_KEY;
+  const apiKey = process.env.DODO_PAYMENTS_API_KEY;
   if (!apiKey) {
     return ok({ invoices: [] });
   }
-  const paddle = new Paddle(apiKey, {
-    environment: apiKey.startsWith("pdl_sdbx_")
-      ? Environment.sandbox
-      : Environment.production,
-  });
 
-  // 3. List transactions scoped to this customer — only billed/paid/completed
-  //    statuses produce invoices.
-  const customerId = user.subscription.providerCustomerId;
-  const collection = paddle.transactions.list({
-    customerId: [customerId],
-    status: ["billed", "paid", "completed"],
-    perPage: 20,
-  });
+  const environment =
+    process.env.DODO_PAYMENTS_ENVIRONMENT === "live_mode"
+      ? "live_mode"
+      : "test_mode";
 
-  const transactions = (await collection.next()) ?? [];
+  const baseUrl =
+    environment === "live_mode"
+      ? "https://live.dodopayments.com"
+      : "https://test.dodopayments.com";
 
-  // 4. Map to invoice DTOs. Use invoiceNumber if available, else generate
-  //    from transaction ID. Invoice PDF URL comes from the invoiceId.
-  const invoices: InvoiceItem[] = transactions.map((t) => ({
-    id: t.id,
-    number: t.invoiceNumber ?? `TXN-${t.id.slice(-8).toUpperCase()}`,
-    date: t.billedAt
-      ? new Date(t.billedAt).toISOString().split("T")[0]
-      : t.createdAt
-        ? new Date(t.createdAt).toISOString().split("T")[0]
+  try {
+    const response = await fetch(`${baseUrl}/payments?page_number=1&page_size=20`, {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+    });
+
+    if (!response.ok) {
+      logger.error("Failed to fetch Dodo payments", { status: response.status });
+      return ok({ invoices: [] });
+    }
+
+    const data = await response.json();
+    const payments = data.items || [];
+
+    const invoices: InvoiceItem[] = payments.map((p: Record<string, unknown>) => ({
+      id: (p.payment_id as string) || "",
+      invoiceNumber: `INV-${(p.payment_id as string)?.slice(-8)?.toUpperCase() || "00000000"}`,
+      date: p.created_at
+        ? new Date(p.created_at as string).toISOString().split("T")[0]
         : "—",
-    amount: parseMoney(t.details?.totals?.total ?? "0", t.currencyCode ?? "USD"),
-    currency: t.currencyCode ?? "USD",
-    status: mapInvoiceStatus(t.status),
-    pdfUrl: t.invoiceId
-      ? `${process.env.NEXT_PUBLIC_PADDLE_ENV === "production" ? "https://www.paddle.com" : "https://sandbox.paddle.com"}/invoice/${t.invoiceId}`
-      : undefined,
-    description:
-      typeof t.customData?.plan === "string"
-        ? `ToneCraft ${t.customData.plan.charAt(0).toUpperCase() + t.customData.plan.slice(1)} Subscription`
-        : t.items?.[0]?.price?.name ??
-          "ToneCraft Subscription",
-  } as InvoiceItem));
+      amount: "$" + String(((p.amount as number) || 0) / 100),
+      currency: (p.currency as string) || "USD",
+      status: p.status === "succeeded" ? "paid" : p.status === "failed" ? "failed" : "pending",
+      pdfUrl: p.payment_id ? `${baseUrl}/invoice/${p.payment_id}` : undefined,
+      description:
+        typeof p.plan === "string"
+          ? `ToneCraft ${p.plan.charAt(0).toUpperCase() + p.plan.slice(1)} Subscription`
+          : `ToneCraft ${(user.subscription?.plan || "pro").charAt(0).toUpperCase() + (user.subscription?.plan || "pro").slice(1)} Subscription`,
+    }));
 
-  return ok({ invoices });
-});
-
-function mapInvoiceStatus(
-  status: string,
-): "paid" | "pending" | "refunded" {
-  switch (status) {
-    case "billed":
-    case "paid":
-    case "completed":
-      return "paid";
-    case "canceled":
-      return "refunded";
-    default:
-      return "pending";
+    return ok({ invoices });
+  } catch (err) {
+    logger.error("Failed to fetch invoices", { error: String(err) });
+    return ok({ invoices: [] });
   }
-}
+});
