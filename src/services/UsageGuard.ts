@@ -3,6 +3,7 @@ import { planService } from "@/services/PlanService";
 import { getMonthlyCredits, getDailyCredits, isUnlimited } from "@/config/credits";
 import { type PlanTier } from "@/config/plans";
 import { logger } from "@/lib/logger";
+import { creditAlertService } from "@/services/CreditAlertService";
 
 export interface UsageCheckResult {
   allowed: boolean;
@@ -260,6 +261,9 @@ export class UsageGuard {
 
       // Log event for audit trail (outside transaction — non-critical)
       await this.logEvent(input, "success");
+
+      // Check credit thresholds and send alerts (non-blocking)
+      void creditAlertService.checkAndAlert(input.userId);
     } catch (error) {
       await this.logEvent(input, "failed");
       throw error;
@@ -295,6 +299,8 @@ export class UsageGuard {
       create: { userId },
       update: { creditsUsed: 0, periodStart: new Date() },
     });
+// Credit alert cooldown resets naturally on period rollover
+    // because we filter alert events by periodStart.
   }
 }
 
