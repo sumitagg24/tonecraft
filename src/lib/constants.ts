@@ -55,25 +55,33 @@ export interface PricingTier {
   cta: string;
 }
 
+const STARTER_MONTH = process.env.NEXT_PUBLIC_PADDLE_PRICE_STARTER;
+const STARTER_YEAR = process.env.NEXT_PUBLIC_PADDLE_PRICE_STARTER_ANNUAL;
+
+/** Starter is only shown when its price IDs are set in env vars.
+ *  This means it appears in sandbox (where the env vars are set)
+ *  but not in live (where we didn't create a Starter product). */
+const STARTER_TIER: PricingTier | null =
+  STARTER_MONTH && STARTER_YEAR
+    ? {
+        name: "Starter",
+        description: "For individuals getting started",
+        features: [
+          "50 AI generations per day",
+          "All tone presets",
+          "4K context window",
+          "5 file uploads/day",
+          "Basic support",
+        ],
+        popular: false,
+        price: 4,
+        cta: "Get Started",
+        priceId: { month: STARTER_MONTH, year: STARTER_YEAR },
+      }
+    : null;
+
 export const PRICING_TIERS: PricingTier[] = [
-  {
-    name: "Starter",
-    description: "For individuals getting started",
-    features: [
-      "50 AI generations per day",
-      "All tone presets",
-      "4K context window",
-      "5 file uploads/day",
-      "Basic support",
-    ],
-    popular: false,
-    price: 4,
-    cta: "Get Started",
-    priceId: {
-      month: process.env.NEXT_PUBLIC_PADDLE_PRICE_STARTER ?? "pri_01m0sz1kj8w4ytkyxgk4b6xkq8",
-      year: process.env.NEXT_PUBLIC_PADDLE_PRICE_STARTER_ANNUAL ?? "pri_01m0sz1mabbjk0ne6be39ezbhn",
-    },
-  },
+  ...(STARTER_TIER ? [STARTER_TIER] : []),
   {
     name: "Pro",
     description: "For power users and professionals",

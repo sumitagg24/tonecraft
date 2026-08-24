@@ -516,7 +516,7 @@ function PromptEditor({
       <div className="space-y-3">
           <div>
             <label className="text-xs font-medium text-muted-foreground/70">Title</label>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1 w-full h-9 bg-muted/30 border border-border/40 rounded-lg px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30" placeholder="e.g. Cold outreach email" />
+            <input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1 w-full h-9 bg-muted/30 border border-border/40 rounded-lg px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30" placeholder="e.g. Professional sales email" />
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground/70">Description</label>

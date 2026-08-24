@@ -54,7 +54,7 @@ export const FEATURES_GROUPS: MarketingGroup[] = [
       { label: "Proposal", description: "Persuasive business proposals", href: "/tools?tool=business-proposal", icon: FileBarChart },
       { label: "Resume", description: "Powerful achievement bullets", href: "/tools?tool=resume-bullet", icon: FileText },
       { label: "Cover Letter", description: "Compelling job applications", href: "/tools?tool=cover-letter", icon: Briefcase },
-      { label: "Sales", description: "Cold outreach that converts", href: "/tools?tool=cold-email", icon: Send },
+      { label: "Sales", description: "Professional sales communication", href: "/solutions/sales", icon: Send },
     ],
   },
   {
@@ -111,15 +111,15 @@ export const SOLUTIONS: Solution[] = [
   {
     slug: "sales",
     name: "Sales",
-    tagline: "Outreach that gets replies — at every stage of the pipeline.",
+    tagline: "Professional communication that closes deals — at every stage.",
     description:
-      "ToneCraft helps sales teams write cold emails, follow-ups, and proposals that sound human and get responses, without burning hours on drafts.",
+      "ToneCraft helps sales teams write personalized emails, follow-ups, and proposals that sound human and get responses, without burning hours on drafts.",
     bullets: [
-      { title: "Cold emails that convert", body: "Structured outreach with a single clear ask and a hook worth replying to." },
-      { title: "Effortless follow-ups", body: "Gentle, effective nudges that don't feel spammy or desperate." },
-      { title: "Meeting requests that land", body: "Polished invitations that respect the prospect's time." },
+      { title: "Emails that get replies", body: "Personalized messages with a single clear ask and a hook worth responding to." },
+      { title: "Effortless follow-ups", body: "Professional, effective nudges that keep the conversation moving." },
+      { title: "Proposals that win", body: "Polished proposals and meeting requests that respect the prospect's time." },
     ],
-    tools: ["cold-email", "cold-email-followup", "business-proposal", "meeting-request"],
+    tools: ["professional-rewrite", "cold-email-followup", "business-proposal", "meeting-request"],
     icon: Target,
   },
   {
@@ -276,7 +276,7 @@ export const TOOLS_MENU: { id: string; title: string; description: string }[] = 
   { id: "twitter-thread", title: "Twitter/X Thread", description: "Viral thread generator" },
   { id: "instagram-caption", title: "Instagram Caption", description: "Scroll-stopping captions" },
   { id: "threads-post", title: "Threads Writer", description: "Casual, conversational updates" },
-  { id: "cold-email", title: "Cold Email", description: "Outreach that gets replies" },
+  { id: "cold-email", title: "Professional Email", description: "Personalized emails that get replies" },
   { id: "email-writer", title: "Sales Email", description: "Emails that convert" },
   { id: "summarize", title: "Meeting Summary", description: "Condense to key points" },
   { id: "grammar-fix", title: "Grammar Fix", description: "Correct errors, keep meaning" },

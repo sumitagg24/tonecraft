@@ -6,8 +6,20 @@ import { planService } from "@/services/PlanService";
 import { auditLogService } from "@/services/AuditLogService";
 import { getPriceId } from "@/lib/billing-prices";
 import { claimWebhookEvent, markWebhookProcessed } from "@/lib/webhook-dedupe";
+import { extractClientIp, isIpFromPaddle } from "@/lib/webhook-ip-allowlist";
 
 export async function POST(req: Request) {
+  // ── IP allowlist ─────────────────────────────────────────────────────────
+  // Defense-in-depth: only accept webhooks from Paddle's published IPs.
+  // Signature verification is the primary gate; IP check catches tampered
+  // requests early before crypto verification.
+  const clientIp = extractClientIp(req.headers);
+  const ipAllowed = await isIpFromPaddle(clientIp);
+  if (!ipAllowed) {
+    logger.warn("Webhook rejected: IP not in Paddle allowlist", { ip: clientIp });
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   // ── Pre-validation ───────────────────────────────────────────────────────
   // A request with no signature header or empty body can't be verified.
   const signature = req.headers.get("paddle-signature") ?? "";

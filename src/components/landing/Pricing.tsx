@@ -4,11 +4,10 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Check, ArrowRight, Loader2 } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
-import Link from "next/link";
-import { initializePaddle, type Paddle } from "@paddle/paddle-js";
 import { PRICING_TIERS, type PricingTier } from "@/lib/constants";
 import { usePaddlePrices } from "@/hooks/usePaddlePrices";
-import { openPaddleCheckoutByPrice } from "@/lib/paddle-client";
+import { openPaddleCheckoutByPrice, loadPaddle } from "@/lib/paddle-client";
+import type { Paddle } from "@paddle/paddle-js";
 import { sectionReveal, sectionItem } from "@/styles/motion";
 import { Minus } from "lucide-react";
 import { toast } from "sonner";
@@ -28,17 +27,18 @@ interface Props {
 export function Pricing({ country = "OTHERS" }: Props) {
   const { isSignedIn, user } = useUser();
   const [annual, setAnnual] = useState(false);
-  const [paddle, setPaddle] = useState<Paddle | undefined>();
+  const [paddle, setPaddle] = useState<Awaited<ReturnType<typeof loadPaddle>> | undefined>();
 
   const { prices, loading: pricesLoading } = usePaddlePrices(paddle, country);
 
-  // Initialize Paddle.js for PricePreview only — no checkout settings needed.
+  // Initialize Paddle.js via the shared singleton (used for both PricePreview
+  // and Checkout.open). This ensures the same instance handles both.
   useEffect(() => {
-    if (!process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN) return;
-    initializePaddle({
-      token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN,
-      environment: process.env.NEXT_PUBLIC_PADDLE_ENV as "sandbox" | "production",
-    }).then((p) => p && setPaddle(p));
+    loadPaddle()
+      .then(setPaddle)
+      .catch(() => {
+        // Paddle not configured — prices will show fallback USD values.
+      });
   }, []);
 
   // Open Paddle checkout overlay directly for the selected tier.
@@ -56,13 +56,8 @@ export function Pricing({ country = "OTHERS" }: Props) {
     });
   };
 
-  // Starter goes to sign-up, Pro and Advanced open checkout directly.
-  const ctaHref = (tierName: string): string => {
-    if (tierName === "Starter") {
-      return "/sign-up?redirect_url=%2Fchat";
-    }
-    return "#"; // handled by handleSubscribe
-  };
+  // All tiers open Paddle Checkout directly.
+  const ctaHref = (tierName: string): string => "#";
 
   /**
    * Get the formatted price for a tier. Uses PricePreview data when available,
@@ -175,30 +170,16 @@ export function Pricing({ country = "OTHERS" }: Props) {
                   </ul>
                 </div>
 
-                {tier.name === "Starter" ? (
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="w-full rounded-2xl h-12 text-xs font-medium shadow-none"
-                    asChild
-                  >
-                    <Link href={ctaHref(tier.name)}>
-                      {tier.cta}
-                      <ArrowRight className="w-3.5 h-3.5 ml-2" />
-                    </Link>
-                  </Button>
-                ) : (
-                  <Button
-                    size="lg"
-                    variant={tier.popular ? "default" : "outline"}
-                    className="w-full rounded-2xl h-12 text-xs font-medium shadow-none"
-                    onClick={() => handleSubscribe(tier)}
-                    disabled={!paddle}
-                  >
-                    {tier.cta}
-                    <ArrowRight className="w-3.5 h-3.5 ml-2" />
-                  </Button>
-                )}
+                <Button
+                  size="lg"
+                  variant={tier.popular ? "default" : "outline"}
+                  className="w-full rounded-2xl h-12 text-xs font-medium shadow-none"
+                  onClick={() => handleSubscribe(tier)}
+                  disabled={!paddle}
+                >
+                  {tier.cta}
+                  <ArrowRight className="w-3.5 h-3.5 ml-2" />
+                </Button>
               </motion.div>
             );
           })}

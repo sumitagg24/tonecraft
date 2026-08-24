@@ -302,9 +302,9 @@ function BillingContent() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {PRICING_TIERS.map((tier) => {
             const isCurrentPlan =
-              (tier.name === "Free" && currentPlan === "free") ||
+              (tier.name === "Starter" && currentPlan === "free") ||
               (tier.name === "Pro" && currentPlan === "pro") ||
-              (tier.name === "Enterprise" && currentPlan === "enterprise");
+              (tier.name === "Advanced" && currentPlan === "enterprise");
 
             return (
               <Card

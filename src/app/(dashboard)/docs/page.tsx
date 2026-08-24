@@ -136,7 +136,7 @@ const GUIDES: GuideSection[] = [
         <GuideHeading>4. Explore the tools hub</GuideHeading>
         <p className="text-sm leading-relaxed text-foreground/80">
           Open <strong>Tools</strong> to browse 30+ purpose-built capabilities: LinkedIn posts, Twitter
-          threads, cold emails, blog writing, grammar fixes, resumes, and more. Every tool works like a
+          threads, professional emails, blog writing, grammar fixes, resumes, and more. Every tool works like a
           guided chat — describe what you need and refine the output.
         </p>
         <Tip>
