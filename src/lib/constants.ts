@@ -45,10 +45,19 @@ export const PRO_TIER_LIMITS = {
   contextWindow: 16384,
 } as const;
 
-export const PRICING_TIERS = [
+export interface PricingTier {
+  name: "Starter" | "Pro" | "Advanced";
+  description: string;
+  features: string[];
+  popular: boolean;
+  priceId: { month: string; year: string };
+  price: number; // base USD price for display fallback
+  cta: string;
+}
+
+export const PRICING_TIERS: PricingTier[] = [
   {
-    name: "Free",
-    price: 0,
+    name: "Starter",
     description: "For individuals getting started",
     features: [
       "50 AI generations per day",
@@ -57,12 +66,16 @@ export const PRICING_TIERS = [
       "5 file uploads/day",
       "Basic support",
     ],
-    cta: "Get Started",
     popular: false,
+    price: 4,
+    cta: "Get Started",
+    priceId: {
+      month: process.env.NEXT_PUBLIC_PADDLE_PRICE_STARTER ?? "pri_01m0sz1kj8w4ytkyxgk4b6xkq8",
+      year: process.env.NEXT_PUBLIC_PADDLE_PRICE_STARTER_ANNUAL ?? "pri_01m0sz1mabbjk0ne6be39ezbhn",
+    },
   },
   {
     name: "Pro",
-    price: 6,
     description: "For power users and professionals",
     features: [
       "Unlimited messages",
@@ -72,12 +85,16 @@ export const PRICING_TIERS = [
       "100 file uploads/day",
       "Priority support",
     ],
-    cta: "Upgrade to Pro",
     popular: true,
+    price: 6,
+    cta: "Upgrade to Pro",
+    priceId: {
+      month: process.env.NEXT_PUBLIC_PADDLE_PRICE_PRO ?? "pri_01kzhetdtpjhtkw6k4x64cf1k5",
+      year: process.env.NEXT_PUBLIC_PADDLE_PRICE_PRO_ANNUAL ?? "pri_01kzheteb5y81vfx2swdqn7c8e",
+    },
   },
   {
-    name: "Enterprise",
-    price: 15,
+    name: "Advanced",
     description: "For teams and organizations",
     features: [
       "Everything in Pro",
@@ -87,8 +104,13 @@ export const PRICING_TIERS = [
       "SSO & Admin controls",
       "Dedicated support",
     ],
-    cta: "Get Enterprise",
     popular: false,
+    price: 15,
+    cta: "Get Advanced",
+    priceId: {
+      month: process.env.NEXT_PUBLIC_PADDLE_PRICE_ADVANCED ?? "pri_01kzhete3g386j4t48jja0gf7q",
+      year: process.env.NEXT_PUBLIC_PADDLE_PRICE_ADVANCED_ANNUAL ?? "pri_01kzhetezh6cshkafkkk5h2d41",
+    },
   },
 ];
 

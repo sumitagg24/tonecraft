@@ -18,12 +18,12 @@ export interface PaymentProvider {
   createCheckout(input: CheckoutInput): Promise<CheckoutResult>;
   verifyWebhook(payload: WebhookPayload): Promise<unknown>;
   handleWebhookEvent(event: unknown): Promise<WebhookEvent>;
-  cancelSubscription(subscriptionId: string): Promise<void>;
+  cancelSubscription(subscriptionId: string, effectiveFrom?: "next_billing_period" | "immediately"): Promise<void>;
   getSubscription(subscriptionId: string): Promise<SubscriptionInfo>;
-  upgradeSubscription(input: SubscriptionChangeInput): Promise<void>;
-  downgradeSubscription(input: SubscriptionChangeInput): Promise<void>;
+  updateSubscription(input: SubscriptionChangeInput): Promise<void>;
+  previewSubscriptionUpdate(input: SubscriptionChangeInput): Promise<import("./types").SubscriptionPreviewResult>;
   refundTransaction(input: RefundInput): Promise<void>;
-  createPortalSession(customerId: string): Promise<PortalSessionResult>;
+  createPortalSession(customerId: string, subscriptionIds?: string[]): Promise<PortalSessionResult>;
   listProducts(): Promise<ProductInfo[]>;
   listPrices(): Promise<PriceInfo[]>;
 }

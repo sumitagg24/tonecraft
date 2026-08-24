@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Pricing } from "@/components/landing/Pricing";
 import { publicPageMetadata, SITE_URL } from "@/lib/site";
 
@@ -40,7 +41,12 @@ const jsonLd = {
   ],
 };
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  // Detect country from Vercel's edge headers for localized pricing.
+  // Falls back to "OTHERS" (Paddle infers from IP at checkout time).
+  const h = await headers();
+  const country = h.get("x-vercel-ip-country") ?? "OTHERS";
+
   return (
     <main id="main-content" className="relative noise-bg min-h-screen">
       <div className="pt-20 md:pt-24">
@@ -49,7 +55,7 @@ export default function PricingPage() {
             Pricing that scales with you
           </h1>
         </div>
-        <Pricing />
+        <Pricing country={country} />
       </div>
       <script
         type="application/ld+json"

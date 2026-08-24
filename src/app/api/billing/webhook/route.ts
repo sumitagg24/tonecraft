@@ -8,16 +8,25 @@ import { getPriceId } from "@/lib/billing-prices";
 import { claimWebhookEvent, markWebhookProcessed } from "@/lib/webhook-dedupe";
 
 export async function POST(req: Request) {
+  // ── Pre-validation ───────────────────────────────────────────────────────
+  // A request with no signature header or empty body can't be verified.
+  const signature = req.headers.get("paddle-signature") ?? "";
   const body = await req.text();
 
-  const headers: Record<string, string> = {};
-  req.headers.forEach((value, key) => {
-    headers[key.toLowerCase()] = value;
-  });
+  if (!signature || !body) {
+    return NextResponse.json(
+      { error: "Missing signature or body" },
+      { status: 400 },
+    );
+  }
 
+  // ── Signature verification ───────────────────────────────────────────────
   let event: unknown;
   try {
-    event = await billingService.verifyWebhook({ body, headers });
+    event = await billingService.verifyWebhook({
+      body,
+      headers: { "paddle-signature": signature },
+    });
   } catch (err) {
     logger.warn("Webhook verification failed", { error: String(err) });
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
@@ -46,14 +55,76 @@ export async function POST(req: Request) {
     });
   }
 
+  // ── Process event ────────────────────────────────────────────────────────
   try {
-    await syncSubscription(normalized);
+    await processEvent(normalized);
     if (eventId) await markWebhookProcessed("paddle", eventId);
   } catch (err) {
-    logger.error("Webhook sync failed", { type: normalized.type, error: String(err) });
+    logger.error("Webhook sync failed", {
+      type: normalized.type,
+      error: String(err),
+    });
   }
 
+  // Acknowledge fast. Heavy work (emails, PDFs, third-party APIs) belongs
+  // in a queue — the 5-second timeout is real.
   return NextResponse.json({ received: true });
+}
+
+// ── Event routing ─────────────────────────────────────────────────────────
+
+async function processEvent(normalized: {
+  type: string;
+  data: Record<string, unknown>;
+}) {
+  switch (normalized.type) {
+    case "subscription.created":
+    case "subscription.updated":
+    case "subscription.cancelled":
+    case "subscription.paused":
+    case "subscription.payment_succeeded":
+    case "subscription.payment_failed":
+      return syncSubscription(normalized);
+    case "customer.created":
+    case "customer.updated":
+      return syncCustomer(normalized);
+    default:
+      logger.debug("Ignoring unmapped webhook event", { type: normalized.type });
+      return;
+  }
+}
+
+// ── Customer sync ─────────────────────────────────────────────────────────
+
+async function syncCustomer(normalized: {
+  type: string;
+  data: Record<string, unknown>;
+}) {
+  const data = normalized.data as {
+    id?: string;
+    email?: string;
+    name?: string;
+  };
+  const customerId = data.id;
+  const email = data.email;
+
+  if (!customerId || !email) {
+    logger.warn("Customer event missing id or email", {
+      type: normalized.type,
+      customerId,
+    });
+    return;
+  }
+
+  logger.info("Customer event received", {
+    type: normalized.type,
+    customerId,
+    email,
+  });
+
+  void auditLogService.record("billing.webhook_received", "billing", {
+    metadata: { eventType: normalized.type, customerId },
+  });
 }
 
 // The Paddle SDK normalizes webhook payloads to camelCase (customData,
@@ -69,8 +140,13 @@ interface PaddleData {
   currentBillingPeriod?: { startsAt?: string; endsAt?: string };
   canceled_at?: string | null;
   canceledAt?: string | null;
+  scheduled_change?: { action?: string; effective_at?: string } | null;
+  scheduledChange?: { action?: string; effectiveAt?: string } | null;
   custom_data?: Record<string, string>;
   customData?: Record<string, string>;
+  // Customer event fields
+  email?: string;
+  name?: string;
 }
 
 function extractUserId(data: PaddleData): string | null {
@@ -110,6 +186,20 @@ async function syncSubscription(normalized: { type: string; data: Record<string,
   const customerId = data.customerId ?? data.customer_id ?? null;
   const isCanceled = !!(data.canceledAt ?? data.canceled_at);
 
+  // Track scheduled changes (cancel/pause effective at end of period).
+  // scheduledChange is non-null when a user cancels or pauses mid-period.
+  const scheduledChangeData = data.scheduledChange ?? data.scheduled_change;
+  const scheduledChangeAction = scheduledChangeData?.action;
+  const scheduledChangeEffectiveAt =
+    scheduledChangeData && "effectiveAt" in scheduledChangeData
+      ? scheduledChangeData.effectiveAt
+      : scheduledChangeData && "effective_at" in scheduledChangeData
+        ? scheduledChangeData.effective_at
+        : null;
+  const scheduledChangeAt = scheduledChangeEffectiveAt
+    ? new Date(scheduledChangeEffectiveAt)
+    : null;
+
   switch (normalized.type) {
     case "subscription.created":
     case "subscription.updated": {
@@ -125,7 +215,8 @@ async function syncSubscription(normalized: { type: string; data: Record<string,
           plan: planFromPriceId(priceId),
           currentPeriodStart: periodStart,
           currentPeriodEnd: periodEnd,
-          cancelAtPeriodEnd: isCanceled,
+          cancelAtPeriodEnd: isCanceled || scheduledChangeAction === "cancel",
+          scheduledChange: scheduledChangeAt,
         },
         update: {
           providerSubscriptionId: subscriptionId,
@@ -135,7 +226,8 @@ async function syncSubscription(normalized: { type: string; data: Record<string,
           plan: planFromPriceId(priceId),
           currentPeriodStart: periodStart,
           currentPeriodEnd: periodEnd,
-          cancelAtPeriodEnd: isCanceled,
+          cancelAtPeriodEnd: isCanceled || scheduledChangeAction === "cancel",
+          scheduledChange: scheduledChangeAt,
         },
       });
 
@@ -147,6 +239,8 @@ async function syncSubscription(normalized: { type: string; data: Record<string,
       break;
     }
     case "subscription.cancelled": {
+      // Terminal state: subscription has actually ended. Clear scheduledChange
+      // and revoke paid access. The user's plan reverts to "free".
       await prisma.subscription.upsert({
         where: { userId },
         create: {
@@ -161,6 +255,7 @@ async function syncSubscription(normalized: { type: string; data: Record<string,
           providerSubscriptionId: null,
           providerPriceId: null,
           cancelAtPeriodEnd: false,
+          scheduledChange: null,
         },
       });
 
@@ -188,6 +283,7 @@ async function syncSubscription(normalized: { type: string; data: Record<string,
           currentPeriodStart: periodStart,
           currentPeriodEnd: periodEnd,
           cancelAtPeriodEnd: isCanceled,
+          scheduledChange: scheduledChangeAt,
         },
         update: {
           status: "paused",
@@ -197,6 +293,7 @@ async function syncSubscription(normalized: { type: string; data: Record<string,
           currentPeriodStart: periodStart,
           currentPeriodEnd: periodEnd,
           cancelAtPeriodEnd: isCanceled,
+          scheduledChange: scheduledChangeAt,
         },
       });
 
@@ -208,6 +305,7 @@ async function syncSubscription(normalized: { type: string; data: Record<string,
       break;
     }
     case "subscription.payment_succeeded": {
+      // Payment succeeded — clear any scheduled change and confirm active status.
       await prisma.subscription.upsert({
         where: { userId },
         create: {
@@ -217,6 +315,7 @@ async function syncSubscription(normalized: { type: string; data: Record<string,
         },
         update: {
           status: "active",
+          scheduledChange: null,
         },
       });
 

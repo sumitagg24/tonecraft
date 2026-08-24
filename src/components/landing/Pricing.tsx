@@ -1,14 +1,17 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Check, ArrowRight } from "lucide-react";
+import { Check, ArrowRight, Loader2 } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
-import { PRICING_TIERS } from "@/lib/constants";
-import { formatMoney } from "@/lib/currency";
+import { initializePaddle, type Paddle } from "@paddle/paddle-js";
+import { PRICING_TIERS, type PricingTier } from "@/lib/constants";
+import { usePaddlePrices } from "@/hooks/usePaddlePrices";
+import { openPaddleCheckoutByPrice } from "@/lib/paddle-client";
 import { sectionReveal, sectionItem } from "@/styles/motion";
 import { Minus } from "lucide-react";
+import { toast } from "sonner";
 
 const COMPARISON_ROWS: { feature: string; tiers: (string | boolean)[] }[] = [
   { feature: "AI Messages", tiers: ["50 / day", "Unlimited", "Unlimited"] },
@@ -18,21 +21,65 @@ const COMPARISON_ROWS: { feature: string; tiers: (string | boolean)[] }[] = [
   { feature: "Team Collaboration", tiers: [false, false, true] },
 ];
 
-export function Pricing() {
-  const { isSignedIn } = useUser();
-  const [annual, setAnnual] = useState(false);
+interface Props {
+  country?: string;
+}
 
-  // Pro and Enterprise go straight to secure checkout (auto-started on
-  // /billing?plan=pro|enterprise). The annual toggle adds &interval=year so
-  // the checkout route selects the yearly (20% off) Paddle price. Signed-out
-  // users sign up first, then get redirected straight to checkout.
+export function Pricing({ country = "OTHERS" }: Props) {
+  const { isSignedIn, user } = useUser();
+  const [annual, setAnnual] = useState(false);
+  const [paddle, setPaddle] = useState<Paddle | undefined>();
+
+  const { prices, loading: pricesLoading } = usePaddlePrices(paddle, country);
+
+  // Initialize Paddle.js for PricePreview only — no checkout settings needed.
+  useEffect(() => {
+    if (!process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN) return;
+    initializePaddle({
+      token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN,
+      environment: process.env.NEXT_PUBLIC_PADDLE_ENV as "sandbox" | "production",
+    }).then((p) => p && setPaddle(p));
+  }, []);
+
+  // Open Paddle checkout overlay directly for the selected tier.
+  // No server transaction needed — Paddle handles everything client-side.
+  const handleSubscribe = (tier: PricingTier) => {
+    const priceId = annual ? tier.priceId.year : tier.priceId.month;
+    openPaddleCheckoutByPrice(priceId, {
+      customerEmail: user?.emailAddresses?.[0]?.emailAddress,
+      onSuccess: () => {
+        window.location.href = "/welcome";
+      },
+      onPaymentError: () => {
+        toast.error("Payment failed. Please check your card details and try again.");
+      },
+    });
+  };
+
+  // Starter goes to sign-up, Pro and Advanced open checkout directly.
   const ctaHref = (tierName: string): string => {
-    if (tierName === "Pro" || tierName === "Enterprise") {
-      const interval = annual ? "&interval=year" : "";
-      const href = `/billing?plan=${tierName.toLowerCase()}${interval}`;
-      return isSignedIn ? href : `/sign-up?redirect_url=${encodeURIComponent(href)}`;
+    if (tierName === "Starter") {
+      return "/sign-up?redirect_url=%2Fchat";
     }
-    return "/sign-up?redirect_url=%2Fchat";
+    return "#"; // handled by handleSubscribe
+  };
+
+  /**
+   * Get the formatted price for a tier. Uses PricePreview data when available,
+   * falls back to the hardcoded USD price for the free tier or if Paddle
+   * hasn't loaded yet.
+   */
+  const getFormattedPrice = (tier: (typeof PRICING_TIERS)[number]): string => {
+    if (tier.price === 0) return "$0";
+    if (!tier.priceId?.month) return `$${tier.price}`;
+
+    const priceId = annual ? tier.priceId.year : tier.priceId.month;
+    const formatted = prices[priceId];
+
+    if (formatted) return formatted;
+    // Fallback: show hardcoded USD with 20% annual discount
+    const fallback = annual ? Math.floor(tier.price * 0.8) : tier.price;
+    return `$${fallback}`;
   };
 
   return (
@@ -79,7 +126,7 @@ export function Pricing() {
         {/* Pricing Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
           {PRICING_TIERS.map((tier, idx) => {
-            const price = annual ? Math.floor(tier.price * 0.8) : tier.price;
+            const formattedPrice = getFormattedPrice(tier);
             return (
               <motion.div
                 key={tier.name}
@@ -107,9 +154,15 @@ export function Pricing() {
 
                   <div className="flex items-baseline gap-1 mb-8">
                     <span className="font-display text-5xl font-medium tracking-tight text-foreground">
-                      {formatMoney(price)}
+                      {pricesLoading && tier.price > 0 ? (
+                        <Loader2 className="w-8 h-8 animate-spin inline" />
+                      ) : (
+                        formattedPrice
+                      )}
                     </span>
-                    <span className="text-xs text-muted-foreground font-medium">/month</span>
+                    {tier.price > 0 && (
+                      <span className="text-xs text-muted-foreground font-medium">/month</span>
+                    )}
                   </div>
 
                   <ul className="space-y-3.5 mb-8">
@@ -122,17 +175,30 @@ export function Pricing() {
                   </ul>
                 </div>
 
-                <Button
-                  size="lg"
-                  variant={tier.popular ? "default" : "outline"}
-                  className="w-full rounded-2xl h-12 text-xs font-medium shadow-none"
-                  asChild
-                >
-                  <Link href={ctaHref(tier.name)}>
+                {tier.name === "Starter" ? (
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="w-full rounded-2xl h-12 text-xs font-medium shadow-none"
+                    asChild
+                  >
+                    <Link href={ctaHref(tier.name)}>
+                      {tier.cta}
+                      <ArrowRight className="w-3.5 h-3.5 ml-2" />
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button
+                    size="lg"
+                    variant={tier.popular ? "default" : "outline"}
+                    className="w-full rounded-2xl h-12 text-xs font-medium shadow-none"
+                    onClick={() => handleSubscribe(tier)}
+                    disabled={!paddle}
+                  >
                     {tier.cta}
                     <ArrowRight className="w-3.5 h-3.5 ml-2" />
-                  </Link>
-                </Button>
+                  </Button>
+                )}
               </motion.div>
             );
           })}

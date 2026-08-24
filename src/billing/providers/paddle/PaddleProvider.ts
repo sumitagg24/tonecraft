@@ -112,9 +112,12 @@ export class PaddleProvider implements PaymentProvider {
     return { type: this.mapEventType(rawType), data: (ev.data as Record<string, unknown>) ?? {} };
   }
 
-  async cancelSubscription(subscriptionId: string): Promise<void> {
+  async cancelSubscription(
+    subscriptionId: string,
+    effectiveFrom: "next_billing_period" | "immediately" = "next_billing_period",
+  ): Promise<void> {
     await this.paddle.subscriptions.cancel(subscriptionId, {
-      effectiveFrom: "immediately",
+      effectiveFrom,
     });
   }
 
@@ -136,18 +139,40 @@ export class PaddleProvider implements PaymentProvider {
     };
   }
 
-  async upgradeSubscription(input: SubscriptionChangeInput): Promise<void> {
+  async updateSubscription(input: SubscriptionChangeInput): Promise<void> {
+    // Items array is a FULL REPLACEMENT — pass only the new item.
+    // Do not fetch existing items and concat — that would bill for both plans.
     await this.paddle.subscriptions.update(input.subscriptionId, {
       items: [{ priceId: input.newPriceId, quantity: 1 }],
-      prorationBillingMode: this.mapProrationMode(input.prorationBillingMode),
+      prorationBillingMode: input.prorationBillingMode,
     });
   }
 
-  async downgradeSubscription(input: SubscriptionChangeInput): Promise<void> {
-    await this.paddle.subscriptions.update(input.subscriptionId, {
-      items: [{ priceId: input.newPriceId, quantity: 1 }],
-      prorationBillingMode: this.mapProrationMode(input.prorationBillingMode),
-    });
+  async previewSubscriptionUpdate(
+    input: SubscriptionChangeInput,
+  ): Promise<import("../../types").SubscriptionPreviewResult> {
+    const preview = await this.paddle.subscriptions.previewUpdate(
+      input.subscriptionId,
+      {
+        items: [{ priceId: input.newPriceId, quantity: 1 }],
+        prorationBillingMode: input.prorationBillingMode,
+      },
+    );
+    return {
+      immediateTransaction: preview.immediateTransaction
+        ? {
+            total: preview.immediateTransaction.details.totals.total,
+            currencyCode: preview.immediateTransaction.details.totals.currencyCode,
+          }
+        : null,
+      recurringTransactionDetails: preview.recurringTransactionDetails
+        ? {
+            total: preview.recurringTransactionDetails.totals.total,
+            currencyCode: preview.recurringTransactionDetails.totals.currencyCode,
+          }
+        : null,
+      nextBilledAt: preview.nextBilledAt ?? null,
+    };
   }
 
   async refundTransaction(input: RefundInput): Promise<void> {
@@ -166,12 +191,28 @@ export class PaddleProvider implements PaymentProvider {
     });
   }
 
-  async createPortalSession(customerId: string): Promise<PortalSessionResult> {
+  async createPortalSession(
+    customerId: string,
+    subscriptionIds: string[] = [],
+  ): Promise<PortalSessionResult> {
     const session = await this.paddle.customerPortalSessions.create(
       customerId,
-      []
+      subscriptionIds,
     );
-    return { url: session.urls.general.overview };
+
+    // Extract per-subscription deep links. The portal overview URL is the
+    // main entry point; deep links let the client offer direct cancel/update
+    // flows without sending the user through the portal home first.
+    const deepLinks = (session.urls.subscriptions ?? []).map((sub) => ({
+      subscriptionId: sub.id,
+      cancelUrl: sub.cancelSubscription,
+      updatePaymentMethodUrl: sub.updateSubscriptionPaymentMethod,
+    }));
+
+    return {
+      url: session.urls.general.overview,
+      deepLinks: deepLinks.length > 0 ? deepLinks : undefined,
+    };
   }
 
   async listProducts(): Promise<ProductInfo[]> {

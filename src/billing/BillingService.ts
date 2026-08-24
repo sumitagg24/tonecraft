@@ -48,28 +48,36 @@ export class BillingService {
     return this.provider.handleWebhookEvent(event);
   }
 
-  async cancelSubscription(subscriptionId: string): Promise<void> {
-    return this.provider.cancelSubscription(subscriptionId);
+  async cancelSubscription(
+    subscriptionId: string,
+    effectiveFrom: "next_billing_period" | "immediately" = "next_billing_period",
+  ): Promise<void> {
+    return this.provider.cancelSubscription(subscriptionId, effectiveFrom);
   }
 
   async getSubscription(subscriptionId: string): Promise<SubscriptionInfo> {
     return this.provider.getSubscription(subscriptionId);
   }
 
-  async upgradeSubscription(input: SubscriptionChangeInput): Promise<void> {
-    return this.provider.upgradeSubscription(input);
+  async updateSubscription(input: SubscriptionChangeInput): Promise<void> {
+    return this.provider.updateSubscription(input);
   }
 
-  async downgradeSubscription(input: SubscriptionChangeInput): Promise<void> {
-    return this.provider.downgradeSubscription(input);
+  async previewSubscriptionUpdate(
+    input: SubscriptionChangeInput,
+  ): Promise<import("./types").SubscriptionPreviewResult> {
+    return this.provider.previewSubscriptionUpdate(input);
   }
 
   async refundTransaction(input: RefundInput): Promise<void> {
     return this.provider.refundTransaction(input);
   }
 
-  async createPortalSession(customerId: string): Promise<PortalSessionResult> {
-    return this.provider.createPortalSession(customerId);
+  async createPortalSession(
+    customerId: string,
+    subscriptionIds: string[] = [],
+  ): Promise<PortalSessionResult> {
+    return this.provider.createPortalSession(customerId, subscriptionIds);
   }
 
   async listProducts(): Promise<ProductInfo[]> {
