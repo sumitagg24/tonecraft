@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { SignIn } from "@clerk/nextjs";
 import { Logo } from "@/components/shared/Logo";
 import { safeRedirectUrl } from "@/lib/utils";
+import { ClerkSignIn } from "@/components/auth/ClerkSignIn";
 
 export const metadata: Metadata = {
   title: "Sign in — ToneCraft",
@@ -21,7 +21,7 @@ export default async function SignInPage({
       {/* fallbackRedirectUrl: Clerk also honors the URL's own redirect_url search
           param; the prop makes it explicit so pricing CTAs can bounce users
           straight back to checkout after signing in. */}
-      <SignIn fallbackRedirectUrl={safeRedirectUrl(redirect_url)} />
+      <ClerkSignIn fallbackRedirectUrl={safeRedirectUrl(redirect_url)} />
     </div>
   );
 }

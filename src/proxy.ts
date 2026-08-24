@@ -59,6 +59,12 @@ const SIGN_IN_URL = process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL || "/sign-in";
 export default clerkMiddleware(async (auth, req: NextRequest) => {
   const { pathname } = req.nextUrl;
 
+  // Clerk proxy routes — pass through immediately without auth checks.
+  // Only rate-limit the sign_in/sign_up POSTs (handled below).
+  if (pathname.startsWith("/__clerk/") && !(req.method === "POST" && pathname.startsWith("/__clerk/v1/client/sign_"))) {
+    return NextResponse.next();
+  }
+
   // Rate-limit credential submissions on the authentication surface
   // (defense-in-depth; Clerk enforces per-account password-attempt limits
   // natively). Clerk's sign-in / sign-up attempts are proxied through

@@ -73,6 +73,10 @@ export default function RootLayout({
       className={`${inter.variable} ${jetbrainsMono.variable} ${instrumentSerif.variable}`}
     >
       <head>
+        {/* Pre-connect to Clerk domains so the browser resolves DNS and
+            establishes TLS before the sign-in page needs them. */}
+        <link rel="dns-prefetch" href="https://clerk.tonecraft.site" />
+        <link rel="preconnect" href="https://clerk.tonecraft.site" crossOrigin="anonymous" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
