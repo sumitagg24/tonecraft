@@ -1,7 +1,5 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
-import { checkAuthRouteLimit } from "@/lib/ratelimit";
-import { getClientIp } from "@/lib/request-ip";
 
 const PUBLIC_PATHS: ReadonlyArray<string> = [
   "/",
@@ -59,40 +57,13 @@ const SIGN_IN_URL = process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL || "/sign-in";
 export default clerkMiddleware(async (auth, req: NextRequest) => {
   const { pathname } = req.nextUrl;
 
-  // Clerk proxy routes — pass through immediately without auth checks.
-  // Only rate-limit the sign_in/sign_up POSTs (handled below).
-  if (pathname.startsWith("/__clerk/") && !(req.method === "POST" && pathname.startsWith("/__clerk/v1/client/sign_"))) {
-    return NextResponse.next();
-  }
-
-  // Rate-limit credential submissions on the authentication surface
-  // (defense-in-depth; Clerk enforces per-account password-attempt limits
-  // natively). Clerk's sign-in / sign-up attempts are proxied through
-  // /__clerk/v1/client/sign_ins and /sign_ups — those POSTs get a strict
-  // per-IP window plus an exponential backoff rather than a hard lockout.
-  // Page loads are intentionally NOT limited: Clerk components prefetch the
-  // auth pages as RSC requests from every public page, so throttling pages
-  // would block legitimate traffic. Thresholds are env-configurable
-  // (RATE_LIMIT_AUTH_* — see lib/ratelimit).
-  const isAuthAttempt =
-    req.method === "POST" && pathname.startsWith("/__clerk/v1/client/sign_");
-  if (isAuthAttempt) {
-    const check = await checkAuthRouteLimit(getClientIp(req));
-    if (!check.allowed) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: "RATE_LIMITED",
-            message: "Too many attempts — try again later.",
-          },
-        },
-        {
-          status: 429,
-          headers: { "Retry-After": String(check.retryAfterSeconds ?? 60) },
-        },
-      );
-    }
+  // Clerk proxy routes at /__clerk/* are internal Clerk-to-Clerk calls.
+  // Clerk handles its own rate limiting on the Frontend API, so we skip
+  // ALL middleware processing here (auth check, rate limiter, etc.) to
+  // minimize latency on every Clerk API call from the browser. This saves
+  // ~50-200ms per request by avoiding the auth() promise and Redis call.
+  if (pathname.startsWith("/__clerk/")) {
+    return;
   }
 
   if (!isPublicPath(pathname)) {

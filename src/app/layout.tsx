@@ -77,6 +77,12 @@ export default function RootLayout({
             establishes TLS before the sign-in page needs them. */}
         <link rel="dns-prefetch" href="https://clerk.tonecraft.site" />
         <link rel="preconnect" href="https://clerk.tonecraft.site" crossOrigin="anonymous" />
+        {/* Pre-connect to OAuth providers so clicking "Sign in with Google/GitHub"
+            doesn't wait for DNS+TLS resolution on the redirect. */}
+        <link rel="dns-prefetch" href="https://accounts.google.com" />
+        <link rel="dns-prefetch" href="https://github.com" />
+        <link rel="preconnect" href="https://accounts.google.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://github.com" crossOrigin="anonymous" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
