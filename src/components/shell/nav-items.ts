@@ -1,7 +1,7 @@
 import {
   MessageSquare, Wand2, Library as LibraryIcon, Search, Bell, BarChart3, Settings,
   ShieldCheck, FileText, StickyNote, ListChecks, CalendarDays, Workflow,
-  Building2, Store, BrainCircuit,
+  Building2, Store, BrainCircuit, Coins,
 } from "lucide-react";
 import type { FeatureKey } from "@/config/features";
 
@@ -36,6 +36,7 @@ const admin: NavItem = { id: "admin", label: "Admin", href: "/admin", icon: Shie
 const marketplace: NavItem = { id: "marketplace", label: "Marketplace", href: "/marketplace", icon: Store, shortcut: "", feature: "marketplace" };
 const memory: NavItem = { id: "memory", label: "Memory", href: "/memory", icon: BrainCircuit, shortcut: "", feature: "memory" };
 const organization: NavItem = { id: "organization", label: "Organization", href: "/organization", icon: Building2, shortcut: "" };
+const usage: NavItem = { id: "usage", label: "Usage", href: "/usage", icon: Coins, shortcut: "" };
 const account: NavItem = { id: "account", label: "Account", href: "/settings", icon: Settings, shortcut: "" };
 
 /**
@@ -55,7 +56,7 @@ export const NAV_SECTIONS: NavSection[] = [
   { id: "create", label: "Create", items: [compose, tools, library, search] },
   { id: "workspace", label: "Workspace", items: [docs, notes, tasks, calendar] },
   { id: "automate", label: "Automate", items: [automations] },
-  { id: "manage", label: "Manage", items: [notifications, account] },
+  { id: "manage", label: "Manage", items: [notifications, usage, account] },
   { id: "more", label: "More", items: [analytics, admin, organization, marketplace, memory] },
 ];
 
