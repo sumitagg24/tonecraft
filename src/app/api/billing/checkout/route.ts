@@ -78,6 +78,22 @@ export const POST = api.POST(async (ctx, body) => {
     return ok({ url: checkout.url });
   } catch (err) {
     logger.error("Checkout error", { userId: ctx.user.id, error: String(err) });
+
+    // Surface Dodo-specific errors so the user knows what to do
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("MERCHANT_NOT_LIVE")) {
+      return fail(
+        "SERVICE_UNAVAILABLE",
+        "Payments are not yet enabled. The merchant account is still under review. Please try again later.",
+        503,
+      );
+    }
+    if (msg.includes("INVALID_REQUEST_BODY") || msg.includes("422")) {
+      return fail("BAD_REQUEST", "Invalid product configuration. Please contact support.", 400);
+    }
+    if (msg.includes("Authentication failed") || msg.includes("401")) {
+      return fail("SERVICE_UNAVAILABLE", "Payment service authentication failed. Please contact support.", 503);
+    }
     return fail("SERVICE_UNAVAILABLE", "Billing is temporarily unavailable. Please try again.", 503);
   }
 });
