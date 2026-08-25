@@ -268,10 +268,10 @@ export class ProviderRouter {
           // Fall through to auto-resolution instead of granting access
         } else {
           const fallback = modelRegistry.resolveFallbackChain(planConfig, modelId);
-          return this.toProviderConfigs([entry, ...fallback]);
+          return this.toProviderConfigs([entry, ...fallback], planConfig.limits.maxTokensPerMessage);
         }
       }
-      return this.toProviderConfigs(modelRegistry.resolveFallbackChain(planConfig, modelId));
+      return this.toProviderConfigs(modelRegistry.resolveFallbackChain(planConfig, modelId), planConfig.limits.maxTokensPerMessage);
     }
 
     // Capability-based routing: prefer models matching the task's capability tier
@@ -280,19 +280,23 @@ export class ProviderRouter {
     if (intent) {
       const tier = capabilities.resolveCapabilityTier(intent, capabilityContext);
       const ranked = capabilities.rankByCapability(allModels, tier);
-      return this.toProviderConfigs(ranked);
+      return this.toProviderConfigs(ranked, planConfig.limits.maxTokensPerMessage);
     }
 
-    return this.toProviderConfigs([...allModels]);
+    return this.toProviderConfigs([...allModels], planConfig.limits.maxTokensPerMessage);
   }
 
-  private toProviderConfigs(entries: readonly ModelEntry[]): ProviderConfig[] {
+  private toProviderConfigs(entries: readonly ModelEntry[], planMaxTokens?: number): ProviderConfig[] {
     return entries
-      .map((entry) => this.toProviderConfig(entry))
+      .map((entry) => this.toProviderConfig(entry, planMaxTokens))
       .filter((config) => providerHealthService.isProviderUsable(config.provider));
   }
 
-  private toProviderConfig(entry: ModelEntry): ProviderConfig {
+  private toProviderConfig(entry: ModelEntry, planMaxTokens?: number): ProviderConfig {
+    // Enforce plan-level token cap: never exceed the plan's maxTokensPerMessage
+    const maxTokens = planMaxTokens
+      ? Math.min(entry.maxTokens ?? Infinity, planMaxTokens)
+      : entry.maxTokens;
     return {
       id: entry.id,
       name: entry.displayName,
@@ -300,7 +304,7 @@ export class ProviderRouter {
       model: entry.modelId,
       temperature: entry.temperature,
       isFree: entry.tier === "free",
-      maxTokens: entry.maxTokens,
+      maxTokens,
     };
   }
 

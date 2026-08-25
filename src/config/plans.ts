@@ -53,9 +53,9 @@ const FREE_PLAN: PlanConfig = {
     messagesPerHour: 5,
     maxTokensPerMessage: 2000,
     maxFileSize: 5 * 1024 * 1024,
-    maxFilesPerDay: 5,
+    maxFilesPerDay: 3,
     maxContextWindow: 4096,
-    maxPersonas: 3,
+    maxPersonas: 0,
     maxStorageMB: 100,
   },
   features: {
@@ -82,7 +82,7 @@ const BASIC_PLAN: PlanConfig = {
     maxFileSize: 10 * 1024 * 1024,
     maxFilesPerDay: 20,
     maxContextWindow: 8192,
-    maxPersonas: 5,
+    maxPersonas: 0,
     maxStorageMB: 500,
   },
   features: {
