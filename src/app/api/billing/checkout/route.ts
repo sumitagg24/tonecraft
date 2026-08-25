@@ -65,8 +65,7 @@ export const POST = api.POST(async (ctx, body) => {
 
     return ok({ url: checkout.url });
   } catch (err) {
-    logger.error("Checkout error", { error: String(err) });
-    const detail = err instanceof Error ? err.message : "Checkout could not be created.";
-    return fail("SERVICE_UNAVAILABLE", `Billing unavailable — ${detail}`, 503);
+    logger.error("Checkout error", { userId: ctx.user.id, error: String(err) });
+    return fail("SERVICE_UNAVAILABLE", "Billing is temporarily unavailable. Please try again.", 503);
   }
 });

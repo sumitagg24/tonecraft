@@ -68,10 +68,17 @@ export function Pricing({ country = "OTHERS" }: Props) {
     }
   };
 
-  /** Show the price formatted for the tier */
+  /** Show the price formatted for the tier, with annual discount */
   const getFormattedPrice = (tier: (typeof PRICING_TIERS)[number]): string => {
     if (tier.price === 0) return "$0";
-    return `$${tier.price}`;
+    // Annual = 20% off the monthly price. Display the actual amount shown in checkout.
+    const monthlyPrice = tier.price;
+    if (annual && monthlyPrice > 0) {
+      const annualPrice = Math.round(monthlyPrice * 12 * 0.8);
+      const annualPerMonth = Math.round(annualPrice / 12);
+      return `$${annualPerMonth}`;
+    }
+    return `$${monthlyPrice}`;
   };
 
   return (
@@ -149,7 +156,7 @@ export function Pricing({ country = "OTHERS" }: Props) {
                       {formattedPrice}
                     </span>
                     {tier.price > 0 && (
-                      <span className="text-xs text-muted-foreground font-medium">/month</span>
+                      <span className="text-xs text-muted-foreground font-medium">/{annual ? "month, billed yearly" : "month"}</span>
                     )}
                   </div>
 

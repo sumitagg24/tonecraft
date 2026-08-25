@@ -2,8 +2,7 @@ import { ok, fail, withApiHandler } from "@/lib/withApiHandler";
 import { billingService } from "@/billing/BillingService";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
-import { planService } from "@/services/PlanService";
-import { checkMessageLimit } from "@/lib/ratelimit";
+import { checkEndpointLimit } from "@/lib/ratelimit";
 
 const api = withApiHandler();
 
@@ -18,6 +17,8 @@ const api = withApiHandler();
  * - Auth checked by withApiHandler before any DB/SDK call
  * - customerId resolved server-side from the authenticated user (never from input)
  * - Returns only the URL, not the raw session object
+ * - Rate-limited by endpoint, NOT by message quota (users at their daily AI
+ *   limit must still be able to manage billing)
  *
  * Deep links:
  * - overview: general portal home
@@ -25,9 +26,8 @@ const api = withApiHandler();
  * - subscriptions[].updateSubscriptionPaymentMethod: direct link to payment method UI
  */
 export const POST = api.POST(async (ctx) => {
-  // Throttle portal-session creation (audit 12 P1.8).
-  const plan = await planService.getPlan(ctx.user.id);
-  const limit = await checkMessageLimit(ctx.user.id, plan.tier);
+  // Throttle portal-session creation (5/min per user — separate from AI message limits).
+  const limit = await checkEndpointLimit("portal", ctx.user.id, 5);
   if (!limit.allowed) {
     return fail("RATE_LIMITED", "Too many requests, try again later", 429);
   }

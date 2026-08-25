@@ -52,7 +52,10 @@ export const GET = api.GET(async (ctx) => {
       : "https://test.dodopayments.com";
 
   try {
-    const response = await fetch(`${baseUrl}/payments?page_number=1&page_size=20`, {
+    // Filter by customer_id to only return this user's payments
+    const customerUrl = `${baseUrl}/payments?page_number=1&page_size=20` +
+      `&customer_id=${encodeURIComponent(user.subscription.providerCustomerId)}`;
+    const response = await fetch(customerUrl, {
       headers: {
         Authorization: `Bearer ${apiKey}`,
       },

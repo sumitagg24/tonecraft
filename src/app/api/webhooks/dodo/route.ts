@@ -22,8 +22,16 @@ async function markProcessed(payload: Record<string, unknown>) {
  * Matches the URL configured in the Dodo dashboard:
  * https://tonecraft.site/api/webhooks/dodo
  */
+const webhookKey = process.env.DODO_PAYMENTS_WEBHOOK_KEY;
+if (!webhookKey) {
+  throw new Error(
+    "DODO_PAYMENTS_WEBHOOK_KEY is not configured. " +
+    "Webhook verification cannot proceed without it."
+  );
+}
+
 export const POST = Webhooks({
-  webhookKey: process.env.DODO_PAYMENTS_WEBHOOK_KEY!,
+  webhookKey,
   onPayload: async (payload) => {
     const p = payload as Record<string, unknown>;
     const eventId =

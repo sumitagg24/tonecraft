@@ -98,14 +98,9 @@ export const POST = api.POST(async (ctx, body) => {
   const subscriptionId = user.subscription.providerSubscriptionId;
 
   try {
-    // Preview mode: return the projected charges without applying
+    // Preview mode: return the projected charges without applying.
+    // Dodo doesn't have a preview API — return what we know client-side.
     if (raw.preview) {
-      const preview = await billingService.previewSubscriptionUpdate({
-        subscriptionId,
-        newPriceId: raw.newPriceId,
-        prorationBillingMode: prorationMode,
-      });
-
       // Resolve the new plan name from the price ID
       const newPlanName =
         raw.newPriceId === (process.env.DODO_PRODUCT_BASIC || "")
@@ -116,16 +111,10 @@ export const POST = api.POST(async (ctx, body) => {
 
       return ok({
         preview: true,
-        immediateCharge: preview.immediateTransaction
-          ? "$" + preview.immediateTransaction.total
-          : null,
-        recurringPrice: preview.recurringTransactionDetails
-          ? "$" + preview.recurringTransactionDetails.total
-          : null,
-        nextBilledAt: preview.nextBilledAt,
         currentPlan: user.subscription.plan,
         newPlan: newPlanName,
         prorationMode,
+        message: `Your plan will change to ${newPlanName}. The prorated charge will be handled by Dodo Payments.`,
       });
     }
 

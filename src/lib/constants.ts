@@ -122,8 +122,8 @@ export const PRICING_TIERS: PricingTier[] = [
     price: 5,
     cta: "Upgrade to Pro",
     priceId: {
-      month: process.env.NEXT_PUBLIC_DODO_PRODUCT_PRO ?? "pdt_0Nm5y3LY8QbNS0RIGUwz0",
-      year: process.env.NEXT_PUBLIC_DODO_PRODUCT_PRO ?? "pdt_0Nm5y3LY8QbNS0RIGUwz0",
+      month: process.env.NEXT_PUBLIC_DODO_PRODUCT_PRO ?? "",
+      year: process.env.NEXT_PUBLIC_DODO_PRODUCT_PRO_ANNUAL ?? process.env.NEXT_PUBLIC_DODO_PRODUCT_PRO ?? "",
     },
   },
   {
@@ -141,8 +141,8 @@ export const PRICING_TIERS: PricingTier[] = [
     price: 12,
     cta: "Get Advanced",
     priceId: {
-      month: process.env.NEXT_PUBLIC_DODO_PRODUCT_ADVANCED ?? "pdt_0Nm60XQmclvBBW1ySbG5A",
-      year: process.env.NEXT_PUBLIC_DODO_PRODUCT_ADVANCED ?? "pdt_0Nm60XQmclvBBW1ySbG5A",
+      month: process.env.NEXT_PUBLIC_DODO_PRODUCT_ADVANCED ?? "",
+      year: process.env.NEXT_PUBLIC_DODO_PRODUCT_ADVANCED_ANNUAL ?? process.env.NEXT_PUBLIC_DODO_PRODUCT_ADVANCED ?? "",
     },
   },
 ];
