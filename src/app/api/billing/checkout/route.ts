@@ -17,18 +17,30 @@ const api = withApiHandler();
  */
 export const POST = api.POST(async (ctx, body) => {
   try {
-    const raw = (body ?? {}) as { plan?: string; productId?: string };
+    const raw = (body ?? {}) as {
+      plan?: string;
+      productId?: string;
+      interval?: string;
+    };
 
     // Resolve product ID from plan name or direct ID
     let productId = raw.productId;
     if (!productId) {
       const plan = (raw.plan ?? "").toLowerCase();
+      const interval = raw.interval === "year" ? "year" : "month";
+
       if (plan === "pro") {
-        productId = process.env.DODO_PRODUCT_PRO;
+        productId = interval === "year"
+          ? (process.env.DODO_PRODUCT_PRO_ANNUAL || process.env.DODO_PRODUCT_PRO)
+          : process.env.DODO_PRODUCT_PRO;
       } else if (plan === "basic") {
-        productId = process.env.DODO_PRODUCT_BASIC;
+        productId = interval === "year"
+          ? (process.env.DODO_PRODUCT_BASIC_ANNUAL || process.env.DODO_PRODUCT_BASIC)
+          : process.env.DODO_PRODUCT_BASIC;
       } else if (plan === "enterprise" || plan === "advanced") {
-        productId = process.env.DODO_PRODUCT_ADVANCED;
+        productId = interval === "year"
+          ? (process.env.DODO_PRODUCT_ADVANCED_ANNUAL || process.env.DODO_PRODUCT_ADVANCED)
+          : process.env.DODO_PRODUCT_ADVANCED;
       }
     }
 

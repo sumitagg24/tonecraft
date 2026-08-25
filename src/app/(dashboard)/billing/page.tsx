@@ -134,8 +134,10 @@ function BillingContent() {
     setInvoicesError(false);
     try {
       const res = await api<{ invoices: InvoiceItem[] }>("/api/billing/invoices");
-      setInvoices(res.invoices ?? []);
-    } catch {
+      const items = Array.isArray(res) ? res : res?.invoices;
+      setInvoices(Array.isArray(items) ? items : []);
+    } catch (err) {
+      console.error("[Billing] Invoices fetch error:", err);
       setInvoicesError(true);
     } finally {
       setInvoicesLoading(false);
@@ -149,8 +151,10 @@ function BillingContent() {
     setHistoryError(false);
     try {
       const res = await api<{ history: PaymentHistoryItem[] }>("/api/billing/history");
-      setHistory(res.history ?? []);
-    } catch {
+      const items = Array.isArray(res) ? res : res?.history;
+      setHistory(Array.isArray(items) ? items : []);
+    } catch (err) {
+      console.error("[Billing] History fetch error:", err);
       setHistoryError(true);
     } finally {
       setHistoryLoading(false);
@@ -180,7 +184,7 @@ function BillingContent() {
 
     setLoading(planName);
     try {
-      const { url, transactionId } = await api<{ url: string; transactionId?: string | null }>(
+      const result = await api<{ url?: string; transactionId?: string | null }>(
         "/api/billing/checkout",
         {
           method: "POST",
@@ -188,14 +192,24 @@ function BillingContent() {
           body: JSON.stringify({
             plan: planName,
             interval: billingInterval,
-            currency: "USD",
           }),
         }
       );
+
+      const url = typeof result === "string" ? result : result?.url;
+      if (!url || typeof url !== "string") {
+        console.error("[Billing] Checkout returned no URL:", result);
+        toast.error("Checkout could not be created. Please try again.");
+        setLoading(null);
+        return;
+      }
+
       // Redirect to Dodo Payments hosted checkout
       window.location.assign(url);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Checkout failed");
+      const msg = e instanceof Error ? e.message : "Checkout failed. Please try again.";
+      console.error("[Billing] Checkout error:", e);
+      toast.error(msg);
       setLoading(null);
     }
   };
@@ -204,12 +218,19 @@ function BillingContent() {
   const handlePortal = async () => {
     setLoading("portal");
     try {
-      const { url } = await api<{ url: string }>("/api/billing/portal", {
+      const result = await api<{ url?: string }>("/api/billing/portal", {
         method: "POST",
       });
+      const url = typeof result === "string" ? result : result?.url;
+      if (!url || typeof url !== "string" || url.includes("/billing?portal")) {
+        toast.info("Portal is not available yet. Contact support@tonecraft.site for billing assistance.");
+        setLoading(null);
+        return;
+      }
       window.location.assign(url);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to open portal");
+      const msg = e instanceof Error ? e.message : "Failed to open portal. Contact support@tonecraft.site.";
+      toast.error(msg);
       setLoading(null);
     }
   };
