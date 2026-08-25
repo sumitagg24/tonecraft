@@ -2,6 +2,9 @@ import { ok, fail, notFound, withApiHandler } from "@/lib/withApiHandler";
 import { prisma } from "@/lib/prisma";
 import { promptService } from "@/services/PromptService";
 import { personaSchema, personaUpdateSchema } from "@/lib/validators";
+import { featureFlagService } from "@/services/FeatureFlagService";
+import { planService } from "@/services/PlanService";
+import { isFeatureEnabledForPlan } from "@/config/features";
 
 const api = withApiHandler({});
 
@@ -25,6 +28,12 @@ export const GET_BY_ID = api.GET(async (ctx) => {
 });
 
 export const POST = api.POST(async (ctx, body) => {
+  // Plan gate: custom personas require Pro or Enterprise
+  const plan = await planService.getPlan(ctx.user.id);
+  if (!isFeatureEnabledForPlan("custom-personas", plan.tier)) {
+    return fail("FORBIDDEN", "Custom personas require a Pro or Enterprise plan. Please upgrade.", 403);
+  }
+
   const parsed = personaSchema.safeParse(body);
   if (!parsed.success) {
     return fail("VALIDATION_ERROR", parsed.error.issues.map(i => i.message).join("; "), 400);

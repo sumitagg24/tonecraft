@@ -18,6 +18,8 @@ const cache = new Map<string, CacheEntry>();
 
 function tierFromString(s: string): PlanTier {
   switch (s) {
+    case "basic":
+      return PlanTier.BASIC;
     case "pro":
       return PlanTier.PRO;
     case "enterprise":

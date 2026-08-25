@@ -51,7 +51,7 @@ const FEATURE_FLAGS: readonly FeatureFlag[] = [
     key: "file-uploads",
     label: "File uploads",
     description: "Upload files for AI processing",
-    enabledPlans: [PlanTier.FREE, PlanTier.PRO, PlanTier.ENTERPRISE],
+    enabledPlans: [PlanTier.FREE, PlanTier.BASIC, PlanTier.PRO, PlanTier.ENTERPRISE],
   },
   {
     key: "export-pdf",
@@ -111,7 +111,7 @@ const FEATURE_FLAGS: readonly FeatureFlag[] = [
     key: "automation",
     label: "Automations",
     description: "Recurring AI tasks and scheduled workflows",
-    enabledPlans: [PlanTier.FREE, PlanTier.PRO, PlanTier.ENTERPRISE],
+    enabledPlans: [PlanTier.FREE, PlanTier.BASIC, PlanTier.PRO, PlanTier.ENTERPRISE],
   },
   {
     key: "marketplace",
@@ -123,7 +123,7 @@ const FEATURE_FLAGS: readonly FeatureFlag[] = [
     key: "memory",
     label: "AI Memory",
     description: "Long-term memory, semantic recall, and the AI context builder",
-    enabledPlans: [PlanTier.FREE, PlanTier.PRO, PlanTier.ENTERPRISE],
+    enabledPlans: [PlanTier.FREE, PlanTier.BASIC, PlanTier.PRO, PlanTier.ENTERPRISE],
   },
 ];
 

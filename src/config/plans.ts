@@ -1,5 +1,6 @@
 export enum PlanTier {
   FREE = "free",
+  BASIC = "basic",
   PRO = "pro",
   ENTERPRISE = "enterprise",
 }
@@ -70,6 +71,33 @@ const FREE_PLAN: PlanConfig = {
   modelTier: "free",
 };
 
+const BASIC_PLAN: PlanConfig = {
+  tier: PlanTier.BASIC,
+  label: "Basic",
+  priceCents: 200,
+  limits: {
+    messagesPerDay: 100,
+    messagesPerHour: 30,
+    maxTokensPerMessage: 8000,
+    maxFileSize: 10 * 1024 * 1024,
+    maxFilesPerDay: 20,
+    maxContextWindow: 8192,
+    maxPersonas: 5,
+    maxStorageMB: 500,
+  },
+  features: {
+    streaming: true,
+    customPersonas: false,
+    premiumPrompts: false,
+    fileUploads: true,
+    exportPdf: false,
+    modelSelector: false,
+    teamWorkspace: false,
+    advancedAnalytics: false,
+  },
+  modelTier: "free",
+};
+
 const PRO_PLAN: PlanConfig = {
   tier: PlanTier.PRO,
   label: "Pro",
@@ -126,6 +154,7 @@ const ENTERPRISE_PLAN: PlanConfig = {
 
 const PLAN_CONFIGS: Record<PlanTier, Readonly<PlanConfig>> = {
   [PlanTier.FREE]: Object.freeze(FREE_PLAN),
+  [PlanTier.BASIC]: Object.freeze(BASIC_PLAN),
   [PlanTier.PRO]: Object.freeze(PRO_PLAN),
   [PlanTier.ENTERPRISE]: Object.freeze(ENTERPRISE_PLAN),
 };
