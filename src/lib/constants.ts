@@ -28,7 +28,7 @@ export const TONES: { id: string; label: string; description: string; color: str
 ];
 
 export const FREE_TIER_LIMITS = {
-  messagesPerDay: 15,
+  messagesPerDay: 5,
   messagesPerHour: 5,
   maxTokensPerMessage: 2000,
   maxFileSize: 5 * 1024 * 1024,
@@ -72,7 +72,7 @@ const FREE_TIER: PricingTier = {
   name: "Free",
   description: "Try ToneCraft with no commitment",
   features: [
-    "15 AI generations per day",
+    "5 AI generations per day",
     "All tone presets",
     "4K context window",
     "3 file uploads/day",

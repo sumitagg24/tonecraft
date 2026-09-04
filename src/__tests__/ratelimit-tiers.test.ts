@@ -441,7 +441,7 @@ describe("checkMessageLimit — free/pro plan budgets", () => {
   it("allows free-plan messages within hourly and daily budgets", async () => {
     const check = await ratelimit.checkMessageLimit("user-1", "free");
     expect(check.allowed).toBe(true);
-    expect(check.limit).toBe(15); // freeDaily default
+    expect(check.limit).toBe(5); // freeDaily default
     expect(check.window).toBe("day");
   });
 

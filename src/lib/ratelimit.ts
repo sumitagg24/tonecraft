@@ -53,7 +53,7 @@ export const rateLimitConfig = {
   /** Free-plan AI message budgets (per user). */
   plans: {
     freeHourly: num("RATE_LIMIT_FREE_HOURLY", 5),
-    freeDaily: num("RATE_LIMIT_FREE_DAILY", 15),
+    freeDaily: num("RATE_LIMIT_FREE_DAILY", 5),
     proHourly: num("RATE_LIMIT_PRO_HOURLY", 100),
   },
 } as const;

@@ -10,7 +10,7 @@ import { Minus } from "lucide-react";
 import { toast } from "sonner";
 
 const COMPARISON_ROWS: { feature: string; tiers: (string | boolean)[] }[] = [
-  { feature: "AI Messages", tiers: ["15 / day", "100 / day", "Unlimited", "Unlimited"] },
+  { feature: "AI Messages", tiers: ["5 / day", "100 / day", "Unlimited", "Unlimited"] },
   { feature: "Knowledge Base", tiers: [true, true, true, true] },
   { feature: "Workspace", tiers: [true, true, true, true] },
   { feature: "Priority Models", tiers: [false, false, true, true] },
@@ -44,11 +44,18 @@ export function Pricing({ country = "OTHERS" }: Props) {
     setLoading(tier.name);
 
     try {
+      // Always send the plan name + interval: the server resolves the product
+      // ID from its own env (DODO_PRODUCT_*). The NEXT_PUBLIC_* ID is included
+      // as a hint when it's set, but never relied on — it can be empty for
+      // tiers that aren't exposed as NEXT_PUBLIC_* env vars, which previously
+      // made the Pro/Advanced buttons fail with "missing productId".
       const res = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          productId,
+          plan: tier.name.toLowerCase(),
+          interval: annual ? "year" : "month",
+          productId: productId || undefined,
           email: user?.emailAddresses?.[0]?.emailAddress,
         }),
       });

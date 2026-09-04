@@ -96,6 +96,25 @@ const MODELS: readonly ModelEntry[] = [
     temperature: 0.7,
     maxTokens: 8192,
   },
+  // Free-tier OpenRouter fallback. The Groq/Google keys are the usual first
+  // choices for free users, but when those providers are unhealthy (or their
+  // keys are rejected) this gives the free tier a working path so generation
+  // never dies with a bare 500. Pinned to a genuinely free (`:free`) OpenRouter
+  // model; costs nothing to the merchant.
+  {
+    id: "openrouter-glm-free",
+    provider: "openrouter",
+    displayName: "GLM 5.2 (free)",
+    modelId: "z-ai/glm-5.2:free",
+    tier: "free",
+    creditCost: 1,
+    contextWindow: 262144,
+    status: "available",
+    capabilities: { streaming: true, vision: false, tools: false, json: true, reasoning: true, longContext: true },
+    priority: 3,
+    temperature: 0.7,
+    maxTokens: 8192,
+  },
   {
     id: "openrouter-claude",
     provider: "openrouter",

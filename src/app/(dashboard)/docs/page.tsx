@@ -117,7 +117,7 @@ const GUIDES: GuideSection[] = [
         <GuideHeading>1. Create your account</GuideHeading>
         <p className="text-sm leading-relaxed text-foreground/80">
           Head to the <strong>Sign Up</strong> page and create a free account — no credit card required.
-          Your free plan includes <strong>15 AI generations per day</strong>, the full prompt library,
+          Your free plan includes <strong>5 AI generations per day</strong>, the full prompt library,
           knowledge base, and workspace tools.
         </p>
         <GuideHeading>2. Open the studio</GuideHeading>
@@ -461,7 +461,7 @@ const GUIDES: GuideSection[] = [
         <GuideHeading>Free</GuideHeading>
         <GuideList
           items={[
-            "15 AI generations per day — enough for daily writing.",
+            "5 AI generations per day — plenty for everyday writing.",
             "Full prompt library, knowledge base (100 MB), and workspace tools.",
             "Personal workspace with projects and notes.",
           ]}
@@ -544,7 +544,7 @@ const GUIDES: GuideSection[] = [
         </p>
         <GuideHeading>Why did my generation stop?</GuideHeading>
         <p className="text-sm leading-relaxed text-foreground/80">
-          Free accounts get 30 generations per day. When the budget is spent, generation pauses with a
+          Free accounts get 5 generations per day. When the budget is spent, generation pauses with a
           clear notice. Check your usage on the <strong>Billing</strong> page; it resets each day, or
           upgrade to Pro for unlimited.
         </p>

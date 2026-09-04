@@ -29,7 +29,7 @@ const SECTIONS = [
     icon: CreditCard,
     title: "Billing",
     body: [
-      "The Free tier includes 15 AI generations/day with all tone presets.",
+      "The Free tier includes 5 AI generations/day with all tone presets.",
       "Pro ($6/mo) unlocks unlimited messages, custom personas, and a 16K context window.",
       "Manage your plan, invoices, and payment method in Settings → Billing.",
     ],

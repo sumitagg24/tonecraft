@@ -6,7 +6,7 @@ import { publicPageMetadata, SITE_URL } from "@/lib/site";
 export const metadata: Metadata = publicPageMetadata({
   title: "Pricing — ToneCraft AI Writing Plans",
   description:
-    "Start free with 15 AI generations a day. Upgrade to Pro for unlimited rewrites, custom personas, and a 16K context window — cancel anytime.",
+    "Start free with 5 AI generations a day. Upgrade to Pro for unlimited rewrites, custom personas, and a 16K context window — cancel anytime.",
   path: "/pricing",
 });
 
@@ -25,7 +25,7 @@ const jsonLd = {
       price: "0",
       priceCurrency: "USD",
       name: "ToneCraft Free",
-      description: "15 AI generations per day, all tone presets",
+      description: "5 AI generations per day, all tone presets",
       url: `${SITE_URL}/pricing`,
       eligibleRegion: { "@type": "Country", name: "Worldwide" },
     },

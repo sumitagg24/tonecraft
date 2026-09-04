@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>ToneCraft — Settings</title>
+  <link rel="stylesheet" href="popup.css" />
+  <style>
+    body { min-width: 460px; }
+    .app { width: 460px; }
+    .hint { font-size: 11px; color: var(--muted); line-height: 1.5; margin-top: 4px; }
+    .status { font-size: 12px; margin-top: 8px; min-height: 16px; }
+    .status.ok { color: #34d399; }
+    .status.err { color: #f87171; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="brand">
+      <img src="icons/icon48.png" alt="" width="22" height="22" />
+      <div>
+        <h1>ToneCraft</h1>
+        <p>Settings</p>
+      </div>
+    </header>
+
+    <label class="field-label" for="base-url">ToneCraft site URL</label>
+    <input id="base-url" type="url" placeholder="https://tonecraft.site" />
+    <p class="hint">
+      Where deep links open the tools page. Change it only if you self-host
+      ToneCraft or use a different deployed domain (no trailing slash).
+    </p>
+
+    <button id="save" class="primary">Save</button>
+    <p id="status" class="status"></p>
+  </div>
+  <script src="options.js"></script>
+</body>
+</html>

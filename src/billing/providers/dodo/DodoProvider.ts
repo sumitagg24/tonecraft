@@ -59,8 +59,13 @@ export class DodoProvider implements PaymentProvider {
   }
 
   async createCheckout(input: CheckoutInput): Promise<CheckoutResult> {
+    // DODO_PAYMENTS_RETURN_URL is the allow-listed domain Dodo redirects back
+    // to after payment — prefer it over NEXT_PUBLIC_APP_URL (which can lag
+    // behind the live domain, e.g. localhost during development).
     const returnUrl =
-      input.successUrl || `${process.env.NEXT_PUBLIC_APP_URL || ""}/welcome`;
+      input.successUrl ||
+      process.env.DODO_PAYMENTS_RETURN_URL ||
+      `${process.env.NEXT_PUBLIC_APP_URL || ""}/welcome`;
 
     const session = await this.client.checkoutSessions.create({
       product_cart: [{ product_id: input.priceId, quantity: 1 }],

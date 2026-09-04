@@ -4,9 +4,59 @@ import { logger } from "@/lib/logger";
 import { planService } from "@/services/PlanService";
 import { auditLogService } from "@/services/AuditLogService";
 import { claimWebhookEvent, markWebhookProcessed } from "@/lib/webhook-dedupe";
-// Helper to mark webhook as processed after successful handling
-async function markProcessed(payload: Record<string, unknown>) {
-  const eventId = (payload.payment_id as string) || (payload.subscription_id as string) || "";
+
+/**
+ * POST /api/webhooks/dodo — receive Dodo Payments webhook events.
+ * Matches the URL configured in the Dodo dashboard:
+ * https://tonecraft.site/api/webhooks/dodo
+ *
+ * Dodo webhook payloads are wrapped in an envelope:
+ *   { type: "subscription.active", business_id, timestamp, data: <Subscription|Payment> }
+ * All resource fields (subscription_id, customer, product_id, metadata…) live
+ * under `data` — NOT at the top level. Handlers below therefore normalize with
+ * `unwrap()` before reading fields. This was the root cause of subscriptions
+ * never syncing after a successful payment (fields read as undefined).
+ */
+
+type Raw = Record<string, unknown>;
+
+/** Return the inner resource (`data`) when present, else the payload itself. */
+function unwrap(payload: Raw): Raw {
+  const d = payload.data;
+  if (d && typeof d === "object" && !Array.isArray(d)) return d as Raw;
+  return payload;
+}
+
+function asRecord(v: unknown): Raw | null {
+  return v && typeof v === "object" && !Array.isArray(v) ? (v as Raw) : null;
+}
+
+function asString(v: unknown): string {
+  return typeof v === "string" ? v : "";
+}
+
+function firstRecord(...candidates: unknown[]): Raw | null {
+  for (const c of candidates) {
+    const r = asRecord(c);
+    if (r) return r;
+  }
+  return null;
+}
+
+/** Event identifier used for webhook replay dedupe + processed marking. */
+function eventIdOf(payload: Raw): string {
+  const sub = unwrap(payload);
+  return (
+    asString(sub.subscription_id) ||
+    asString(sub.payment_id) ||
+    asString(payload.subscription_id) ||
+    asString(payload.payment_id) ||
+    ""
+  );
+}
+
+async function markProcessed(payload: Raw) {
+  const eventId = eventIdOf(payload);
   if (eventId) {
     try {
       await markWebhookProcessed("dodo", eventId);
@@ -16,12 +66,6 @@ async function markProcessed(payload: Record<string, unknown>) {
   }
 }
 
-
-/**
- * POST /api/webhooks/dodo — receive Dodo Payments webhook events.
- * Matches the URL configured in the Dodo dashboard:
- * https://tonecraft.site/api/webhooks/dodo
- */
 const webhookKey = process.env.DODO_PAYMENTS_WEBHOOK_KEY;
 if (!webhookKey) {
   throw new Error(
@@ -33,12 +77,11 @@ if (!webhookKey) {
 export const POST = Webhooks({
   webhookKey,
   onPayload: async (payload) => {
-    const p = payload as Record<string, unknown>;
-    const eventId =
-      (p.payment_id as string) || (p.subscription_id as string) || "";
+    const p = payload as Raw;
+    const eventId = eventIdOf(p);
 
     const claim = eventId
-      ? await claimWebhookEvent("dodo", eventId, p.type as string)
+      ? await claimWebhookEvent("dodo", eventId, asString(p.type))
       : "new";
     if (claim === "duplicate") {
       logger.info("Dodo webhook replay skipped", { eventId, type: p.type });
@@ -55,15 +98,15 @@ export const POST = Webhooks({
   },
 
   onPaymentSucceeded: async (payload) => {
-    const p = payload as Record<string, unknown>;
-    logger.info("Dodo payment succeeded", { paymentId: p.payment_id });
+    const p = payload as Raw;
+    logger.info("Dodo payment succeeded", { paymentId: eventIdOf(p) });
     await syncSubscriptionFromDodo(p, "active");
     await markProcessed(p);
   },
 
   onPaymentFailed: async (payload) => {
-    const p = payload as Record<string, unknown>;
-    logger.warn("Dodo payment failed", { paymentId: p.payment_id });
+    const p = payload as Raw;
+    logger.warn("Dodo payment failed", { paymentId: eventIdOf(p) });
     // Sync subscription to past_due so the access gate shows the right state.
     // Also mark processed — without this, failed-payment events would be
     // retried indefinitely, flooding the logs.
@@ -72,56 +115,61 @@ export const POST = Webhooks({
   },
 
   onSubscriptionActive: async (payload) => {
-    const p = payload as Record<string, unknown>;
+    const p = payload as Raw;
     await syncSubscriptionFromDodo(p, "active");
     await markProcessed(p);
   },
 
   onSubscriptionCancelled: async (payload) => {
-    const p = payload as Record<string, unknown>;
+    const p = payload as Raw;
     await syncSubscriptionFromDodo(p, "canceled");
     await markProcessed(p);
   },
 
   onSubscriptionOnHold: async (payload) => {
-    const p = payload as Record<string, unknown>;
+    const p = payload as Raw;
     await syncSubscriptionFromDodo(p, "past_due");
     await markProcessed(p);
   },
 
+  onSubscriptionPaused: async (payload) => {
+    const p = payload as Raw;
+    await syncSubscriptionFromDodo(p, "paused");
+    await markProcessed(p);
+  },
+
+  onSubscriptionUnpaused: async (payload) => {
+    const p = payload as Raw;
+    await syncSubscriptionFromDodo(p, "active");
+    await markProcessed(p);
+  },
+
   onSubscriptionRenewed: async (payload) => {
-    const p = payload as Record<string, unknown>;
+    const p = payload as Raw;
     await syncSubscriptionFromDodo(p, "active");
     await markProcessed(p);
   },
 
   onSubscriptionPlanChanged: async (payload) => {
-    const p = payload as Record<string, unknown>;
+    const p = payload as Raw;
     await syncSubscriptionFromDodo(p, "active");
     await markProcessed(p);
   },
 
   onSubscriptionFailed: async (payload) => {
-    const p = payload as Record<string, unknown>;
+    const p = payload as Raw;
     await syncSubscriptionFromDodo(p, "past_due");
     await markProcessed(p);
   },
 
   onSubscriptionExpired: async (payload) => {
-    const p = payload as Record<string, unknown>;
+    const p = payload as Raw;
     await syncSubscriptionFromDodo(p, "canceled");
     await markProcessed(p);
   },
 });
 
 // ── Subscription sync ────────────────────────────────────────────────────
-
-function extractUserId(
-  metadata: Record<string, unknown> | undefined,
-): string | null {
-  if (!metadata) return null;
-  return (metadata.userId as string) || (metadata.user_id as string) || null;
-}
 
 function planFromProductId(productId: string): string {
   const BASIC = process.env.DODO_PRODUCT_BASIC || "";
@@ -130,28 +178,82 @@ function planFromProductId(productId: string): string {
   if (productId === PRO) return "pro";
   if (productId === BASIC) return "basic";
   if (productId === ADVANCED) return "enterprise";
-  return "free";
+  return "";
+}
+
+function toDate(v: unknown): Date | null {
+  if (typeof v !== "string" || !v) return null;
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? null : d;
 }
 
 async function syncSubscriptionFromDodo(
-  payload: Record<string, unknown>,
+  payload: Raw,
   status: string,
 ) {
-  const metadata = payload.metadata as Record<string, unknown> | undefined;
-  const userId = extractUserId(metadata);
+  // Dodo wraps the resource under `data` — normalize once, then read fields.
+  const sub = unwrap(payload);
+  const customer = firstRecord(sub.customer);
+  const metadata = firstRecord(payload.metadata, sub.metadata, sub.custom_data, customer?.metadata);
+
+  let userId =
+    asString(metadata?.userId) || asString(metadata?.user_id) || "";
+  const email =
+    asString(customer?.email) || asString(sub.email) || asString(payload.email);
+
+  if (!userId && email) {
+    // Fallback: checkout always carries the user's email; some events (e.g.
+    // renewal payments) may not echo the session metadata back, so resolve
+    // the account by email instead of dropping the event.
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+    userId = user?.id ?? "";
+  }
+
   if (!userId) {
-    logger.warn("No userId in Dodo webhook", {
-      type: payload.type,
-      subscriptionId: payload.subscription_id,
+    logger.warn("No userId or matching email in Dodo webhook", {
+      type: asString(payload.type),
+      eventId: eventIdOf(payload),
+      hasEmail: Boolean(email),
     });
     return;
   }
 
-  const subscriptionId = (payload.subscription_id as string) || "";
-  const customerId = (payload.customer_id as string) || "";
-  const product = payload.product as Record<string, unknown> | undefined;
-  const productId = (product?.product_id as string) || "";
-  const plan = planFromProductId(productId);
+  const subscriptionId =
+    asString(sub.subscription_id) || asString(payload.subscription_id) || "";
+  const customerId =
+    asString(customer?.customer_id) ||
+    asString(sub.customer_id) ||
+    asString(payload.customer_id) ||
+    "";
+  // Subscription resources carry a flat `product_id` (Dodo's product = our
+  // plan). Payment events don't include it — keep the existing plan then.
+  const productId =
+    asString(sub.product_id) ||
+    asString(firstRecord(sub.product)?.product_id) ||
+    "";
+
+  const existing = await prisma.subscription.findUnique({
+    where: { userId },
+    select: { plan: true },
+  });
+  const resolvedPlan = productId
+    ? planFromProductId(productId) || existing?.plan || "free"
+    : existing?.plan || "free";
+
+  const cancelAtPeriodEnd =
+    status === "canceled" ||
+    (typeof sub.cancel_at_next_billing_date === "boolean"
+      ? (sub.cancel_at_next_billing_date as boolean)
+      : false);
+
+  // Billing-period windows keep UsageGuard's credit reset in sync with the
+  // subscription (see UsageGuard.periodChanged).
+  const periodStart =
+    toDate(sub.previous_billing_date) || toDate(sub.created_at);
+  const periodEnd = toDate(sub.next_billing_date);
 
   await prisma.subscription.upsert({
     where: { userId },
@@ -162,24 +264,36 @@ async function syncSubscriptionFromDodo(
       providerCustomerId: customerId,
       providerPriceId: productId,
       status,
-      plan,
-      cancelAtPeriodEnd: status === "canceled",
+      plan: resolvedPlan,
+      cancelAtPeriodEnd,
+      currentPeriodStart: periodStart,
+      currentPeriodEnd: periodEnd,
     },
     update: {
-      providerSubscriptionId: subscriptionId,
+      providerSubscriptionId: subscriptionId || undefined,
       providerCustomerId: customerId || undefined,
-      providerPriceId: productId,
+      providerPriceId: productId || undefined,
       status,
-      plan,
-      cancelAtPeriodEnd: status === "canceled",
+      plan: resolvedPlan,
+      cancelAtPeriodEnd,
+      currentPeriodStart: periodStart ?? undefined,
+      currentPeriodEnd: periodEnd ?? undefined,
       scheduledChange: null,
     },
+  });
+
+  logger.info("Dodo subscription synced", {
+    userId,
+    plan: resolvedPlan,
+    status,
+    subscriptionId,
+    customerId,
   });
 
   void auditLogService.record("billing.subscribe", "subscription", {
     actorId: userId,
     resourceId: subscriptionId,
-    metadata: { plan, status, provider: "dodo" },
+    metadata: { plan: resolvedPlan, status, provider: "dodo" },
   });
 
   void planService.invalidateCache(userId);

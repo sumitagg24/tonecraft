@@ -70,6 +70,13 @@ const AI_PROVIDER_MAP: Record<string, ProviderName> = {
   openrouter: "openrouter",
 };
 
+const HTTP_NAME_BY_PROVIDER: Record<ProviderName, string> = {
+  groq: "groq",
+  google: "gemini",
+  openrouter: "openrouter",
+  openai: "openai",
+};
+
 function classifyHttpStatus(status: number): ProviderStatus {
   if (status >= 200 && status < 300) return "healthy";
   if (status === 401 || status === 403) return "offline";
@@ -326,6 +333,24 @@ class ProviderHealthService {
     const detail = this.cache.get(aiName);
     if (!detail) return true;
     return detail.status !== "offline";
+  }
+
+  /**
+   * Mark an AI provider unusable for the lifetime of this process (e.g. its
+   * API key was rejected mid-request). Subsequent auto-routing skips it via
+   * `isProviderUsable` instead of burning three retries on a dead key. A cold
+   * start (or an explicit /api/health refresh with `force`) re-probes it.
+   */
+  markProviderUnusable(provider: ProviderName, reason?: string): void {
+    const name = HTTP_NAME_BY_PROVIDER[provider];
+    if (!name) return;
+    logger.warn(`[ProviderHealth] ${provider} marked unusable`, { reason });
+    this.setCache({
+      name,
+      status: "offline",
+      lastChecked: new Date(),
+      error: reason ?? "Provider key rejected by upstream (401/403) — skipped",
+    });
   }
 }
 
