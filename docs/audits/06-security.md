@@ -28,10 +28,9 @@ Every state-changing / read API route was read end-to-end with the repository/se
 
 ## High
 
-### H1 — Paddle webhook is unreachable: `/api/billing/webhook` blocked by auth proxy
-- `src/proxy.ts:15-18` — `PUBLIC_PATHS` whitelists `/api/webhook` (covers Clerk) and `/api/health`, but **not** `/api/billing/webhook`. `src/proxy.ts:26-29` runs `await auth.protect()` for it. Paddle's server-side POST carries no Clerk session cookie, so `auth.protect()` rejects it (404/redirect) before `src/app/api/billing/webhook/route.ts:7` ever executes.
-- Consequence: `PaddleProvider.verifyWebhook` (`src/billing/providers/paddle/PaddleProvider.ts:55-61`) never runs in practice; subscription.created/updated/cancelled/payment events never reach `syncSubscription` (`route.ts:50`), so paid entitlements never activate and the `billingService` webhook security is dead code.
-- Fix: add `/api/billing/webhook` to `PUBLIC_PATHS` in `src/proxy.ts` — the Paddle signature check (route handler, `route.ts:17`) is the auth boundary for webhooks. Verify after deploy that a Paddle event actually syncs a subscription.
+### H1 — ~~Payment webhook is unreachable~~ RESOLVED: Migrated to Dodo Payments
+- **Original**: The payment webhook was blocked by the auth proxy.
+- **Resolution**: Migrated to Dodo Payments. Webhook now at `/api/webhooks/dodo` which is in `PUBLIC_PATHS`. Dodo's `Webhooks()` handler validates signatures via Standard Webhooks spec. No auth proxy bypass needed.
 
 ### H2 — No rate limiting on the other LLM-costly endpoints (free-account cost abuse)
 - `src/app/api/chats/[chatId]/messages/route.ts:41` is the only generation path using `checkMessageLimit` (`src/lib/ratelimit.ts`). The following invoke the LLM with **no `checkMessageLimit`**, no per-day cap:
@@ -102,6 +101,6 @@ Every state-changing / read API route was read end-to-end with the repository/se
 - **Upload validation:** ⚠️ PARTIAL — auth + per-file size (plan-aware) + extension allowlist + filename sanitization + `Content-Disposition: attachment` present; but MIME from client is spoofable, no content scan, no `maxFilesPerDay`/`maxStorageMB` enforcement; knowledge upload has no type allowlist.
 - **Rate limiting:** ⚠️ PARTIAL — Upstash sliding-window on `POST /api/chats/[chatId]/messages` only; absent on regenerate/continue/tools/upload/billing/import; no-op placeholder if Upstash env missing.
 - **CSP:** ❌ ABSENT — no CSP or other security headers anywhere.
-- **JWT/webhook verification:** ✅ PRESENT — Clerk webhook via svix (`src/app/api/webhook/clerk/route.ts:23-31`), Paddle webhook via `paddle.webhooks.unmarshal` (`src/billing/providers/paddle/PaddleProvider.ts:60`), no hand-rolled JWT; but the Paddle webhook is **unreachable** behind the auth proxy (H1).
+- **JWT/webhook verification:** ✅ PRESENT — Clerk webhook via svix (`src/app/api/webhook/clerk/route.ts:23-31`), Dodo webhook via `@dodopayments/nextjs` Webhooks handler with Standard Webhooks signature verification (`src/app/api/webhooks/dodo/route.ts`), no hand-rolled JWT.
 - **XSS:** ✅ verified safe on rendered user content — `react-markdown` without `rehype-raw` escapes raw HTML; default `urlTransform` blocks `javascript:`/`data:` hrefs; user bubbles are plain text; the only `dangerouslySetInnerHTML` is a static theme script (`src/app/layout.tsx:68`). Latent risk only if `rehype-raw` is enabled (L2).
 - **Secrets handling:** ✅ `.env*` gitignored, no secrets tracked, no `NEXT_PUBLIC_` secrets.

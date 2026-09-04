@@ -76,7 +76,7 @@
 **Category:** Duplicate implementation (documentation of already-shipped work), with factual errors.
 
 **Why:** It presents the `withApiHandler` refactor as new "Phase A1" work. That refactor **already shipped in Phase 8.12** — `src/lib/withApiHandler.ts` is committed (in `c1ccec3`, the 8.12 commit) and its own migration report already exists at `docs/migrations/phase-8.12-api-cleanup.md`. This report re-claims credit for it and adds inaccuracies:
-- Says "Stripe webhook" — the project uses **Paddle** (`src/billing/PaymentProvider.ts`, ADR-002).
+- Says "Stripe webhook" — the project uses **Dodo Payments** (`src/billing/providers/dodo/DodoProvider.ts`).
 - Says "pre-existing warnings in ratelimit.ts and startup-validation.ts are unrelated" — those were **fixed** in Phase 8.17 (`c09249f`), so the statement is stale/false.
 - Plans per-file validator modules `projectSchema.ts`, `promptSchema.ts`, `personaSchema.ts`, `knowledgeSchema.ts` — but the actual A2 work created a single `index.ts`. The report's plan doesn't match what it claims to have delivered.
 

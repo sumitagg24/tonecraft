@@ -1,24 +1,21 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Check, ArrowRight, Loader2 } from "lucide-react";
+import { Check, ArrowRight } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
-import Link from "next/link";
-import { initializePaddle, type Paddle } from "@paddle/paddle-js";
-import { PRICING_TIERS, type PricingTier } from "@/lib/constants";
-import { usePaddlePrices } from "@/hooks/usePaddlePrices";
-import { openPaddleCheckoutByPrice } from "@/lib/paddle-client";
+import { PRICING_TIERS, ANNUAL_BILLING_CONFIGURED } from "@/lib/constants";
 import { sectionReveal, sectionItem } from "@/styles/motion";
 import { Minus } from "lucide-react";
 import { toast } from "sonner";
 
 const COMPARISON_ROWS: { feature: string; tiers: (string | boolean)[] }[] = [
-  { feature: "AI Messages", tiers: ["50 / day", "Unlimited", "Unlimited"] },
-  { feature: "Knowledge Base", tiers: [true, true, true] },
-  { feature: "Workspace", tiers: [true, true, true] },
-  { feature: "Priority Models", tiers: [false, true, true] },
-  { feature: "Team Collaboration", tiers: [false, false, true] },
+  { feature: "AI Messages", tiers: ["5 / day", "100 / day", "Unlimited", "Unlimited"] },
+  { feature: "Knowledge Base", tiers: [true, true, true, true] },
+  { feature: "Workspace", tiers: [true, true, true, true] },
+  { feature: "Priority Models", tiers: [false, false, true, true] },
+  { feature: "Custom Personas", tiers: [false, false, true, true] },
+  { feature: "Team Collaboration", tiers: [false, false, false, true] },
 ];
 
 interface Props {
@@ -28,58 +25,62 @@ interface Props {
 export function Pricing({ country = "OTHERS" }: Props) {
   const { isSignedIn, user } = useUser();
   const [annual, setAnnual] = useState(false);
-  const [paddle, setPaddle] = useState<Paddle | undefined>();
+  const [loading, setLoading] = useState<string | null>(null);
 
-  const { prices, loading: pricesLoading } = usePaddlePrices(paddle, country);
-
-  // Initialize Paddle.js for PricePreview only — no checkout settings needed.
-  useEffect(() => {
-    if (!process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN) return;
-    initializePaddle({
-      token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN,
-      environment: process.env.NEXT_PUBLIC_PADDLE_ENV as "sandbox" | "production",
-    }).then((p) => p && setPaddle(p));
-  }, []);
-
-  // Open Paddle checkout overlay directly for the selected tier.
-  // No server transaction needed — Paddle handles everything client-side.
-  const handleSubscribe = (tier: PricingTier) => {
-    const priceId = annual ? tier.priceId.year : tier.priceId.month;
-    openPaddleCheckoutByPrice(priceId, {
-      customerEmail: user?.emailAddresses?.[0]?.emailAddress,
-      onSuccess: () => {
-        window.location.href = "/welcome";
-      },
-      onPaymentError: () => {
-        toast.error("Payment failed. Please check your card details and try again.");
-      },
-    });
-  };
-
-  // Starter goes to sign-up, Pro and Advanced open checkout directly.
-  const ctaHref = (tierName: string): string => {
-    if (tierName === "Starter") {
-      return "/sign-up?redirect_url=%2Fchat";
+  // Open Dodo Payments checkout — redirects to hosted checkout page
+  const handleSubscribe = async (tier: (typeof PRICING_TIERS)[number]) => {
+    // Free tier: just redirect to sign up
+    if (tier.price === 0) {
+      window.location.href = "/sign-up";
+      return;
     }
-    return "#"; // handled by handleSubscribe
+
+    if (!isSignedIn) {
+      window.location.href = "/sign-up?redirect_url=%2Fpricing";
+      return;
+    }
+
+    const productId = annual ? tier.priceId.year : tier.priceId.month;
+    setLoading(tier.name);
+
+    try {
+      // Always send the plan name + interval: the server resolves the product
+      // ID from its own env (DODO_PRODUCT_*). The NEXT_PUBLIC_* ID is included
+      // as a hint when it's set, but never relied on — it can be empty for
+      // tiers that aren't exposed as NEXT_PUBLIC_* env vars, which previously
+      // made the Pro/Advanced buttons fail with "missing productId".
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          plan: tier.name.toLowerCase(),
+          interval: annual ? "year" : "month",
+          productId: productId || undefined,
+          email: user?.emailAddresses?.[0]?.emailAddress,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Checkout failed");
+      }
+
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Checkout failed");
+      setLoading(null);
+    }
   };
 
-  /**
-   * Get the formatted price for a tier. Uses PricePreview data when available,
-   * falls back to the hardcoded USD price for the free tier or if Paddle
-   * hasn't loaded yet.
-   */
+  /** Show the price formatted for the tier, with annual discount */
   const getFormattedPrice = (tier: (typeof PRICING_TIERS)[number]): string => {
     if (tier.price === 0) return "$0";
-    if (!tier.priceId?.month) return `$${tier.price}`;
-
-    const priceId = annual ? tier.priceId.year : tier.priceId.month;
-    const formatted = prices[priceId];
-
-    if (formatted) return formatted;
-    // Fallback: show hardcoded USD with 20% annual discount
-    const fallback = annual ? Math.floor(tier.price * 0.8) : tier.price;
-    return `$${fallback}`;
+    // Monthly: the base price. Annual: the exact yearly total charged at checkout
+    // (priceYear mirrors the Dodo *_ANNUAL product amounts, e.g. Pro $48/yr).
+    return annual ? `$${tier.priceYear}` : `$${tier.price}`;
   };
 
   return (
@@ -112,19 +113,21 @@ export function Pricing({ country = "OTHERS" }: Props) {
             >
               Monthly Billing
             </button>
-            <button
-              onClick={() => setAnnual(true)}
-              className={`px-5 py-2 rounded-xl text-xs font-medium transition-all ${
-                annual ? "bg-foreground text-background shadow-editorial" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Annual (20% Off)
-            </button>
+            {ANNUAL_BILLING_CONFIGURED && (
+              <button
+                onClick={() => setAnnual(true)}
+                className={`px-5 py-2 rounded-xl text-xs font-medium transition-all ${
+                  annual ? "bg-foreground text-background shadow-editorial" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Annual (20% Off)
+              </button>
+            )}
           </div>
         </motion.div>
 
         {/* Pricing Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
           {PRICING_TIERS.map((tier, idx) => {
             const formattedPrice = getFormattedPrice(tier);
             return (
@@ -154,14 +157,10 @@ export function Pricing({ country = "OTHERS" }: Props) {
 
                   <div className="flex items-baseline gap-1 mb-8">
                     <span className="font-display text-5xl font-medium tracking-tight text-foreground">
-                      {pricesLoading && tier.price > 0 ? (
-                        <Loader2 className="w-8 h-8 animate-spin inline" />
-                      ) : (
-                        formattedPrice
-                      )}
+                      {formattedPrice}
                     </span>
                     {tier.price > 0 && (
-                      <span className="text-xs text-muted-foreground font-medium">/month</span>
+                      <span className="text-xs text-muted-foreground font-medium">{annual ? "/year" : "/month"}</span>
                     )}
                   </div>
 
@@ -175,36 +174,22 @@ export function Pricing({ country = "OTHERS" }: Props) {
                   </ul>
                 </div>
 
-                {tier.name === "Starter" ? (
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="w-full rounded-2xl h-12 text-xs font-medium shadow-none"
-                    asChild
-                  >
-                    <Link href={ctaHref(tier.name)}>
-                      {tier.cta}
-                      <ArrowRight className="w-3.5 h-3.5 ml-2" />
-                    </Link>
-                  </Button>
-                ) : (
-                  <Button
-                    size="lg"
-                    variant={tier.popular ? "default" : "outline"}
-                    className="w-full rounded-2xl h-12 text-xs font-medium shadow-none"
-                    onClick={() => handleSubscribe(tier)}
-                    disabled={!paddle}
-                  >
-                    {tier.cta}
-                    <ArrowRight className="w-3.5 h-3.5 ml-2" />
-                  </Button>
-                )}
+                <Button
+                  size="lg"
+                  variant={tier.popular ? "default" : "outline"}
+                  className="w-full rounded-2xl h-12 text-xs font-medium shadow-none"
+                  onClick={() => handleSubscribe(tier)}
+                  disabled={loading === tier.name}
+                >
+                  {loading === tier.name ? "Redirecting..." : tier.cta}
+                  <ArrowRight className="w-3.5 h-3.5 ml-2" />
+                </Button>
               </motion.div>
             );
           })}
         </div>
 
-        {/* ── Detailed Comparison Table ─────────────────────── */}
+        {/* Detailed Comparison Table */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -223,13 +208,13 @@ export function Pricing({ country = "OTHERS" }: Props) {
                   <th className="text-left font-medium text-muted-foreground px-6 md:px-8 py-4 text-xs uppercase tracking-wider">
                     Feature
                   </th>
-                  {["Free", "Pro", "Enterprise"].map((name, i) => (
+                  {["Free", "Basic", "Pro", "Advanced"].map((name, i) => (
                     <th
                       key={name}
-                      className={`text-center font-semibold px-4 py-4 text-sm ${i === 1 ? "bg-foreground/5 text-foreground" : "text-foreground/80"}`}
+                      className={`text-center font-semibold px-3 py-4 text-sm ${i === 2 ? "bg-foreground/5 text-foreground" : "text-foreground/80"}`}
                     >
                       {name}
-                      {i === 1 && <span className="block text-[10px] font-medium text-foreground/50 mt-0.5 uppercase tracking-wide">Most popular</span>}
+                      {i === 2 && <span className="block text-[10px] font-medium text-foreground/50 mt-0.5 uppercase tracking-wide">Most popular</span>}
                     </th>
                   ))}
                 </tr>
@@ -239,7 +224,7 @@ export function Pricing({ country = "OTHERS" }: Props) {
                   <tr key={row.feature} className={`border-b border-border/30 ${idx % 2 === 0 ? "bg-muted/10" : ""}`}>
                     <td className="px-6 md:px-8 py-4 font-medium text-foreground/90">{row.feature}</td>
                     {row.tiers.map((value, i) => (
-                      <td key={i} className={`text-center px-4 py-4 ${i === 1 ? "bg-foreground/5" : ""}`}>
+                      <td key={i} className={`text-center px-3 py-4 ${i === 2 ? "bg-foreground/5" : ""}`}>
                         {value === true ? (
                           <Check className="w-4 h-4 mx-auto text-emerald-500" />
                         ) : value === false ? (

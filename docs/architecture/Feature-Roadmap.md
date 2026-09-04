@@ -18,7 +18,7 @@
 | Command palette | overlay | exists |
 | Appearance / preferences | Account → Appearance | partial (`/api/preferences`) |
 | Notifications | Account → Notifications | exists but toggles are local-only |
-| Billing / plan | Account → Billing | exists (`/billing`, Paddle) |
+| Billing / plan | Account → Billing | exists (`/billing`, Dodo Payments) |
 | Usage meters | Account → Usage (split from Billing) | exists, buried in billing page |
 | Delete account | Account → Danger | exists |
 | Feedback (like/dislike) | Compose thread | partial (UI toasts, persistence pending) |
@@ -57,7 +57,7 @@ Order chosen so each step is visible and revertible:
 5. **Unify Search** — delete the overlay, keep one scoped Search section; drop
    ⌘⇧F (or rebind to `/search`).
 6. **Split Account / Billing / Usage** — extract meters into Usage; Billing
-   keeps plan + Paddle.
+   keeps plan + Dodo Payments.
 7. **Reduce workspace modes to 3** — delete `split`/`compact`/`minimal` handling;
    keep Standard/Focus/Writer.
 8. **Component polish** — apply `docs/design/*` tokens/recipes to the new

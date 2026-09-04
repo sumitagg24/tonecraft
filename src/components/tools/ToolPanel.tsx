@@ -17,11 +17,13 @@ import { useRecentTools } from "@/hooks/use-recent-tools";
 interface ToolPanelProps {
   tool: ToolDefinition;
   onClose: () => void;
+  /** Pre-filled source text — used by deep links like /tools?tool=<id>&text=… (browser extension). */
+  initialText?: string;
 }
 
-export function ToolPanel({ tool, onClose }: ToolPanelProps) {
+export function ToolPanel({ tool, onClose, initialText }: ToolPanelProps) {
   const { record } = useRecentTools();
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(initialText ?? "");
   const [result, setResult] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [metadata, setMetadata] = useState<Record<string, any> | null>(null);

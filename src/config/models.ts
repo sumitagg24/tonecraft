@@ -2,7 +2,22 @@ import { PlanTier, getPlanConfig, type PlanConfig } from "./plans";
 
 // NOTE: "anthropic" was removed — no client exists for it (audit A2); Claude
 // models route through openrouter. Re-add only with a real @ai-sdk/anthropic client.
-export type ProviderName = "groq" | "openrouter" | "google" | "openai";
+//
+// "custom" is a generic OpenAI-compatible slot driven purely by env vars
+// (CUSTOM_AI_BASE_URL + CUSTOM_AI_API_KEY + CUSTOM_AI_MODEL). It lets any
+// OpenAI-compatible endpoint — GitHub Models, Cloudflare Workers AI, Cerebras,
+// DeepInfra, Together, etc. — power generations without a code change. The
+// entry below only exists when all three env vars are configured.
+export type ProviderName = "groq" | "openrouter" | "google" | "openai" | "custom";
+
+const CUSTOM_AI_BASE_URL = process.env.CUSTOM_AI_BASE_URL?.trim() || "";
+const CUSTOM_AI_API_KEY = process.env.CUSTOM_AI_API_KEY?.trim() || "";
+const CUSTOM_AI_MODEL = process.env.CUSTOM_AI_MODEL?.trim() || "";
+const CUSTOM_AI_DISPLAY =
+  process.env.CUSTOM_AI_DISPLAY_NAME?.trim() || "Custom model";
+const CUSTOM_AI_CONFIGURED = Boolean(
+  CUSTOM_AI_BASE_URL && CUSTOM_AI_API_KEY && CUSTOM_AI_MODEL,
+);
 
 // Google model IDs are pinned to current GA releases (Gemini 3.x). `gemini-2.5-*`
 // returns 404 for new API keys ("no longer available to new users"). Override via
@@ -39,12 +54,17 @@ export interface ModelEntry {
   readonly maxTokens: number;
 }
 
+// Groq retired `llama-3.3-70b-versatile` and `llama-3.1-8b-instant` (Aug 16,
+// 2026 — see console.groq.com/docs/deprecations). Groq's own migration path
+// points to `openai/gpt-oss-120b` / `qwen/qwen3.6-27b` for the 70B slot and
+// `openai/gpt-oss-20b` for the 8B slot; the IDs below are the live replacements
+// (verified serving on the configured key).
 const MODELS: readonly ModelEntry[] = [
   {
-    id: "groq-llama3-70b",
+    id: "groq-gpt-oss-120b",
     provider: "groq",
-    displayName: "Llama 3.3 70B",
-    modelId: "llama-3.3-70b-versatile",
+    displayName: "GPT-OSS 120B",
+    modelId: "openai/gpt-oss-120b",
     tier: "free",
     creditCost: 1,
     contextWindow: 131072,
@@ -55,10 +75,10 @@ const MODELS: readonly ModelEntry[] = [
     maxTokens: 32768,
   },
   {
-    id: "groq-llama3-8b",
+    id: "groq-gpt-oss-20b",
     provider: "groq",
-    displayName: "Llama 3.1 8B Instant",
-    modelId: "llama-3.1-8b-instant",
+    displayName: "GPT-OSS 20B",
+    modelId: "openai/gpt-oss-20b",
     tier: "free",
     creditCost: 1,
     contextWindow: 131072,
@@ -96,6 +116,25 @@ const MODELS: readonly ModelEntry[] = [
     temperature: 0.7,
     maxTokens: 8192,
   },
+  // Free-tier OpenRouter fallback. The Groq/Google keys are the usual first
+  // choices for free users, but when those providers are unhealthy (or their
+  // keys are rejected) this gives the free tier a working path so generation
+  // never dies with a bare 500. Pinned to a genuinely free (`:free`) OpenRouter
+  // model; costs nothing to the merchant.
+  {
+    id: "openrouter-glm-free",
+    provider: "openrouter",
+    displayName: "GLM 5.2 (free)",
+    modelId: "z-ai/glm-5.2:free",
+    tier: "free",
+    creditCost: 1,
+    contextWindow: 262144,
+    status: "available",
+    capabilities: { streaming: true, vision: false, tools: false, json: true, reasoning: true, longContext: true },
+    priority: 3,
+    temperature: 0.7,
+    maxTokens: 8192,
+  },
   {
     id: "openrouter-claude",
     provider: "openrouter",
@@ -124,6 +163,29 @@ const MODELS: readonly ModelEntry[] = [
     temperature: 0.7,
     maxTokens: 16384,
   },
+  // Generic OpenAI-compatible provider (env-configured). Free-tier fallback so
+  // GitHub Models / Workers AI / Cerebras etc. can carry free generations once
+  // CUSTOM_AI_BASE_URL + CUSTOM_AI_API_KEY + CUSTOM_AI_MODEL are set — no code
+  // change needed. Sits above the :free OpenRouter last-resort so a real custom
+  // key is preferred when both exist.
+  ...(CUSTOM_AI_CONFIGURED
+    ? [
+        {
+          id: "custom-openai",
+          provider: "custom" as ProviderName,
+          displayName: CUSTOM_AI_DISPLAY,
+          modelId: CUSTOM_AI_MODEL,
+          tier: "free" as const,
+          creditCost: 1,
+          contextWindow: 200000,
+          status: "available" as const,
+          capabilities: { streaming: true, vision: false, tools: false, json: true, reasoning: false, longContext: true },
+          priority: 4,
+          temperature: 0.7,
+          maxTokens: 8192,
+        },
+      ]
+    : []),
 ];
 
 const unavailableModels = new Set<string>();

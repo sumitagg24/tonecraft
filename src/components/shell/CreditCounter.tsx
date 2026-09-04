@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
 import { useCredits } from "@/hooks/use-credits";
 import { cn } from "@/lib/utils";
-import { openPaddleCheckout } from "@/lib/paddle-client";
 import { toast } from "sonner";
 import { Zap, Infinity, ArrowUpRight, Loader2 } from "lucide-react";
 
@@ -64,26 +63,18 @@ export function CreditCounter({ collapsed = false }: CreditCounterProps) {
       const res = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: "Pro", interval: "month", currency: "USD" }),
+        body: JSON.stringify({ plan: "Pro", interval: "month" }),
       });
       const json = await res.json();
       if (!json.success) throw new Error(json.error?.message ?? "Checkout failed");
-      const { url, transactionId } = json.data ?? json;
-      if (transactionId) {
-        await openPaddleCheckout(transactionId, {
-          fallbackUrl: url,
-          onSuccess: () => {
-            toast.success("Subscription activated!");
-          },
-          onPaymentError: () => {
-            toast.error("Payment failed. Please check your card details and try again.");
-          },
-        });
-      } else if (url) {
+      const url = json.data?.url ?? json.url;
+      if (typeof url === "string" && url) {
         window.location.assign(url);
+      } else {
+        toast.error("Checkout could not be created. Please try again.");
       }
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Checkout failed");
+      toast.error(e instanceof Error ? e.message : "Checkout failed. Please try again.");
     } finally {
       setCheckoutLoading(false);
     }

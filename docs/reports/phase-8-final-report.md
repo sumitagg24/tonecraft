@@ -25,7 +25,7 @@
 | 8.14 | Database optimization | `edaa65c` | — | Removed redundant indexes, added `Message.parentId` index, pgvector plan (pending, not enabled), retention SQL, nullable `Draft` unique semantics | 4 (+270/-121) |
 | 8.15 | AI engine cleanup | `cf72618` | — | ModelRegistry single source of truth (legacy `PROVIDERS`/`isPro` gone), idle timeout + client-disconnect chaining, typed AITool protocol + ToolRegistry, failover retries 5xx/network | 8 (+252/-99) |
 | 8.16 | UX consistency | `7477871` | — | Shared Radix `Modal` primitive (PromptEditor/RunDialog/HistoryDialog), EmptyState error variant, `role="status"` spinners, nano/micro/tiny font tokens (0 arbitrary sizes left), motion-token drift fixes | 44 (+512/-385) |
-| 8.17 | Production hardening | `c09249f` | — | Message IDOR closed, Paddle webhook whitelisted, rate limits on every LLM-costly path, magic-byte upload validation + caps, error-reporting abstraction, security headers + CSP, env fail-fast, fail-closed rate limiting, backup runbook, sanitized health, robots/sitemap | 33 (+1,616/-172) |
+| 8.17 | Production hardening | `c09249f` | — | Message IDOR closed, payment webhook whitelisted, rate limits on every LLM-costly path, magic-byte upload validation + caps, error-reporting abstraction, security headers + CSP, env fail-fast, fail-closed rate limiting, backup runbook, sanitized health, robots/sitemap | 33 (+1,616/-172) |
 
 **Phase totals:** 14 commits · ~200 files changed · ~15,700 insertions / ~1,900 deletions across the branch window.
 
@@ -54,14 +54,14 @@
 
 ### Infrastructure changes
 - `next.config.ts`: security headers, production CSP (`frame-ancestors 'none'`, Clerk/R2/AI hosts), `poweredByHeader: false`.
-- `src/proxy.ts`: `/api/billing/webhook` whitelisted (Paddle signature = auth).
+- `src/proxy.ts`: payment webhook path whitelisted (provider signature = auth).
 - `src/lib/startup-validation.ts`: production boot fails fast on missing DB/Clerk/Upstash/R2 vars (build- and client-bundle-safe).
 - `src/lib/ratelimit.ts`: fails **closed** in production when Upstash is unconfigured; dev fallback loud.
 - SEO: `src/app/robots.ts`, `src/app/sitemap.ts`.
 
 ### Security changes
 - Message IDOR (C1–C3) closed via ownership-scoped repository methods; latent unscoped service methods deleted.
-- Paddle webhook unblocked — subscriptions can now activate end-to-end.
+- Payment webhook unblocked — subscriptions can now activate end-to-end.
 - Upload validation: magic-byte sniffing + exact-subtype MIME matching + plan caps (size/day/storage), size gate before body read (no memory-DoS).
 - CSP + security headers; `poweredByHeader` off; health payload sanitized.
 - `logger.error` routes through a DSN-gated error-reporting abstraction (Sentry envelope, no SDK).
@@ -128,4 +128,4 @@ Captured in full in `docs/reports/technical-debt-register.md`; highlights:
 - **API envelope changed** — all in-repo consumers migrated; any external API consumer (Pro `apiAccess` feature, not yet shipped) would need to adapt to `{success, data}`/`{success, error}`.
 - **Removed npm deps**: `@tanstack/react-query`, `rehype-raw`, `dompurify` (and `@types/dompurify`). Code that imports them breaks.
 - **Removed exports**: `src/config/provider-clients.ts`, legacy `PROVIDERS` array and `isPro` routing option in `ProviderRouter`; `MessageService.editMessage/deleteMessage/setFeedback`; `MessageRepository.update/updateFeedback` (unscoped variants).
-- **Behavior changes**: message mutations on another user's message now return 404 (previously mutated/deleted); `/api/health` no longer accepts `force` and no longer returns provider error text; unauthenticated Paddle webhooks were previously blocked (now verified by signature).
+- **Behavior changes**: message mutations on another user's message now return 404 (previously mutated/deleted); `/api/health` no longer accepts `force` and no longer returns provider error text; unauthenticated payment webhooks were previously blocked (now verified by signature).

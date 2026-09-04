@@ -3,6 +3,7 @@ import * as Sentry from "@sentry/nextjs";
 import { auth } from "@/lib/auth";
 import { logger } from "./logger";
 import { z, ZodError } from "zod";
+import { AIEngineError, toApiFailure } from "@/engine/AIEngineError";
 import {
   checkEndpointLimit,
   checkIpLimit,
@@ -27,7 +28,7 @@ import { getClientIp } from "@/lib/request-ip";
  *
  * Documented exceptions that keep their native protocols (not JSON envelopes):
  *  - SSE streams (chats/[chatId]/messages POST, notifications/stream GET)
- *  - Webhooks (webhook/clerk, billing/webhook) — signature-verified
+ *  - Webhooks (webhook/clerk, webhooks/dodo) — signature-verified
  *  - /api/health — public liveness payload
  */
 
@@ -298,6 +299,25 @@ function buildHandler(
         path: req.nextUrl.pathname,
         ...(session?.user?.id ? { userId: session.user.id } : {}),
       }, error instanceof Error ? error : new Error(String(error)));
+
+      // Engine-level failures (credit/daily-limit denials, provider outages)
+      // carry a real status + user-readable message — surface them instead of
+      // collapsing everything into a generic 500 "Internal Server Error".
+      if (error instanceof AIEngineError) {
+        const failure = toApiFailure(error);
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: failure.code,
+              message: failure.message,
+              details: failure.details,
+            },
+          },
+          { status: failure.status }
+        );
+      }
+
       return NextResponse.json(
         {
           success: false,

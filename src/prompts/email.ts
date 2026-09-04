@@ -27,7 +27,7 @@ Structure: Subject line, appropriate greeting, clear body, professional closing.
 }
 
 export function buildColdEmailPrompt(input: string, config: EmailConfig): string {
-  return `You are a sales outreach specialist. Write a compelling cold email:
+  return `You are a professional communication specialist. Write a compelling personalized email:
 "${input}"
 
 Requirements:

@@ -59,7 +59,7 @@ export default function BlogPost2Page() {
 
       <h2>From grammar to voice</h2>
       <p>
-        Traditional writing tools fix what is <em>wrong</em>. Tone-aware tools shape what is <em>appropriate</em>. &quot;I&apos;d love to set up a call&quot; is grammatically perfect — and completely wrong for a WhatsApp message to a friend, or a cold email to a VP of Sales, or a LinkedIn post about a layoff. The context is the content.
+        Traditional writing tools fix what is <em>wrong</em>. Tone-aware tools shape what is <em>appropriate</em>. &quot;I&apos;d love to set up a call&quot; is grammatically perfect — and completely wrong for a WhatsApp message to a friend, or a professional email to a VP of Sales, or a LinkedIn post about a layoff. The context is the content.
       </p>
 
       <h2>Platform-aware communication is already here</h2>

@@ -12,26 +12,26 @@ Git tags match `package.json` versions exactly.
 
 - **Storage layer deleted** — `src/lib/storage.ts`, `src/app/api/upload/route.ts`, and `scripts/probe-r2.cjs` are gone; `@aws-sdk/client-s3` uninstalled. Chat attachments were the only consumer, and they're not needed for launch — knowledge-base files already live in Postgres
 - **Paperclip attachment UI removed from the composer** — no dead button, no broken uploads (matches the "every button must work or be removed" UX rule)
-- **Health check simplified** — `checkStorage` dropped; `/api/health` reports exactly the real providers (DB, Redis, AI, Clerk, Paddle)
-- **Boot + env hygiene** — `startup-validation` no longer mentions storage; `STORAGE_*` vars removed from `.env.example`, README, `docs/PRODUCTION-CUTOVER.md`, `scripts/production-cutover.js`, and `.env.local`
+- **Health check simplified** — `checkStorage` dropped; `/api/health` reports exactly the real providers (DB, Redis, AI, Clerk, Dodo)
+- **Boot + env hygiene** — `startup-validation` no longer mentions storage; `STORAGE_*` vars removed from `.env.example`, README, `scripts/production-cutover.js`, and `.env.local`
 
-### 🔒 Subscription access helper hardened (Paddle fulfillment)
+### 🔒 Subscription access helper hardened (Dodo fulfillment)
 
-- `PlanService.getPlan` now keeps **`past_due`** subscribers on their paid tier — Paddle retries payment for a grace period, so customers keep features mid-retry. Access is revoked only on actual cancellation/pause (`scheduled_change` never revokes). Matches the fulfillment spec's "only revoke when status is actually canceled"
+- `PlanService.getPlan` now keeps **`past_due`** subscribers on their paid tier — Dodo retries payment for a grace period, so customers keep features mid-retry. Access is revoked only on actual cancellation/pause (`scheduled_change` never revokes). Matches the fulfillment spec's "only revoke when status is actually canceled"
 
 ## [1.5.0] - 2026-08-13
 
-### 💳 Paddle payments are LIVE
+### 💳 Dodo Payments billing is LIVE
 
-End-to-end live checkout verified: Paddle hosted checkout opens in **live mode** on `tonecraft-psi.vercel.app` (real Pro plan, $6.00 with GST), with a live client token (`live_…`) baked into the production bundle.
+End-to-end live checkout verified: Dodo hosted checkout opens in **live mode** on `www.tonecraft.site`, backed by the live Dodo catalog (Pro $5/mo, Advanced $15/mo, annual at 20% off). Subscriptions sync through `/api/webhooks/dodo` and entitlements activate in the database.
 
-- **Find-or-create Paddle customer by email** — repeated checkouts (the billing-page live probe, users whose DB row lost its provider customer ID) no longer hit `customer_already_exists`; parallel-race safe
-- **Case-insensitive customer lookup** — Paddle lowercases emails but Clerk temp-user emails are mixed-case in the DB; exact-match misses are gone
-- **Live client token deployed** — `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` regenerated via the Paddle API, pushed to Vercel, verified in the served bundle (no sandbox `test_` token leaks)
-- **Paddle environment follows the API key** (not `NODE_ENV`) — sandbox keys authenticate against sandbox-api, live keys against api.paddle.com
-- **Checkout overlay CSP fix** — `paddle.com` + hosted-checkout fallback whitelisted; ProfitWell analytics (`public.profitwell.com`) allowlisted so the overlay opens without console errors
-- **Webhook plan activation + fallback price IDs** — subscription.updated/completed webhooks activate the right plan even when the price mapping lags
-- **Live provisioning tooling** — `scripts/setup-live-paddle.js` (idempotent products/prices/webhook), `scripts/create-live-client-token.js`, `scripts/recheck-live-checkout.js` (onboarding + checkout probe)
+- **Webhook payload normalization** — Dodo wraps resources under `data`; the handler unwraps it so `subscription.active` / `payment.succeeded` events actually sync the plan (previously fields were read from the top level and subscriptions silently stayed Free)
+- **UserId from checkout metadata, with email fallback** — accounts resolve even when renewal events don't echo the session metadata
+- **Annual products** — separate `*_ANNUAL` products in the Dodo catalog; the annual toggle only renders when they're configured, and the webhook maps them to the same plan grant (no silent monthly fallback)
+- **Webhook plan activation** — subscription events activate the right plan; payment events without a product id preserve the existing plan
+- **Dodo environment follows the API key** (`live_mode` / `test_mode`) — sandbox keys hit the sandbox host, live keys hit the live host
+- **Checkout CSP fix** — `checkout.dodopayments.com` + hosted-checkout domains allowed so the overlay/redirect opens without console errors
+- **Sandbox E2E harness** — `scripts/dodo-sandbox/` drives plan → checkout session → test-card payment → webhook → entitlement sync without touching the live merchant
 
 ### 🔐 Clerk auth fixed in production
 
@@ -52,7 +52,7 @@ End-to-end live checkout verified: Paddle hosted checkout opens in **live mode**
 
 ### ✅ Validation
 
-`npm run lint` 0 · `tsc --noEmit` 0 · `npm run build` green · **Playwright 64 passed / 27 skipped / 0 failed** across 4 viewports · Live checkout opens in production (browser-verified)
+`npm run lint` 0 · `tsc --noEmit` 0 · `npm run build` green · **Playwright 64 passed / 27 skipped / 0 failed** across 4 viewports · Live Dodo checkout opens in production (browser-verified)
 
 ## [1.4.0] - 2026-08-08
 
@@ -105,7 +105,7 @@ No user can see which third-party model produced their results:
 ## [1.0.0] - 2026-08-02
 
 ### Added
-- First stable milestone: multi-provider AI architecture, provider routing, credit-based usage, Paddle billing
+- First stable milestone: multi-provider AI architecture, provider routing, credit-based usage, Dodo Payments billing
 - Modern chat interface, projects, prompt library, personas, knowledge base
 - Search, notifications, export system, analytics dashboard
 - Centralized validation, production hardening, documentation overhaul, testing infrastructure

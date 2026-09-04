@@ -80,7 +80,7 @@ const INTENT_MAP: Record<string, IntentMapping> = {
 
   // Email family
   "email-writer": { intent: "email", defaultTone: "professional", defaultPlatform: "email", description: "Write email" },
-  "cold-email": { intent: "email", defaultTone: "professional", defaultPlatform: "email", description: "Cold email" },
+  "cold-email": { intent: "email", defaultTone: "professional", defaultPlatform: "email", description: "Professional email" },
   "cold-email-followup": { intent: "email", defaultTone: "professional", defaultPlatform: "email", description: "Email follow-up" },
   "hr-email": { intent: "email", defaultTone: "professional", defaultPlatform: "email", description: "HR email" },
   "apology-email": { intent: "email", defaultTone: "polite", defaultPlatform: "email", description: "Apology email" },

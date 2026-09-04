@@ -2,7 +2,7 @@
  * Money formatting for pricing displays.
  *
  * Pricing is displayed and charged in USD only (per product decision — the
- * checkout always uses the configured USD Paddle price). All displays show
+ * checkout always uses the configured USD Dodo price). All displays show
  * dollars.
  */
 

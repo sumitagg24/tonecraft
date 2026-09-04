@@ -28,12 +28,21 @@ export const TONES: { id: string; label: string; description: string; color: str
 ];
 
 export const FREE_TIER_LIMITS = {
-  messagesPerDay: 50,
-  messagesPerHour: 10,
+  messagesPerDay: 5,
+  messagesPerHour: 5,
   maxTokensPerMessage: 2000,
   maxFileSize: 5 * 1024 * 1024,
-  maxFilesPerDay: 5,
+  maxFilesPerDay: 3,
   contextWindow: 4096,
+} as const;
+
+export const BASIC_TIER_LIMITS = {
+  messagesPerDay: 100,
+  messagesPerHour: 30,
+  maxTokensPerMessage: 8000,
+  maxFileSize: 10 * 1024 * 1024,
+  maxFilesPerDay: 20,
+  contextWindow: 8192,
 } as const;
 
 export const PRO_TIER_LIMITS = {
@@ -46,34 +55,61 @@ export const PRO_TIER_LIMITS = {
 } as const;
 
 export interface PricingTier {
-  name: "Starter" | "Pro" | "Advanced";
+  name: "Free" | "Basic" | "Pro" | "Advanced";
   description: string;
   features: string[];
   popular: boolean;
   priceId: { month: string; year: string };
-  price: number; // base USD price for display fallback
+  price: number; // base USD monthly price for display fallback
+  priceYear: number; // exact USD annual total (matches the Dodo *_ANNUAL products)
   cta: string;
 }
 
+const BASIC_MONTH = process.env.NEXT_PUBLIC_DODO_PRODUCT_BASIC;
+const BASIC_YEAR = process.env.NEXT_PUBLIC_DODO_PRODUCT_BASIC_ANNUAL;
+
+/** Free tier is always shown — no product ID needed. */
+const FREE_TIER: PricingTier = {
+  name: "Free",
+  description: "Try ToneCraft with no commitment",
+  features: [
+    "5 AI generations per day",
+    "All tone presets",
+    "4K context window",
+    "3 file uploads/day",
+    "Community support",
+  ],
+  popular: false,
+  price: 0,
+  priceYear: 0,
+  cta: "Get Started Free",
+  priceId: { month: "", year: "" },
+};
+
+/** Basic is shown when its price IDs are set in env vars. */
+const BASIC_TIER: PricingTier | null =
+  BASIC_MONTH
+    ? {
+        name: "Basic",
+        description: "For casual users who need more",
+        features: [
+          "100 AI generations per day",
+          "All tone presets",
+          "8K context window",
+          "20 file uploads/day",
+          "Email support",
+        ],
+        popular: false,
+        price: 2,
+        priceYear: 19, // $19/yr — 20% off $2/mo × 12 (matches live catalog "Basic (Annual)")
+        cta: "Get Basic",
+        priceId: { month: BASIC_MONTH, year: BASIC_YEAR ?? "" },
+      }
+    : null;
+
 export const PRICING_TIERS: PricingTier[] = [
-  {
-    name: "Starter",
-    description: "For individuals getting started",
-    features: [
-      "50 AI generations per day",
-      "All tone presets",
-      "4K context window",
-      "5 file uploads/day",
-      "Basic support",
-    ],
-    popular: false,
-    price: 4,
-    cta: "Get Started",
-    priceId: {
-      month: process.env.NEXT_PUBLIC_PADDLE_PRICE_STARTER ?? "pri_01m0sz1kj8w4ytkyxgk4b6xkq8",
-      year: process.env.NEXT_PUBLIC_PADDLE_PRICE_STARTER_ANNUAL ?? "pri_01m0sz1mabbjk0ne6be39ezbhn",
-    },
-  },
+  FREE_TIER,
+  ...(BASIC_TIER ? [BASIC_TIER] : []),
   {
     name: "Pro",
     description: "For power users and professionals",
@@ -86,11 +122,12 @@ export const PRICING_TIERS: PricingTier[] = [
       "Priority support",
     ],
     popular: true,
-    price: 6,
+    price: 5,
+    priceYear: 48, // $48/yr — 20% off $5/mo × 12 (matches live catalog "Pro (Annual)")
     cta: "Upgrade to Pro",
     priceId: {
-      month: process.env.NEXT_PUBLIC_PADDLE_PRICE_PRO ?? "pri_01kzhetdtpjhtkw6k4x64cf1k5",
-      year: process.env.NEXT_PUBLIC_PADDLE_PRICE_PRO_ANNUAL ?? "pri_01kzheteb5y81vfx2swdqn7c8e",
+      month: process.env.NEXT_PUBLIC_DODO_PRODUCT_PRO ?? "",
+      year: process.env.NEXT_PUBLIC_DODO_PRODUCT_PRO_ANNUAL ?? "",
     },
   },
   {
@@ -105,14 +142,30 @@ export const PRICING_TIERS: PricingTier[] = [
       "Dedicated support",
     ],
     popular: false,
+    // Display must match the live Dodo catalog: the Advanced product is $15/mo
+    // (1500¢). It was previously shown as $12 while checkout charged $15.
     price: 15,
+    priceYear: 144, // $144/yr — 20% off $15/mo × 12 (matches live catalog "Advanced (Annual)")
     cta: "Get Advanced",
     priceId: {
-      month: process.env.NEXT_PUBLIC_PADDLE_PRICE_ADVANCED ?? "pri_01kzhete3g386j4t48jja0gf7q",
-      year: process.env.NEXT_PUBLIC_PADDLE_PRICE_ADVANCED_ANNUAL ?? "pri_01kzhetezh6cshkafkkk5h2d41",
+      month: process.env.NEXT_PUBLIC_DODO_PRODUCT_ADVANCED ?? "",
+      year: process.env.NEXT_PUBLIC_DODO_PRODUCT_ADVANCED_ANNUAL ?? "",
     },
   },
 ];
+
+/**
+ * Annual billing is only offered once real annual product IDs exist in the
+ * Dodo catalog (NEXT_PUBLIC_DODO_PRODUCT_*_ANNUAL). Without them the checkout
+ * would silently bill the monthly product at its monthly price while the UI
+ * advertised "20% off billed yearly" — so the toggle stays hidden until the
+ * envs are configured.
+ */
+export const ANNUAL_BILLING_CONFIGURED = Boolean(
+  process.env.NEXT_PUBLIC_DODO_PRODUCT_PRO_ANNUAL &&
+    process.env.NEXT_PUBLIC_DODO_PRODUCT_ADVANCED_ANNUAL &&
+    (!BASIC_MONTH || BASIC_YEAR)
+);
 
 export const FEATURES = [
   {

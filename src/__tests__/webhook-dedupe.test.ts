@@ -32,10 +32,10 @@ describe("claimWebhookEvent", () => {
     mockUpsert.mockResolvedValue({ id: "w1", processed: false });
     const { claimWebhookEvent } = await import("@/lib/webhook-dedupe");
 
-    await expect(claimWebhookEvent("paddle", "evt_1", "subscription.created")).resolves.toBe("new");
+    await expect(claimWebhookEvent("dodo", "evt_1", "subscription.created")).resolves.toBe("new");
     expect(mockUpsert).toHaveBeenCalledWith({
-      where: { provider_eventId: { provider: "paddle", eventId: "evt_1" } },
-      create: { provider: "paddle", eventId: "evt_1", type: "subscription.created" },
+      where: { provider_eventId: { provider: "dodo", eventId: "evt_1" } },
+      create: { provider: "dodo", eventId: "evt_1", type: "subscription.created" },
       update: { type: "subscription.created" },
     });
   });
@@ -66,9 +66,9 @@ describe("markWebhookProcessed", () => {
     mockUpdateMany.mockResolvedValue({ count: 1 });
     const { markWebhookProcessed } = await import("@/lib/webhook-dedupe");
 
-    await markWebhookProcessed("paddle", "evt_1");
+    await markWebhookProcessed("dodo", "evt_1");
     expect(mockUpdateMany).toHaveBeenCalledWith({
-      where: { provider: "paddle", eventId: "evt_1" },
+      where: { provider: "dodo", eventId: "evt_1" },
       data: { processed: true, processedAt: expect.any(Date) },
     });
   });

@@ -12,9 +12,9 @@ import { PlanTier } from "@/config/plans";
 // ── Credit config tests ──────────────────────────────────────────────────────
 
 describe("Credit configuration", () => {
-  it("FREE plan has 100 monthly and 20 daily credits", () => {
+  it("FREE plan has 100 monthly and 5 daily credits", () => {
     expect(getMonthlyCredits(PlanTier.FREE)).toBe(100);
-    expect(getDailyCredits(PlanTier.FREE)).toBe(20);
+    expect(getDailyCredits(PlanTier.FREE)).toBe(5);
   });
 
   it("PRO plan has 2000 monthly and 200 daily credits", () => {

@@ -51,11 +51,9 @@ export default function BlogPost3Page() {
     >
       <p>
         Every month we look at which outputs users save, star, or copy out of ToneCraft. Five email patterns show up again and again — and they are not what you would guess. Here they are, with the structure that makes each one work.
-      </p>
-
-      <h2>1. The cold outreach follow-up</h2>
-      <p>
-        Most cold emails fail because they are too long and ask for too much. The follow-up that converts is the opposite: short, specific, and low-friction.
+      </p>      <h2>1. The follow-up that converts</h2>
+        <p>
+          Most outreach emails fail because they are too long and ask for too much. The follow-up that converts is the opposite: short, specific, and low-friction.
       </p>
       <blockquote>
         <p><strong>Subject:</strong> Re: ToneCraft for Acme</p>

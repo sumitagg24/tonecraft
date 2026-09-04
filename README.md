@@ -2,7 +2,7 @@
 
 **AI-powered voice & tone transformation studio** — rewrite anything in 10 built-in tones (or your own custom personas), run 40+ specialized AI writing tools, and organize your work across documents, tasks, and calendars. Built for writers, marketers, creators, and teams who care about *how* things are said.
 
-> **v1.5.0** — production-launch hardening: live Paddle billing, production Clerk auth, in-app feedback with admin triage, webhook replay protection, retention cleanup, semantic knowledge retrieval, and a per-viewport e2e QA suite.
+> **v1.5.0** — production-launch hardening: live Dodo Payments billing, production Clerk auth, in-app feedback with admin triage, webhook replay protection, retention cleanup, semantic knowledge retrieval, and a per-viewport e2e QA suite.
 
 ---
 
@@ -29,11 +29,11 @@
 - Every realtime and collaboration route re-verifies resource membership server-side — no client-claimed identities or cross-user reads
 
 ### 🛠️ Platform
-- Clerk auth (email + social), **live Paddle billing** (Free / Pro / Enterprise) with webhooks and annual plans
-- **USD pricing** — Pro at $6/mo, Enterprise at $15/mo; invoices and payment health checks in-app
+- Clerk auth (email + social), **live Dodo Payments billing** (Free / Basic / Pro / Advanced) with webhooks and annual plans
+- **USD pricing** — Basic at $2/mo, Pro at $5/mo, Advanced at $15/mo; annual billing at 20% off; invoices and payment health checks in-app
 - Enterprise audit logging + **admin dashboard** (metrics, permissions, audit, credits, AI usage)
 - **In-app feedback** — bug / feature request / general / other, rating, optional context; triaged at `/admin/feedback` (new / reviewed / resolved) and emailed to `FEEDBACK_NOTIFICATION_EMAIL`
-- **Webhook replay protection** — Paddle and Clerk events dedupe by event ID (`WebhookEvent` table), so replays never re-write audit logs
+- **Webhook replay protection** — Dodo and Clerk events dedupe by event ID (`WebhookEvent` table), so replays never re-write audit logs
 - **Retention & cleanup** — daily bounded cleanup of audit logs, activity, usage records, queue jobs, prompt history, and document operations (windows env-overridable)
 - Rate limiting (Upstash Redis), usage analytics, Sentry error monitoring
 - Scheduled background workers (usage resets, notification digests, automations, retention, embedding backfill) guarded by `CRON_SECRET`
@@ -63,7 +63,7 @@
 └────────────────────────────────────────────────────────────┘
 ```
 
-**Layering:** pages → API routes → services → repositories → Prisma. Server components for public pages; client components for the dashboard shell. All AI endpoints run through `checkMessageLimit` (Upstash) and plan-based affordability checks. `/api/health` probes the real dependencies (database, Groq, Gemini, OpenRouter, Clerk, Paddle) with sanitized output.
+**Layering:** pages → API routes → services → repositories → Prisma. Server components for public pages; client components for the dashboard shell. All AI endpoints run through `checkMessageLimit` (Upstash) and plan-based affordability checks. `/api/health` probes the real dependencies (database, Groq, Gemini, OpenRouter, Clerk, Dodo) with sanitized output.
 
 **Key directories**
 
@@ -75,19 +75,19 @@
 | `src/services/` | Business logic (`ToolService`, `NotificationService`, `VoiceService`, `PlanService`, `RetentionService`, `FeedbackService`, …) |
 | `src/repositories/` | Data access (`PromptRepository`, `WorkspaceRepository`, `AuditLogRepository`, …) |
 | `src/engine/` | AI provider router, model registry, tool calling, local tone engine |
-| `src/billing/` | Billing abstraction (`BillingService`, Paddle provider, entitlement sync) |
+| `src/billing/` | Billing abstraction (`BillingService`, Dodo Payments provider, entitlement sync) |
 | `src/components/` | UI: `shell/` (rail, topbar, palette), `tools/`, `workspace/`, `landing/`, `ui/`, `feedback/` |
 | `src/hooks/` | Client data hooks (`use-chat`, `use-command-palette`, `use-notifications`, …) |
 | `src/lib/` | Shared utilities (`prisma`, `ratelimit`, `ai-labels`, `validators`, `withApiHandler`, `admin`, `resource-access`) |
 | `src/middleware/` | Role/permission checks for workspace routes |
 | `src/__tests__/` | Jest unit + security suites (guards, feedback API, admin authz, webhook dedupe, retention, collaboration authz) |
 | `e2e/` | Playwright specs (hydration, auth mount, chat flow, mobile viewports) |
-| `scripts/` | Tooling (dead-code check, Paddle provisioning, e2e session refresh) |
+| `scripts/` | Tooling (dead-code check, Dodo sandbox checkout harness, e2e session refresh) |
 
 **Security model**
 - Every `/api/**` route runs through `withApiHandler`: session required by default, Zod body validation, sanitized errors, three-tier rate limits, feature gates
 - Personal resources are ownership-scoped (`findFirst({ id, userId })`); workspace routes check membership + role; global admin actions are gated by `ADMIN_EMAILS` (fail closed when unset)
-- Webhooks (Clerk svix, Paddle) verify signatures and dedupe by event ID; cron workers require the `CRON_SECRET` bearer token (timing-safe compare)
+- Webhooks (Clerk svix, Dodo) verify signatures and dedupe by event ID; cron workers require the `CRON_SECRET` bearer token (timing-safe compare)
 - Secrets live only in server env vars — never `NEXT_PUBLIC_*`; R2 credentials never reach the browser (uploads go through the server, downloads via `/api/files`)
 - The app **fails closed**: missing rate-limit, cron, or storage config blocks the feature rather than running unguarded
 
@@ -163,9 +163,9 @@ Sign in with Clerk, and you're on `/chat`. The shell rail + ⌘K palette navigat
 | `RETENTION_DAYS_QUEUEITEM` / `_AUDITLOG` / `_ACTIVITY` / `_NOTIFICATION` / `_USAGERECORD` / `_PROMPTHISTORY` / `_DOCUMENTOPERATION` | | Per-table retention windows in days (defaults: 30 / 365 / 180 / 365 / 365 / 365 / 180; `0` disables) |
 | `RETENTION_DAYS_MESSAGE` / `RETENTION_DAYS_MEMORYITEM` | | Retention for user content — **disabled by default**, opt in only if you accept deleting user data |
 | `RETENTION_MAX_ROWS_PER_RUN` | | Cap on rows deleted per daily retention run (default 100,000) |
-| `PADDLE_API_KEY` / `PADDLE_CLIENT_TOKEN` / `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` / `PADDLE_WEBHOOK_SECRET` | | Billing |
-| `PADDLE_PRICE_PRO` / `PADDLE_PRICE_ENTERPRISE` | | Monthly price IDs |
-| `PADDLE_PRICE_PRO_ANNUAL` / `PADDLE_PRICE_ENTERPRISE_ANNUAL` | | Annual price IDs (20% off toggle) |
+| `DODO_PAYMENTS_API_KEY` / `DODO_PAYMENTS_ENVIRONMENT` / `DODO_PAYMENTS_WEBHOOK_KEY` / `DODO_PAYMENTS_RETURN_URL` | | Dodo Payments billing (live_mode / test_mode) |
+| `DODO_PRODUCT_BASIC` / `DODO_PRODUCT_PRO` / `DODO_PRODUCT_ADVANCED` (+ `NEXT_PUBLIC_` variants) | | Monthly product IDs |
+| `DODO_PRODUCT_BASIC_ANNUAL` / `DODO_PRODUCT_PRO_ANNUAL` / `DODO_PRODUCT_ADVANCED_ANNUAL` (+ `NEXT_PUBLIC_` variants) | | Annual product IDs (20% off toggle) |
 | `NEXT_PUBLIC_APP_URL` | | Canonical app URL |
 | `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` / `SENTRY_AUTH_TOKEN` / `SENTRY_ORG` / `SENTRY_PROJECT` | | Error monitoring + source maps |
 | `E2E_EMAIL` / `E2E_PASSWORD` | | CI-only: signed-in e2e test account (specs skip when absent) |
@@ -206,7 +206,7 @@ Sign in with Clerk, and you're on `/chat`. The shell rail + ⌘K palette navigat
    - `0 9 * * *` → `/api/cron/daily` — usage resets, notification digests, retention cleanup, embedding backfill, collaboration-storage compaction
 
    Note: sub-daily schedules (`* * * * *`, `*/5 * * * *`) require a Vercel Pro plan or higher — Hobby plans only run crons once per day.
-4. Verify post-deploy: sign-in flow, an AI chat, a Paddle checkout, the in-app billing health check, and a feedback submission appearing in `/admin/feedback`
+4. Verify post-deploy: sign-in flow, an AI chat, a Dodo checkout, the in-app billing health check, and a feedback submission appearing in `/admin/feedback`
 
 ---
 
@@ -231,7 +231,7 @@ npm run start -- -p 3100   # in another terminal
 node scripts/refresh-e2e-session.cjs
 ```
 
-**CI (pull requests):** Playwright runs as a **matrix job with one job per viewport** — `e2e (chromium)`, `e2e (mobile-android)`, `e2e (mobile-ios)`, `e2e (tablet-ios)` — so failures are reported per-project (a mobile-only regression shows up as exactly which phone/tablet form factor broke). `fail-fast` is disabled so one failing viewport never cancels the others. The production build is built **once** in the `build-and-test` job and shared with every matrix entry via `actions/cache` (keyed on the commit SHA) — no per-viewport rebuilds. The mobile/tablet jobs are a mandatory, separate gate: hydration on every phone/tablet viewport plus the auth-free responsive checks always execute. When an e2e job fails, its **browsable HTML report and traces** are uploaded as a `playwright-<viewport>` artifact on the run (download it from the failed job's Summary page — `playwright-report/index.html` for the report, `test-results/` for raw traces viewable with `npx playwright show-trace`). Enable the jobs with the `CLERK_SECRET_KEY` + `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` repo secrets (required to render pages). To also run the **signed-in** checks (touch composer, reply action bar, protected pages, chat flow) and the billing/checkout spec on every PR, add a password-verified test account as `E2E_EMAIL` + `E2E_PASSWORD` and the Paddle secrets as repo secrets — without them those specs skip with a hint.
+**CI (pull requests):** Playwright runs as a **matrix job with one job per viewport** — `e2e (chromium)`, `e2e (mobile-android)`, `e2e (mobile-ios)`, `e2e (tablet-ios)` — so failures are reported per-project (a mobile-only regression shows up as exactly which phone/tablet form factor broke). `fail-fast` is disabled so one failing viewport never cancels the others. The production build is built **once** in the `build-and-test` job and shared with every matrix entry via `actions/cache` (keyed on the commit SHA) — no per-viewport rebuilds. The mobile/tablet jobs are a mandatory, separate gate: hydration on every phone/tablet viewport plus the auth-free responsive checks always execute. When an e2e job fails, its **browsable HTML report and traces** are uploaded as a `playwright-<viewport>` artifact on the run (download it from the failed job's Summary page — `playwright-report/index.html` for the report, `test-results/` for raw traces viewable with `npx playwright show-trace`). Enable the jobs with the `CLERK_SECRET_KEY` + `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` repo secrets (required to render pages). To also run the **signed-in** checks (touch composer, reply action bar, protected pages, chat flow) and the billing/checkout spec on every PR, add a password-verified test account as `E2E_EMAIL` + `E2E_PASSWORD` and the Dodo sandbox secrets as repo secrets — without them those specs skip with a hint.
 
 The e2e suite covers:
 - **Hydration smoke** — landing, sign-in, and sign-up render with zero console/hydration errors (desktop, tablet, and both phone viewports)
@@ -239,7 +239,7 @@ The e2e suite covers:
 - **Signed-in smoke** — protected pages (docs, admin, calendar, settings) render clean
 - **Chat flow** — New Workspace → send → copy, asserting the clipboard contents
 - **Composer controls** — tone picker, tool picker, voice dictation (fake media stream), edit + `(edited)` marker, regenerate
-- **Billing/checkout** — `/billing` mount, bundle token↔build-config match, and the Paddle checkout probe
+- **Billing/checkout** — `/billing` mount, plan cards render, and the Dodo checkout probe
 - **Responsive overflow** (all projects) — public pages must fit the viewport with no horizontal scroll; at tablet width (834px) this covers the md breakpoint between the phone and desktop layouts
 - **Mobile responsive** (`mobile-android` / `mobile-ios` projects) — composer send button stays on-screen, toolbar scrolls on small screens, tone picker opens as a touch bottom sheet, share menu opens on tap, reply action bar (Copy/Regenerate) visible and tappable without hover
 
@@ -252,7 +252,7 @@ Clerk's dev instance requires a one-time email code for new devices; the signed-
 **Done**
 - Chat studio, tones, personas, prompt library, knowledge base (with semantic retrieval + embedding backfill), workspaces, collaboration
 - Tools catalog (40+ tools), docs/notes/tasks/calendar suite
-- Admin dashboard, audit logs, **live Paddle billing** (USD monthly + annual), voice dictation
+- Admin dashboard, audit logs, **live Dodo Payments billing** (USD monthly + annual), voice dictation
 - In-app feedback with admin triage + email notification; webhook replay protection; retention cleanup; production security hardening (IDOR/realtime/admin fixes, role hierarchy)
 - Provider-neutral engine — users never see which model produced their results
 - Mobile-first chat UI; per-viewport Playwright e2e (Android / iOS / tablet) + dead-code CI checks, Sentry monitoring
@@ -277,4 +277,4 @@ Clerk's dev instance requires a one-time email code for new devices; the signed-
 
 ## 📄 License
 
-Built with Next.js 16, React 19, Prisma 7, Tailwind CSS 4, Clerk, and Paddle. Licensing to be confirmed — see the project owner before reuse.
+Built with Next.js 16, React 19, Prisma 7, Tailwind CSS 4, Clerk, and Dodo Payments. Licensing to be confirmed — see the project owner before reuse.

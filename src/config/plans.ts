@@ -1,5 +1,6 @@
 export enum PlanTier {
   FREE = "free",
+  BASIC = "basic",
   PRO = "pro",
   ENTERPRISE = "enterprise",
 }
@@ -48,14 +49,41 @@ const FREE_PLAN: PlanConfig = {
   label: "Free",
   priceCents: 0,
   limits: {
-    messagesPerDay: 50,
-    messagesPerHour: 10,
+    messagesPerDay: 5,
+    messagesPerHour: 5,
     maxTokensPerMessage: 2000,
     maxFileSize: 5 * 1024 * 1024,
-    maxFilesPerDay: 5,
+    maxFilesPerDay: 3,
     maxContextWindow: 4096,
-    maxPersonas: 3,
+    maxPersonas: 0,
     maxStorageMB: 100,
+  },
+  features: {
+    streaming: true,
+    customPersonas: false,
+    premiumPrompts: false,
+    fileUploads: true,
+    exportPdf: false,
+    modelSelector: false,
+    teamWorkspace: false,
+    advancedAnalytics: false,
+  },
+  modelTier: "free",
+};
+
+const BASIC_PLAN: PlanConfig = {
+  tier: PlanTier.BASIC,
+  label: "Basic",
+  priceCents: 200,
+  limits: {
+    messagesPerDay: 100,
+    messagesPerHour: 30,
+    maxTokensPerMessage: 8000,
+    maxFileSize: 10 * 1024 * 1024,
+    maxFilesPerDay: 20,
+    maxContextWindow: 8192,
+    maxPersonas: 0,
+    maxStorageMB: 500,
   },
   features: {
     streaming: true,
@@ -73,7 +101,7 @@ const FREE_PLAN: PlanConfig = {
 const PRO_PLAN: PlanConfig = {
   tier: PlanTier.PRO,
   label: "Pro",
-  priceCents: 600,
+  priceCents: 500, // $5/mo — matches the live Dodo "ToneCraft Pro" product (500¢)
   limits: {
     messagesPerDay: Infinity,
     messagesPerHour: 100,
@@ -126,6 +154,7 @@ const ENTERPRISE_PLAN: PlanConfig = {
 
 const PLAN_CONFIGS: Record<PlanTier, Readonly<PlanConfig>> = {
   [PlanTier.FREE]: Object.freeze(FREE_PLAN),
+  [PlanTier.BASIC]: Object.freeze(BASIC_PLAN),
   [PlanTier.PRO]: Object.freeze(PRO_PLAN),
   [PlanTier.ENTERPRISE]: Object.freeze(ENTERPRISE_PLAN),
 };
