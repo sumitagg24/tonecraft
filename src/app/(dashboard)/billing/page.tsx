@@ -22,7 +22,7 @@ import {
   RefreshCw,
   Zap,
 } from "lucide-react";
-import { PRICING_TIERS } from "@/lib/constants";
+import { PRICING_TIERS, ANNUAL_BILLING_CONFIGURED } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api-client";
 import { formatMoney } from "@/lib/currency";
@@ -276,17 +276,19 @@ function BillingContent() {
             >
               Monthly
             </button>
-            <button
-              onClick={() => setBillingInterval("year")}
-              className={cn(
-                "px-4 py-1.5 rounded-lg text-xs font-medium transition-all",
-                interval === "year"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              Annual (20% off)
-            </button>
+            {ANNUAL_BILLING_CONFIGURED && (
+              <button
+                onClick={() => setBillingInterval("year")}
+                className={cn(
+                  "px-4 py-1.5 rounded-lg text-xs font-medium transition-all",
+                  interval === "year"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Annual (20% off)
+              </button>
+            )}
           </div>
         </div>
 
@@ -326,13 +328,13 @@ function BillingContent() {
                     <CardDescription>{tier.description}</CardDescription>
                     <div className="pt-4 flex items-baseline gap-1">
                       <span className="text-3xl md:text-4xl font-bold">
-                        {formatMoney(interval === "year" ? Math.floor(tier.price * 0.8) : tier.price)}
+                        {formatMoney(interval === "year" ? tier.priceYear : tier.price)}
                       </span>
-                      <span className="text-muted-foreground text-sm">/month</span>
+                      <span className="text-muted-foreground text-sm">{interval === "year" ? "/year" : "/month"}</span>
                     </div>
-                    {interval === "year" && tier.price > 0 && (
+                    {interval === "year" && tier.price > 0 && tier.priceYear > 0 && (
                       <p className="text-xs text-muted-foreground mt-1">
-                        Billed {formatMoney(Math.floor(tier.price * 0.8) * 12)}/year — save 20%
+                        Billed once a year — save 20% vs {formatMoney(tier.price * 12)}/yr
                       </p>
                     )}
                   </CardHeader>

@@ -60,7 +60,8 @@ export interface PricingTier {
   features: string[];
   popular: boolean;
   priceId: { month: string; year: string };
-  price: number; // base USD price for display fallback
+  price: number; // base USD monthly price for display fallback
+  priceYear: number; // exact USD annual total (matches the Dodo *_ANNUAL products)
   cta: string;
 }
 
@@ -80,6 +81,7 @@ const FREE_TIER: PricingTier = {
   ],
   popular: false,
   price: 0,
+  priceYear: 0,
   cta: "Get Started Free",
   priceId: { month: "", year: "" },
 };
@@ -99,6 +101,7 @@ const BASIC_TIER: PricingTier | null =
         ],
         popular: false,
         price: 2,
+        priceYear: 19, // $19/yr — 20% off $2/mo × 12 (matches live catalog "Basic (Annual)")
         cta: "Get Basic",
         priceId: { month: BASIC_MONTH, year: BASIC_YEAR ?? "" },
       }
@@ -120,6 +123,7 @@ export const PRICING_TIERS: PricingTier[] = [
     ],
     popular: true,
     price: 5,
+    priceYear: 48, // $48/yr — 20% off $5/mo × 12 (matches live catalog "Pro (Annual)")
     cta: "Upgrade to Pro",
     priceId: {
       month: process.env.NEXT_PUBLIC_DODO_PRODUCT_PRO ?? "",
@@ -138,7 +142,10 @@ export const PRICING_TIERS: PricingTier[] = [
       "Dedicated support",
     ],
     popular: false,
-    price: 12,
+    // Display must match the live Dodo catalog: the Advanced product is $15/mo
+    // (1500¢). It was previously shown as $12 while checkout charged $15.
+    price: 15,
+    priceYear: 144, // $144/yr — 20% off $15/mo × 12 (matches live catalog "Advanced (Annual)")
     cta: "Get Advanced",
     priceId: {
       month: process.env.NEXT_PUBLIC_DODO_PRODUCT_ADVANCED ?? "",

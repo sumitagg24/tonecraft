@@ -68,6 +68,9 @@ const AI_PROVIDER_MAP: Record<string, ProviderName> = {
   groq: "groq",
   gemini: "google",
   openrouter: "openrouter",
+  // Env-configured OpenAI-compatible slot — not probed by the static list, but
+  // registered so a mid-request 401 marks it offline and routing skips it.
+  custom: "custom",
 };
 
 const HTTP_NAME_BY_PROVIDER: Record<ProviderName, string> = {
@@ -75,6 +78,7 @@ const HTTP_NAME_BY_PROVIDER: Record<ProviderName, string> = {
   google: "gemini",
   openrouter: "openrouter",
   openai: "openai",
+  custom: "custom",
 };
 
 function classifyHttpStatus(status: number): ProviderStatus {

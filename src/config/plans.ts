@@ -101,7 +101,7 @@ const BASIC_PLAN: PlanConfig = {
 const PRO_PLAN: PlanConfig = {
   tier: PlanTier.PRO,
   label: "Pro",
-  priceCents: 600,
+  priceCents: 500, // $5/mo — matches the live Dodo "ToneCraft Pro" product (500¢)
   limits: {
     messagesPerDay: Infinity,
     messagesPerHour: 100,

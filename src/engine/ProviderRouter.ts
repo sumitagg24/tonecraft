@@ -107,6 +107,15 @@ function getClient(provider: string) {
       return createGoogleGenerativeAI({ apiKey: process.env.GOOGLE_AI_API_KEY });
     case "openai":
       return createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    // Generic OpenAI-compatible provider — base URL + key come from env, so any
+    // OpenAI-compatible endpoint (GitHub Models, Workers AI, Cerebras, etc.)
+    // works without a code change. Guarded by models.ts only registering the
+    // model when all three env vars are present.
+    case "custom":
+      return createOpenAI({
+        apiKey: process.env.CUSTOM_AI_API_KEY,
+        baseURL: process.env.CUSTOM_AI_BASE_URL || undefined,
+      });
     default:
       throw new Error(`Unknown provider: ${provider}`);
   }

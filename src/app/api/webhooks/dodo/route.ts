@@ -175,9 +175,14 @@ function planFromProductId(productId: string): string {
   const BASIC = process.env.DODO_PRODUCT_BASIC || "";
   const PRO = process.env.DODO_PRODUCT_PRO || "";
   const ADVANCED = process.env.DODO_PRODUCT_ADVANCED || "";
-  if (productId === PRO) return "pro";
-  if (productId === BASIC) return "basic";
-  if (productId === ADVANCED) return "enterprise";
+  // Annual variants bill yearly but grant the same plan — without them a
+  // yearly purchase would resolve to "" and silently sync the user to Free.
+  const BASIC_ANNUAL = process.env.DODO_PRODUCT_BASIC_ANNUAL || "";
+  const PRO_ANNUAL = process.env.DODO_PRODUCT_PRO_ANNUAL || "";
+  const ADVANCED_ANNUAL = process.env.DODO_PRODUCT_ADVANCED_ANNUAL || "";
+  if (productId === PRO || productId === PRO_ANNUAL) return "pro";
+  if (productId === BASIC || productId === BASIC_ANNUAL) return "basic";
+  if (productId === ADVANCED || productId === ADVANCED_ANNUAL) return "enterprise";
   return "";
 }
 

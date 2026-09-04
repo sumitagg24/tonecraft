@@ -31,7 +31,7 @@ const jsonLd = {
     },
     {
       "@type": "Offer",
-      price: "6",
+      price: "5",
       priceCurrency: "USD",
       name: "ToneCraft Pro",
       description: "Unlimited rewrites, custom personas, 16K context window",
