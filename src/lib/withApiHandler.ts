@@ -28,7 +28,7 @@ import { getClientIp } from "@/lib/request-ip";
  *
  * Documented exceptions that keep their native protocols (not JSON envelopes):
  *  - SSE streams (chats/[chatId]/messages POST, notifications/stream GET)
- *  - Webhooks (webhook/clerk, billing/webhook) — signature-verified
+ *  - Webhooks (webhook/clerk, webhooks/dodo) — signature-verified
  *  - /api/health — public liveness payload
  */
 

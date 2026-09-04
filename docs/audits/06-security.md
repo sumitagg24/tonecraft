@@ -28,8 +28,8 @@ Every state-changing / read API route was read end-to-end with the repository/se
 
 ## High
 
-### H1 — ~~Paddle webhook is unreachable~~ RESOLVED: Migrated to Dodo Payments
-- **Original**: Paddle webhook at `/api/billing/webhook` was blocked by the auth proxy.
+### H1 — ~~Payment webhook is unreachable~~ RESOLVED: Migrated to Dodo Payments
+- **Original**: The payment webhook was blocked by the auth proxy.
 - **Resolution**: Migrated to Dodo Payments. Webhook now at `/api/webhooks/dodo` which is in `PUBLIC_PATHS`. Dodo's `Webhooks()` handler validates signatures via Standard Webhooks spec. No auth proxy bypass needed.
 
 ### H2 — No rate limiting on the other LLM-costly endpoints (free-account cost abuse)

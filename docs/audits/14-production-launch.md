@@ -55,7 +55,7 @@ Date: 2026-08-17 · Scope: full production-readiness audit (auth, API authorizat
 4. **PDF knowledge ingestion** — `pdf-parse` is installed and the Jest path works under `--experimental-vm-modules` (already in `npm test`); VisionService uses the same static import (the old `eval("require")` path is gone).
 5. **Retention windows** — the retention job runs with conservative defaults (operational tables 180–365 days, user content disabled), deletes in 1,000-row id batches, and stops at `RETENTION_MAX_ROWS_PER_RUN` (default 100k) per tick. Review/adjust via `RETENTION_DAYS_<TABLE>` before launch.
 6. **`EMBEDDINGS_API_URL/KEY`** — embeddings degrade to hash vectors when unset (documented in audit 13). Set the provider keys to enable real semantic memory + knowledge retrieval.
-7. **Clerk production instance** — ensure the publishable/secret keys are the `pk_live_`/`sk_live_` pair and the Dodo client token is live (no `test_`) before launch (`scripts/production-cutover.js` checks this).
+7. **Clerk production instance** — ensure the publishable/secret keys are the `pk_live_`/`sk_live_` pair and Dodo Payments is in `live_mode` with live product ids (no sandbox values) before launch (`scripts/production-cutover.js` checks this).
 
 ## E. Tests executed
 

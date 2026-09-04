@@ -57,7 +57,7 @@
 
 ## 3. Monetization & Billing Infrastructure
 
-### Recommendation: Stripe/Paddle Billing Setup
+### Recommendation: Dodo Payments Billing Setup
 **Why**: Scalable payment handling
 **Benefits**: - Global payment support
 - Fraud protection

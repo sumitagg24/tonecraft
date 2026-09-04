@@ -10,7 +10,7 @@ export type ProviderName = "noop" | "dodo";
  * IMPORTANT: providers must NOT be constructed at module scope — the provider
  * client constructor throws when DODO_PAYMENTS_API_KEY is absent, and next build
  * collects page data for routes that import this module (e.g.
- * /api/billing/webhook). Deferring construction keeps importing safe while
+ * /api/webhooks/dodo). Deferring construction keeps importing safe while
  * DODO_PAYMENTS_API_KEY remains required the moment a billing method actually runs.
  */
 const providerCache = new Map<string, PaymentProvider>();

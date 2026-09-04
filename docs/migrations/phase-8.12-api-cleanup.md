@@ -29,7 +29,7 @@ array is returned only under `error.details` for validation failures.
 - `POST /api/chats/[chatId]/messages` — SSE streaming response
 - `GET /api/notifications/stream` — SSE event stream
 - `POST /api/webhook/clerk` — Svix signature-verified webhook
-- `POST /api/billing/webhook` — Dodo signature-verified webhook (Standard Webhooks)
+- `POST /api/webhooks/dodo` — Dodo signature-verified webhook (Standard Webhooks)
 - `GET /api/health` — public liveness payload
 
 ---

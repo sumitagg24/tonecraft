@@ -14,7 +14,7 @@ Date: 2026-08-17 · Scope: every production dependency traced from code → envi
 | Upstash Redis rate limiting | ✅ Real, fully wired | `src/lib/ratelimit.ts` (fail-closed in prod); `withApiHandler`, `src/proxy.ts`, chat route, `ProviderRouter`; `UPSTASH_REDIS_REST_URL/TOKEN` set |
 | Clerk production auth | ✅ Real | `src/proxy.ts` `clerkMiddleware` + `auth.protect()`; `src/lib/auth.ts` lazy-sync; `/api/webhook/clerk` svix-verified; keys set |
 | Neon database (Prisma 7) | ✅ Real | `src/lib/prisma.ts` (`@prisma/adapter-pg`, `DIRECT_URL`); `DATABASE_URL`/`DIRECT_URL` set |
-| Dodo webhooks/billing | ✅ Real, **1 bug** | `DodoProvider.ts` + `/api/billing/webhook` (duplicate `subscription.payment_succeeded` case) |
+| Dodo webhooks/billing | ✅ Real, **1 bug** | `DodoProvider.ts` + `/api/webhooks/dodo` (duplicate `subscription.payment_succeeded` case) |
 | Cron auth | ✅ Guard real + hardened | `src/lib/cron-guard.ts` (timing-safe CRON_SECRET bearer + Vercel schedule-header/UA verification) |
 | Cron scheduling | ❌ **Broken** | `vercel.json` scheduled only `/api/cron/daily`; automations + queue never ran (fixed 2026-08-17, see Resolved) |
 | AI providers + usage limits | ✅ Real, 2 caveats | `ProviderRouter.ts`, `UsageGuard.ts`; local-template fallback + hash-vector embeddings |
@@ -46,7 +46,7 @@ Prisma 7 + `@prisma/adapter-pg`; runtime uses `DIRECT_URL` (avoids pooler stalen
 
 Full SDK provider, signature verification, live/sandbox key detection, hardened access gating (PlanService grants active/trialing/past_due only), ownership-bound checkout (`customData.userId` = session user).
 
-**Bug — `src/app/api/billing/webhook/route.ts`: `case "subscription.payment_succeeded"` appears twice.** The first (dead) case executes: it writes a mislabeled `billing.unsubscribe` audit entry and **never flips the subscription to active**; the correct activation code is unreachable. `transaction.completed`/`transaction.paid` therefore can't activate a subscription through this path. Compiles because TS doesn't flag duplicate case labels.
+**Bug — the Dodo webhook route: `case "subscription.payment_succeeded"` appears twice.** The first (dead) case executes: it writes a mislabeled `billing.unsubscribe` audit entry and **never flips the subscription to active**; the correct activation code is unreachable. `transaction.completed`/`transaction.paid` therefore can't activate a subscription through this path. Compiles because TS doesn't flag duplicate case labels.
 
 ### F6. Cron authentication — guard real, scheduling was broken (P0, fixed)
 
@@ -84,7 +84,7 @@ Remaining weaknesses (not yet fixed):
 2. **Socket.IO auth (F9)** — `src/lib/socket.ts` and `src/app/api/socket/route.ts` now verify the handshake JWT with Clerk's `verifyToken` (signature + `exp`/`nbf` against the Clerk JWKS) and derive the identity from `claims.sub`. The placeholder `validateSocketToken` (accepted any ≥10-char token, parsed `userId:name:image` out of it) is deleted. Client (`src/lib/socket/index.ts`) sends the real `__session` cookie token and no longer transmits a client-claimed `userId`.
 3. **`/api/ws` authorization (F9)** — the route now verifies `permissionMiddleware.isWorkspaceMember(workspaceId, userId)` and returns 403 for non-members.
 4. **README drift** — verified current README no longer claims R2 uploads; deployment/cron section corrected (it previously claimed crons that were not registered).
-5. **Dodo webhook (F5)** — removed the duplicate `subscription.payment_succeeded` case; `transaction.completed`/`transaction.paid` now activate the subscription (`src/app/api/billing/webhook/route.ts`).
+5. **Dodo webhook (F5)** — removed the duplicate `subscription.payment_succeeded` case; `transaction.completed`/`transaction.paid` now activate the subscription (in the `/api/webhooks/dodo` handler).
 6. **Queue handlers (F6/F7)** — `email` jobs now send via a real nodemailer SMTP transport (`src/lib/email.ts`, `SMTP_*` env vars added to `.env.example`); `embedding` jobs now embed each knowledge chunk and persist vectors in `KnowledgeChunk.embedding` (`KnowledgeService.embedFile`).
 7. **AI fallback (F7)** — production no longer falls back to the LocalToneEngine template text when all providers fail: `generate()` throws / `stream()` yields an `AIEngineError` with a classified, user-safe message (`all_providers_exhausted` etc.), and no credits are charged. Dev keeps the local fallback; the chat route surfaces the engine's message instead of the generic apology.
 8. **PDF ingestion (F1)** — installed `pdf-parse@2.4.5` (bundled types, no `@types` needed) and added a real PDF branch to `extractText` (`src/lib/knowledge/extract.ts`, now async): `PDFParse({ data })` + `getText()`, NUL stripping, and a `PdfParseError` for corrupt/encrypted/scanned files that the `/api/knowledge` route surfaces as 422 instead of a generic 500. `detectMimeType` maps `.pdf` → `application/pdf`; `pdf-parse` is in `serverExternalPackages` (`next.config.ts`) so its worker runs unbundled; `VisionService.parseDocument` now uses the v2 API (the old `eval("require")` + v1 call signature was dead). Regression test `src/__tests__/knowledge-extract.test.ts` builds a minimal valid PDF and asserts extraction (jest needs `--experimental-vm-modules` for pdf.js's fake worker — `test`/`test:watch` scripts updated accordingly).

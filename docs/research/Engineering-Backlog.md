@@ -20,7 +20,7 @@
 | Capability Registry | Mid-term | Catalog of provider capabilities (e.g., vision, JSON mode) | Drives intelligent routing decisions | Medium | Integration with Model Registry, UI | Maintenance overhead | Phase 9 | 3–4 weeks |
 | Credits System Enhancements | Immediate | Transparent usage meters, rollover, bulk discounts | Improves pricing clarity, encourages higher tiers | Low | Billing integration, UI display | Accuracy of metering | Phase 8 | 2–3 days |
 | Provider Router (Smart Selection) | Near-term | Choose cheapest capable model based on task, fallback routing, user prefs, health, credits | Cost efficiency, resilience, user satisfaction | Medium | Routing logic, monitoring, fallbacks | Incorrect selection leading to subpar output | Phase 8 | 1–2 weeks |
-| Existing Already Implemented Items | — | Items already in production (e.g., Paddle billing, Clerk auth) | No additional work needed | None | None | None | Already Implemented | — |
+| Existing Already Implemented Items | — | Items already in production (e.g., Dodo Payments billing, Clerk auth) | No additional work needed | None | None | None | Already Implemented | — |
 | Rejected Recommendations | — | HIPAA, BAA, Healthcare module, Fine-tuning, API marketplace, Vendor lock‑in avoidance | Out of scope for current phase | — | — | — | Rejected | — |
 
 ## Conflict Detection
