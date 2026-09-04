@@ -54,12 +54,17 @@ export interface ModelEntry {
   readonly maxTokens: number;
 }
 
+// Groq retired `llama-3.3-70b-versatile` and `llama-3.1-8b-instant` (Aug 16,
+// 2026 — see console.groq.com/docs/deprecations). Groq's own migration path
+// points to `openai/gpt-oss-120b` / `qwen/qwen3.6-27b` for the 70B slot and
+// `openai/gpt-oss-20b` for the 8B slot; the IDs below are the live replacements
+// (verified serving on the configured key).
 const MODELS: readonly ModelEntry[] = [
   {
-    id: "groq-llama3-70b",
+    id: "groq-gpt-oss-120b",
     provider: "groq",
-    displayName: "Llama 3.3 70B",
-    modelId: "llama-3.3-70b-versatile",
+    displayName: "GPT-OSS 120B",
+    modelId: "openai/gpt-oss-120b",
     tier: "free",
     creditCost: 1,
     contextWindow: 131072,
@@ -70,10 +75,10 @@ const MODELS: readonly ModelEntry[] = [
     maxTokens: 32768,
   },
   {
-    id: "groq-llama3-8b",
+    id: "groq-gpt-oss-20b",
     provider: "groq",
-    displayName: "Llama 3.1 8B Instant",
-    modelId: "llama-3.1-8b-instant",
+    displayName: "GPT-OSS 20B",
+    modelId: "openai/gpt-oss-20b",
     tier: "free",
     creditCost: 1,
     contextWindow: 131072,

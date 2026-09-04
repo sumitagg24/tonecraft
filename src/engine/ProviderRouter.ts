@@ -68,7 +68,12 @@ function isModelGoneError(error: unknown): boolean {
     msg.includes("unknown model") ||
     msg.includes("does not exist") ||
     msg.includes("is not found") ||
-    msg.includes("not found for api version")
+    msg.includes("not found for api version") ||
+    // The AI SDK's synthetic error when a provider stream dies without emitting
+    // output (e.g. a 404/retired model swallowed into an empty stream). The
+    // model is effectively unusable — treat it like a gone model so the router
+    // fails over to the next provider/model instead of aborting the whole queue.
+    msg.includes("no output generated")
   );
 }
 

@@ -12,9 +12,8 @@ import { usageGuard } from "@/services/UsageGuard";
 import { modelRegistry } from "@/services/ModelRegistry";
 import { auditLogService } from "@/services/AuditLogService";
 import { logger } from "@/lib/logger";
-import { type PlanTier, getPlanConfig } from "@/config/plans";
 import { CODE_PATTERN } from "@/lib/capabilities";
-import { calculateCreditCost, intentToOperation, type OperationType } from "@/config/credits";
+import { calculateCreditCost, intentToOperation } from "@/config/credits";
 
 export class AIEngine {
   private providerRouter: ProviderRouter;
@@ -351,7 +350,6 @@ export class AIEngine {
           userId,
           messagesSent: 1,
           tokensUsed: data.tokens,
-          dailyMessages: 1,
           monthlyMessages: 1,
           dailyTokens: data.tokens,
           monthlyTokens: data.tokens,
@@ -362,7 +360,6 @@ export class AIEngine {
         update: {
           messagesSent: { increment: 1 },
           tokensUsed: { increment: data.tokens },
-          dailyMessages: { increment: 1 },
           monthlyMessages: { increment: 1 },
           dailyTokens: { increment: data.tokens },
           monthlyTokens: { increment: data.tokens },
