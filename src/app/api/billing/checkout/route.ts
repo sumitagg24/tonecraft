@@ -31,16 +31,26 @@ export const POST = api.POST(async (ctx, body) => {
 
       if (plan === "pro") {
         productId = interval === "year"
-          ? (process.env.DODO_PRODUCT_PRO_ANNUAL || process.env.DODO_PRODUCT_PRO)
+          ? process.env.DODO_PRODUCT_PRO_ANNUAL
           : process.env.DODO_PRODUCT_PRO;
       } else if (plan === "basic") {
         productId = interval === "year"
-          ? (process.env.DODO_PRODUCT_BASIC_ANNUAL || process.env.DODO_PRODUCT_BASIC)
+          ? process.env.DODO_PRODUCT_BASIC_ANNUAL
           : process.env.DODO_PRODUCT_BASIC;
       } else if (plan === "enterprise" || plan === "advanced") {
         productId = interval === "year"
-          ? (process.env.DODO_PRODUCT_ADVANCED_ANNUAL || process.env.DODO_PRODUCT_ADVANCED)
+          ? process.env.DODO_PRODUCT_ADVANCED_ANNUAL
           : process.env.DODO_PRODUCT_ADVANCED;
+      }
+
+      // Never silently bill the monthly product for a "yearly" checkout — if
+      // the annual product id isn't configured, say so instead.
+      if (interval === "year" && !productId && plan !== "") {
+        return fail(
+          "BAD_REQUEST",
+          "Annual billing isn't available for this plan yet. Please choose monthly billing.",
+          400,
+        );
       }
     }
 

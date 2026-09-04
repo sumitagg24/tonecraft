@@ -100,7 +100,7 @@ const BASIC_TIER: PricingTier | null =
         popular: false,
         price: 2,
         cta: "Get Basic",
-        priceId: { month: BASIC_MONTH, year: BASIC_YEAR || BASIC_MONTH },
+        priceId: { month: BASIC_MONTH, year: BASIC_YEAR ?? "" },
       }
     : null;
 
@@ -123,7 +123,7 @@ export const PRICING_TIERS: PricingTier[] = [
     cta: "Upgrade to Pro",
     priceId: {
       month: process.env.NEXT_PUBLIC_DODO_PRODUCT_PRO ?? "",
-      year: process.env.NEXT_PUBLIC_DODO_PRODUCT_PRO_ANNUAL ?? process.env.NEXT_PUBLIC_DODO_PRODUCT_PRO ?? "",
+      year: process.env.NEXT_PUBLIC_DODO_PRODUCT_PRO_ANNUAL ?? "",
     },
   },
   {
@@ -142,10 +142,23 @@ export const PRICING_TIERS: PricingTier[] = [
     cta: "Get Advanced",
     priceId: {
       month: process.env.NEXT_PUBLIC_DODO_PRODUCT_ADVANCED ?? "",
-      year: process.env.NEXT_PUBLIC_DODO_PRODUCT_ADVANCED_ANNUAL ?? process.env.NEXT_PUBLIC_DODO_PRODUCT_ADVANCED ?? "",
+      year: process.env.NEXT_PUBLIC_DODO_PRODUCT_ADVANCED_ANNUAL ?? "",
     },
   },
 ];
+
+/**
+ * Annual billing is only offered once real annual product IDs exist in the
+ * Dodo catalog (NEXT_PUBLIC_DODO_PRODUCT_*_ANNUAL). Without them the checkout
+ * would silently bill the monthly product at its monthly price while the UI
+ * advertised "20% off billed yearly" — so the toggle stays hidden until the
+ * envs are configured.
+ */
+export const ANNUAL_BILLING_CONFIGURED = Boolean(
+  process.env.NEXT_PUBLIC_DODO_PRODUCT_PRO_ANNUAL &&
+    process.env.NEXT_PUBLIC_DODO_PRODUCT_ADVANCED_ANNUAL &&
+    (!BASIC_MONTH || BASIC_YEAR)
+);
 
 export const FEATURES = [
   {

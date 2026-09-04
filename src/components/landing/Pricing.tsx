@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Check, ArrowRight } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
-import { PRICING_TIERS } from "@/lib/constants";
+import { PRICING_TIERS, ANNUAL_BILLING_CONFIGURED } from "@/lib/constants";
 import { sectionReveal, sectionItem } from "@/styles/motion";
 import { Minus } from "lucide-react";
 import { toast } from "sonner";
@@ -118,14 +118,16 @@ export function Pricing({ country = "OTHERS" }: Props) {
             >
               Monthly Billing
             </button>
-            <button
-              onClick={() => setAnnual(true)}
-              className={`px-5 py-2 rounded-xl text-xs font-medium transition-all ${
-                annual ? "bg-foreground text-background shadow-editorial" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Annual (20% Off)
-            </button>
+            {ANNUAL_BILLING_CONFIGURED && (
+              <button
+                onClick={() => setAnnual(true)}
+                className={`px-5 py-2 rounded-xl text-xs font-medium transition-all ${
+                  annual ? "bg-foreground text-background shadow-editorial" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Annual (20% Off)
+              </button>
+            )}
           </div>
         </motion.div>
 
