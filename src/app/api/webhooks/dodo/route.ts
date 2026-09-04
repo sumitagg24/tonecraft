@@ -1,4 +1,5 @@
 import { Webhooks } from "@dodopayments/nextjs";
+import type { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { planService } from "@/services/PlanService";
@@ -66,16 +67,19 @@ async function markProcessed(payload: Raw) {
   }
 }
 
-const webhookKey = process.env.DODO_PAYMENTS_WEBHOOK_KEY;
-if (!webhookKey) {
-  throw new Error(
-    "DODO_PAYMENTS_WEBHOOK_KEY is not configured. " +
-    "Webhook verification cannot proceed without it."
-  );
-}
+let webhookHandler: ((req: NextRequest) => Promise<NextResponse<unknown>>) | undefined;
 
-export const POST = Webhooks({
-  webhookKey,
+function getWebhookHandler() {
+  if (!webhookHandler) {
+    const webhookKey = process.env.DODO_PAYMENTS_WEBHOOK_KEY;
+    if (!webhookKey) {
+      throw new Error(
+        "DODO_PAYMENTS_WEBHOOK_KEY is not configured. " +
+        "Webhook verification cannot proceed without it."
+      );
+    }
+    webhookHandler = Webhooks({
+      webhookKey,
   onPayload: async (payload) => {
     const p = payload as Raw;
     const eventId = eventIdOf(p);
@@ -167,7 +171,12 @@ export const POST = Webhooks({
     await syncSubscriptionFromDodo(p, "canceled");
     await markProcessed(p);
   },
-});
+    });
+  }
+  return webhookHandler;
+}
+
+export const POST = (req: NextRequest) => getWebhookHandler()(req);
 
 // ── Subscription sync ────────────────────────────────────────────────────
 
