@@ -35,6 +35,11 @@ export function Pricing({ country = "OTHERS" }: Props) {
       return;
     }
 
+    // Duplicate-click protection: the button is disabled while loading, but a
+    // rapid double-click can still re-enter before React commits the state —
+    // guard here so we never create two checkout sessions for one click.
+    if (loading !== null) return;
+
     if (!isSignedIn) {
       window.location.assign("/sign-up?redirect_url=%2Fpricing");
       return;

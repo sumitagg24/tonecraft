@@ -181,6 +181,10 @@ function BillingContent() {
     billingInterval: "month" | "year" = "month"
   ) => {
     if (!isSignedIn) return;
+    // Duplicate-click protection (see landing Pricing): a rapid double-click
+    // can re-enter before the disabled state commits — never create two
+    // checkout sessions for one click.
+    if (loading !== null) return;
 
     setLoading(planName);
     try {

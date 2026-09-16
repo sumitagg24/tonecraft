@@ -22,6 +22,10 @@ function tierFromString(s: string): PlanTier {
       return PlanTier.BASIC;
     case "pro":
       return PlanTier.PRO;
+    // "advanced" is the UI-facing name for the ENTERPRISE grant (stored as
+    // "enterprise" by the Dodo webhook). Accept both so a row carrying the
+    // display name never degrades to FREE.
+    case "advanced":
     case "enterprise":
       return PlanTier.ENTERPRISE;
     default:

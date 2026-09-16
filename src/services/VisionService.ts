@@ -1,5 +1,9 @@
-import { PDFParse } from "pdf-parse";
 import { logger } from "@/lib/logger";
+
+// NOTE: pdf-parse is dynamically imported inside parseDocument (see
+// src/lib/knowledge/extract.ts) — a static import here would pull pdf.js into
+// every route that imports VisionService and crash module load on runtimes
+// without DOMMatrix (Vercel serverless).
 
 /**
  * Phase 18 — Vision & Multimodal AI.
@@ -84,6 +88,7 @@ export class VisionService {
       return { text: "", provider: "unavailable" };
     }
     try {
+      const { PDFParse } = await import("pdf-parse");
       // Copy the ArrayBuffer so the pdf.js worker doesn't detach the caller's buffer.
       const parser = new PDFParse({ data: new Uint8Array(bytes.slice(0)) });
       const result = await parser.getText();

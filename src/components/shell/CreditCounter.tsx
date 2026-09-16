@@ -58,6 +58,7 @@ export function CreditCounter({ collapsed = false }: CreditCounterProps) {
 
   const handleUpgrade = useCallback(async () => {
     if (!isSignedIn) return;
+    if (checkoutLoading) return;
     setCheckoutLoading(true);
     try {
       const res = await fetch("/api/billing/checkout", {
@@ -78,7 +79,7 @@ export function CreditCounter({ collapsed = false }: CreditCounterProps) {
     } finally {
       setCheckoutLoading(false);
     }
-  }, [isSignedIn]);
+  }, [isSignedIn, checkoutLoading]);
 
   // Don't render while loading or if no data
   if (loading || !data) return null;

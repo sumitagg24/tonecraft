@@ -3,6 +3,7 @@ import { billingService } from "@/billing/BillingService";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { auditLogService } from "@/services/AuditLogService";
+import { allConfiguredProductIds, grantForProductId } from "@/billing/dodoProducts";
 import type { ProrationBillingMode } from "@/billing/types";
 
 const api = withApiHandler();
@@ -49,12 +50,10 @@ export const POST = api.POST(async (ctx, body) => {
       ? (raw.prorationBillingMode as ProrationBillingMode)
       : "prorated_immediately"; // default for upgrades
 
-  // Validate the price ID belongs to our catalog
-  const knownPrices = [
-    process.env.DODO_PRODUCT_BASIC || "",
-    process.env.DODO_PRODUCT_PRO || "",
-    process.env.DODO_PRODUCT_ADVANCED || "",
-  ].filter(Boolean);
+  // Validate the price ID belongs to our catalog (monthly + annual — the
+  // server-side catalog is the single source of truth, so term switches to
+  // annual products validate the same way as monthly ones).
+  const knownPrices = allConfiguredProductIds();
 
   if (!knownPrices.includes(raw.newPriceId)) {
     return fail("BAD_REQUEST", "Invalid price ID.", 400);
@@ -101,13 +100,11 @@ export const POST = api.POST(async (ctx, body) => {
     // Preview mode: return the projected charges without applying.
     // Dodo doesn't have a preview API — return what we know client-side.
     if (raw.preview) {
-      // Resolve the new plan name from the price ID
-      const newPlanName =
-        raw.newPriceId === (process.env.DODO_PRODUCT_BASIC || "")
-          ? "basic"
-          : raw.newPriceId === (process.env.DODO_PRODUCT_PRO || "")
-            ? "pro"
-            : "enterprise";
+      // Resolve the new plan name from the price ID via the server catalog so
+      // annual products map to the same grant as their monthly counterpart
+      // (previously only monthly envs were compared, so an annual target
+      // previewed as "enterprise" regardless of the actual tier).
+      const newPlanName = grantForProductId(raw.newPriceId) ?? "enterprise";
 
       return ok({
         preview: true,

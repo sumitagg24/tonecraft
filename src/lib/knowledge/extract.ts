@@ -1,5 +1,12 @@
-import { PDFParse } from "pdf-parse";
 import { logger } from "@/lib/logger";
+
+// NOTE: pdf-parse (pdf.js) is intentionally NOT imported at module scope.
+// It requires browser globals (DOMMatrix) that don't exist in the Vercel
+// Node serverless runtime; a static import makes every route that transitively
+// imports this module fail to load (observed: /api/cron/* 500s with
+// "DOMMatrix is not defined" on the production deployment). It is dynamically
+// imported inside extractPdfText so only actual PDF parses pay the cost — and
+// a load failure degrades to PdfParseError instead of crashing the route.
 
 export const SUPPORTED_TEXT_TYPES = new Set([
   "text/plain",
@@ -63,6 +70,7 @@ export async function extractText(mimeType: string, buffer: Buffer): Promise<str
 async function extractPdfText(buffer: Buffer): Promise<string> {
   let text = "";
   try {
+    const { PDFParse } = await import("pdf-parse");
     // Pass a copy so the pdf.js worker doesn't detach the caller's buffer
     // (Uint8Array.from copies element-wise; new Uint8Array(buf) is just a view).
     const parser = new PDFParse({ data: Uint8Array.from(buffer) });

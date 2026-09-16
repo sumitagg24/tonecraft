@@ -110,7 +110,14 @@ export const POST = api.POST(async (ctx, body) => {
       email: user.email ?? undefined,
       name: user.name ?? undefined,
       metadata: { plan: metadataPlan, userId: user.id },
-      cancelUrl: `${process.env.NEXT_PUBLIC_APP_URL || ""}/billing`,
+      // Prefer the explicit Dodo cancel URL (canonical www billing page) over
+      // NEXT_PUBLIC_APP_URL, which can lag behind the live domain (e.g.
+      // localhost during development). DodoProvider applies the same priority
+      // when input.cancelUrl is absent, but the explicit value wins — so send
+      // the right one here instead of forcing the APP_URL fallback.
+      cancelUrl:
+        process.env.DODO_PAYMENTS_CANCEL_URL ||
+        `${process.env.NEXT_PUBLIC_APP_URL || ""}/billing`,
     });
 
     logger.info("Checkout created", { userId: user.id, productId });
