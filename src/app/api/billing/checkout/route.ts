@@ -3,6 +3,7 @@ import { billingService } from "@/billing/BillingService";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { auditLogService } from "@/services/AuditLogService";
+import { ensureRealEmail, isPlaceholderEmail } from "@/lib/clerk-email";
 import { z } from "zod";
 import {
   allConfiguredProductIds,
@@ -74,6 +75,7 @@ export const POST = api.POST(async (ctx, body) => {
       where: { id: ctx.user.id },
       select: {
         id: true,
+        clerkId: true,
         email: true,
         name: true,
         subscription: { select: { status: true, plan: true } },
@@ -81,6 +83,25 @@ export const POST = api.POST(async (ctx, body) => {
     });
     if (!user) {
       return fail("UNAUTHORIZED", "Authentication required.", 401);
+    }
+
+    // Never send a lazy-sync placeholder (temp-*@clerk.local) to Dodo as the
+    // customer email: receipts would go nowhere and the webhook's
+    // email-fallback user resolution would silently fail. Resolve the
+    // authoritative address from Clerk and backfill the row (the Clerk
+    // dashboard webhook is the primary sync, but it can lag or be
+    // unconfigured — every production row currently holds a placeholder).
+    // If Clerk is unreachable we still proceed: the webhook's metadata.userId
+    // path activates the subscription regardless of email.
+    let checkoutEmail = user.email ?? undefined;
+    if (isPlaceholderEmail(user.email)) {
+      const real = await ensureRealEmail(user.id, user.clerkId, user.email);
+      if (real) checkoutEmail = real;
+      else {
+        logger.error("Checkout proceeding with placeholder email; Clerk lookup failed", {
+          userId: user.id,
+        });
+      }
     }
 
     // Only block checkout when the existing subscription actually grants paid
@@ -107,7 +128,7 @@ export const POST = api.POST(async (ctx, body) => {
     const checkout = await billingService.createCheckout({
       priceId: productId,
       userId: user.id,
-      email: user.email ?? undefined,
+      email: checkoutEmail,
       name: user.name ?? undefined,
       metadata: { plan: metadataPlan, userId: user.id },
       // Prefer the explicit Dodo cancel URL (canonical www billing page) over
