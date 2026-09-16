@@ -17,6 +17,9 @@ const eslintConfig = defineConfig([
     "playwright-report/**",
     "test-results/**",
     "blob-report/**",
+    // Standalone Chrome MV3 extension — intentionally dependency-free vanilla
+    // JS/HTML outside the Next.js app (chrome.* globals, no TS).
+    "extension/**",
   ]),
   {
     rules: {

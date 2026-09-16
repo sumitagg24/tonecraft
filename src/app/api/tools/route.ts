@@ -28,7 +28,11 @@ export const POST = api.POST(async (ctx, body) => {
   const plan = await planService.getPlan(ctx.user.id);
   const limit = await checkMessageLimit(ctx.user.id, plan.tier);
   if (!limit.allowed) {
-    return fail("RATE_LIMITED", "Rate limit exceeded", 429, {
+    const message =
+      plan.tier === "free" && limit.window === "day"
+        ? `You've reached the free limit of ${limit.limit} generations per day. Upgrade to Pro for unlimited, or try again tomorrow.`
+        : "Rate limit exceeded — please wait a moment and try again.";
+    return fail("RATE_LIMITED", message, 429, {
       limit: limit.limit,
       window: limit.window,
       remaining: limit.remaining,

@@ -6,7 +6,7 @@ import { publicPageMetadata, SITE_URL } from "@/lib/site";
 export const metadata: Metadata = publicPageMetadata({
   title: "Pricing — ToneCraft AI Writing Plans",
   description:
-    "Start free with 50 AI generations a day. Upgrade to Pro for unlimited rewrites, custom personas, and a 16K context window — cancel anytime.",
+    "Start free with 5 AI generations a day. Upgrade to Pro for unlimited rewrites, custom personas, and a 16K context window — cancel anytime.",
   path: "/pricing",
 });
 
@@ -25,13 +25,13 @@ const jsonLd = {
       price: "0",
       priceCurrency: "USD",
       name: "ToneCraft Free",
-      description: "50 AI generations per day, all tone presets",
+      description: "5 AI generations per day, all tone presets",
       url: `${SITE_URL}/pricing`,
       eligibleRegion: { "@type": "Country", name: "Worldwide" },
     },
     {
       "@type": "Offer",
-      price: "6",
+      price: "5",
       priceCurrency: "USD",
       name: "ToneCraft Pro",
       description: "Unlimited rewrites, custom personas, 16K context window",
@@ -43,7 +43,7 @@ const jsonLd = {
 
 export default async function PricingPage() {
   // Detect country from Vercel's edge headers for localized pricing.
-  // Falls back to "OTHERS" (Paddle infers from IP at checkout time).
+  // Falls back to "OTHERS" (Dodo infers from IP at checkout time).
   const h = await headers();
   const country = h.get("x-vercel-ip-country") ?? "OTHERS";
 

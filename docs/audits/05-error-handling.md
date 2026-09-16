@@ -42,7 +42,7 @@ Fix: have `setMessageFeedback` return a boolean and gate the success toast on it
 Fix: use the found message's id (or `deleteMany({ id, chat: { userId } })`), and wrap in try/catch.
 
 ### P0-5 `billing/webhook` lets the event handler escape unhandled
-`src/app/api/billing/webhook/route.ts:23` — `verifyWebhook` is wrapped (line 12) but `handleWebhookEvent` is not; an exception → raw 500 → Stripe retries → potential duplicate sync. Conversely the inner `syncSubscription` failure is caught and swallowed returning `{ received: true }` (line 29-31), meaning a sync failure is acknowledged but never retried or logged as an error.
+The payment webhook route (`/api/webhooks/dodo`) — `verifyWebhook` is wrapped but `handleWebhookEvent` is not; an exception → raw 500 → provider retries → potential duplicate sync. Conversely the inner `syncSubscription` failure is caught and swallowed returning `{ received: true }`, meaning a sync failure is acknowledged but never retried or logged as an error.
 
 Fix: wrap `handleWebhookEvent`, return `200 {received:true}` with an error log on any event-processing failure (keep sync idempotent).
 
@@ -157,7 +157,7 @@ Legend: `try/catch` = handler catches exceptions → JSON error. `res.ok` = clie
 |---|---|---|---|---|
 | `POST /api/billing/checkout` | ✔ | JSON | ✔ (billing page) | ✔ toast |
 | `POST /api/billing/portal` | ✘ | raw 500 | — | — |
-| `POST /api/billing/webhook` | partial (P0-5) | partial | n/a | n/a |
+| `POST /api/webhooks/dodo` | partial (P0-5) | partial | n/a | n/a |
 | `GET/POST /api/chats` | ✘ | raw 500 | GET: ✘ (P0-2) / POST: ✔ (throws, P0-1) | silent / unhandled |
 | `GET/PATCH/DELETE /api/chats/[chatId]` | ✘ (PATCH partial) | raw 500 | ✔ (delete/rename/pin/fav/archive toast; GET throws) | toast on mut, GET silent |
 | `POST /api/chats/[chatId]/messages` | pre-stream ✘ | raw 500 / SSE error | ✔ | ✔ toast |

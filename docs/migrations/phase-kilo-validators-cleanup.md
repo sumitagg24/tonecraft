@@ -40,7 +40,7 @@ Verification of no behavior change: every diff removes an inline `z.object({...}
 
 ## 3. Changes discarded (DELETE)
 
-- `docs/PHASE_A1_COMPLETION_REPORT.md` — re-claimed already-shipped Phase 8.12 `withApiHandler` work as "Phase A1"; stated "Stripe webhook" (project uses **Paddle**); claimed ratelimit/startup-validation warnings were "pre-existing" (they were **fixed** in Phase 8.17).
+- `docs/PHASE_A1_COMPLETION_REPORT.md` — re-claimed already-shipped Phase 8.12 `withApiHandler` work as "Phase A1"; stated "Stripe webhook" (project uses **Dodo Payments**); claimed ratelimit/startup-validation warnings were "pre-existing" (they were **fixed** in Phase 8.17).
 - `docs/migrations/phase-a2-performance.md` — fabricated: claimed removal of dependencies (`rehype-raw`, `dompurify`, `mobx-state-tree`, `eui`) that **never existed** (0 matches in `package.json` and `package-lock.json`); referenced non-existent artifacts (`scripts/rollback-phase-a2.sh`, `docs/migrations/bundle-report-2026-08-02.html`); misattributed already-committed Phase 8.17 files as its own changes.
 - `docs/documentation/Verification-Report.md` — fabricated findings: marked `src/middleware/auth.ts`, `src/hooks/useAccount.ts`, `docs/README.md`, `docs/documentation/Coverage-Matrix.md` as ✅/existing; none of those files exist.
 - `.kilo/` — agent runtime state.

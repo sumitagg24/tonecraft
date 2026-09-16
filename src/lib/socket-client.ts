@@ -89,7 +89,12 @@ function ensureSocket(): Socket {
     path: "/api/socket",
     autoConnect: false,
     transports: ["websocket", "polling"],
-    reconnectionAttempts: Infinity,
+    // Bounded retries: the Socket.IO handshake cannot succeed on transports
+    // without upgrade support (Vercel serverless answers 308; the route only
+    // serves plain HTTP). Unbounded retries logged a console error per attempt
+    // forever — presence/typing simply stay dormant instead (notifications use
+    // SSE), and a working transport recovers on the next fresh connect.
+    reconnectionAttempts: 8,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 15000,
     timeout: 10000,

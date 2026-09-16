@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { providerHealthService, type HealthReport } from "@/services/ProviderHealthService";
 
-const PROVIDER_NAMES = ["database", "groq", "gemini", "openrouter", "clerk", "paddle"] as const;
+const PROVIDER_NAMES = ["database", "groq", "gemini", "openrouter", "clerk", "dodo"] as const;
 
 /**
  * Public liveness endpoint.

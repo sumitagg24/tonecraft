@@ -78,8 +78,8 @@ Library → Prompts → browse category → Use → Compose preloaded (prompt + 
 ## 6. Billing & usage
 
 ```
-Upgrade path:  Compose limit banner ──► /account/billing ──► Paddle checkout ──► success → Pro
-Manage path:   /account/billing ──► "Manage subscription" ──► Paddle portal
+Upgrade path:  Compose limit banner ──► /account/billing ──► Dodo checkout ──► success → Pro
+Manage path:   /account/billing ──► "Manage subscription" ──► Dodo portal
 Consumption:   /account/usage (meters) ← one click from Billing
 ```
 

@@ -33,27 +33,43 @@ export default function ToolsPage() {
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTool, setActiveTool] = useState<ToolDefinition | null>(null);
+  const [prefillText, setPrefillText] = useState<string | null>(null);
   const { recentTools, record } = useRecentTools();
   const { pinnedTools, toggle, isPinned } = usePinnedTools();
 
-  // Deep-link support: /tools?tool=<id> opens that tool directly (marketing
-  // mega menus and solution pages link here). Unknown ids are ignored.
+  // Deep-link support: /tools?tool=<id>&text=… opens that tool directly and
+  // pre-fills its input (marketing mega menus, solution pages, and the
+  // ToneCraft browser extension link here). Unknown tool ids are ignored and
+  // the query is cleared so it isn't re-applied to later tool opens.
   useEffect(() => {
-    const id = new URLSearchParams(window.location.search).get("tool");
-    if (!id) return;
-    const tool = tools.find((t) => t.id === id);
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("tool");
+    const text = params.get("text");
+    const tool = id ? tools.find((t) => t.id === id) : undefined;
     if (tool) {
       record(tool.id);
       setActiveTool(tool);
+      setPrefillText(text && text.trim().length > 0 ? text : null);
+    }
+    if (id || text) {
+      window.history.replaceState(null, "", window.location.pathname);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const closeTool = () => {
+    setActiveTool(null);
+    setPrefillText(null);
+  };
 
   // Esc closes the open tool panel.
   useEffect(() => {
     if (!activeTool) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setActiveTool(null);
+      if (e.key === "Escape") {
+        setActiveTool(null);
+        setPrefillText(null);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -171,7 +187,7 @@ export default function ToolsPage() {
 
         <AnimatePresence mode="wait">
           {activeTool ? (
-            <ToolPanel key="panel" tool={activeTool} onClose={() => setActiveTool(null)} />
+            <ToolPanel key="panel" tool={activeTool} onClose={closeTool} initialText={prefillText ?? undefined} />
           ) : (
             <motion.div
               key="hub"

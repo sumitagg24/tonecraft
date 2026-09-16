@@ -76,10 +76,10 @@ Adding new capabilities requires updating both `capabilities.ts` and `ModelRegis
 Accepted
 
 ## Context
-Billing must expose a transparent, per-user credit ledger that integrates with Paddle subscriptions and tracks usage for AI generations.
+Billing must expose a transparent, per-user credit ledger that integrates with Dodo Payments subscriptions and tracks usage for AI generations.
 
 ## Decision
-Maintain an internal credit ledger (`Usage` model) that logs each generation's token consumption. Paddle handles recurring subscriptions; the ledger supplements them with token-level granularity.
+Maintain an internal credit ledger (`Usage` model) that logs each generation's token consumption. Dodo Payments handles recurring subscriptions; the ledger supplements them with token-level granularity.
 
 ## Evidence
 - **Models**: `Usage`, `UsageRecord`, `Subscription` in `prisma/schema.prisma` (lines 140-191)
@@ -89,12 +89,12 @@ Maintain an internal credit ledger (`Usage` model) that logs each generation's t
 - **Plan Service**: `src/services/PlanService.ts` — resolves user plan tier
 
 ## Alternatives Considered
-1. **Paddle usage events only** — Rejected; insufficient granularity for per-token tracking
-2. **Stripe metered billing** — Rejected; Paddle already handles subscriptions
+1. **Dodo usage events only** — Rejected; insufficient granularity for per-token tracking
+2. **Stripe metered billing** — Rejected; Dodo already handles subscriptions
 
 ## Tradeoffs
 - **Pro**: Granular control, supports promotions and internal credit adjustments
-- **Con**: Requires maintenance of credit balance, separate from Paddle's metering
+- **Con**: Requires maintenance of credit balance, separate from Dodo's metering
 
 ## Consequences
 All generation calls check credit balance before proceeding and update the ledger. The billing dashboard displays both subscription status and credit balance.

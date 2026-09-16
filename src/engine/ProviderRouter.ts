@@ -23,6 +23,60 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/** HTTP status when the upstream SDK attaches one (AI SDK APICallError has statusCode). */
+function httpStatus(error: unknown): number | undefined {
+  if (!error || typeof error !== "object") return undefined;
+  const e = error as { statusCode?: number; status?: number };
+  if (typeof e.statusCode === "number") return e.statusCode;
+  if (typeof e.status === "number") return e.status;
+  return undefined;
+}
+
+/**
+ * Key-level rejection (401/403 or "invalid API key") — retrying the same
+ * provider is pointless. The provider is marked unusable so later requests in
+ * this process skip it entirely instead of burning three attempts per call.
+ */
+function isAuthError(error: unknown): boolean {
+  const status = httpStatus(error);
+  if (status === 401 || status === 403) return true;
+  const msg = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  return (
+    msg.includes("invalid api key") ||
+    msg.includes("incorrect api key") ||
+    msg.includes("api key not valid") ||
+    msg.includes("api key is not valid") ||
+    msg.includes("invalid key") ||
+    msg.includes("missing api key") ||
+    msg.includes("missing key") ||
+    msg.includes("unauthorized") ||
+    msg.includes("authentication failed") ||
+    msg.includes("forbidden")
+  );
+}
+
+/**
+ * Model-level rejection (404 / "model not found") — retrying is pointless, but
+ * the NEXT provider/model in the queue may still work, so fail over.
+ */
+function isModelGoneError(error: unknown): boolean {
+  const status = httpStatus(error);
+  if (status === 404) return true;
+  const msg = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  return (
+    msg.includes("model not found") ||
+    msg.includes("unknown model") ||
+    msg.includes("does not exist") ||
+    msg.includes("is not found") ||
+    msg.includes("not found for api version") ||
+    // The AI SDK's synthetic error when a provider stream dies without emitting
+    // output (e.g. a 404/retired model swallowed into an empty stream). The
+    // model is effectively unusable — treat it like a gone model so the router
+    // fails over to the next provider/model instead of aborting the whole queue.
+    msg.includes("no output generated")
+  );
+}
+
 /**
  * Thrown when the per-user per-provider budget is exhausted (Phase 12.4).
  * Distinct class so the failover loop can recognize it without relying on
@@ -58,6 +112,15 @@ function getClient(provider: string) {
       return createGoogleGenerativeAI({ apiKey: process.env.GOOGLE_AI_API_KEY });
     case "openai":
       return createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    // Generic OpenAI-compatible provider — base URL + key come from env, so any
+    // OpenAI-compatible endpoint (GitHub Models, Workers AI, Cerebras, etc.)
+    // works without a code change. Guarded by models.ts only registering the
+    // model when all three env vars are present.
+    case "custom":
+      return createOpenAI({
+        apiKey: process.env.CUSTOM_AI_API_KEY,
+        baseURL: process.env.CUSTOM_AI_BASE_URL || undefined,
+      });
     default:
       throw new Error(`Unknown provider: ${provider}`);
   }
@@ -82,7 +145,14 @@ export class ProviderRouter {
           error: error instanceof Error ? error.message : String(error),
         });
         // Budget exhaustion is a deliberate fail-over, not a transient error.
-        if (error instanceof ProviderRateLimitedError || this.isRetryable(error)) continue;
+        // A rejected key makes the provider useless for this process — mark it
+        // offline so the next request skips it, then move to the next provider.
+        if (this.shouldFailOver(error)) {
+          if (isAuthError(error)) {
+            providerHealthService.markProviderUnusable(config.provider, `${config.provider} key rejected (HTTP ${httpStatus(error) ?? "401/403"})`);
+          }
+          continue;
+        }
         throw error;
       } finally {
         idle.cleanup();
@@ -114,7 +184,12 @@ export class ProviderRouter {
           error: error instanceof Error ? error.message : String(error),
         });
         // Budget exhaustion is a deliberate fail-over, not a transient error.
-        if (error instanceof ProviderRateLimitedError || this.isRetryable(error)) continue;
+        if (this.shouldFailOver(error)) {
+          if (isAuthError(error)) {
+            providerHealthService.markProviderUnusable(config.provider, `${config.provider} key rejected (HTTP ${httpStatus(error) ?? "401/403"})`);
+          }
+          continue;
+        }
         throw error;
       } finally {
         idle.cleanup();
@@ -172,7 +247,10 @@ export class ProviderRouter {
         return;
       } catch (error) {
         // Once a chunk has been delivered we can't retry — rethrow so the
-        // outer failover loop decides (next provider or abort).
+        // outer failover loop decides (next provider or abort). Auth/model
+        // rejections are deterministic: fail fast, don't retry the same
+        // provider, and let the outer loop fail over.
+        if (isAuthError(error) || isModelGoneError(error)) throw error;
         if (this.isRetryable(error) && attempt < PROVIDER_RETRIES - 1) {
           lastError = error as Error;
           logger.warn(`[ProviderRouter] ${config.provider}/${config.model} stream attempt ${attempt + 1}/${PROVIDER_RETRIES} failed`, {
@@ -233,6 +311,9 @@ export class ProviderRouter {
         };
       } catch (error) {
         lastError = error as Error;
+        // Deterministic rejections (bad key / dead model) are not retryable —
+        // fail fast so the outer loop moves to the next provider immediately.
+        if (isAuthError(error) || isModelGoneError(error)) throw error;
         const retryable = this.isRetryable(error);
         const lastAttempt = attempt === PROVIDER_RETRIES - 1;
         logger.warn(`[ProviderRouter] ${config.provider}/${config.model} attempt ${attempt + 1}/${PROVIDER_RETRIES} failed`, {
@@ -268,10 +349,10 @@ export class ProviderRouter {
           // Fall through to auto-resolution instead of granting access
         } else {
           const fallback = modelRegistry.resolveFallbackChain(planConfig, modelId);
-          return this.toProviderConfigs([entry, ...fallback]);
+          return this.toProviderConfigs([entry, ...fallback], planConfig.limits.maxTokensPerMessage);
         }
       }
-      return this.toProviderConfigs(modelRegistry.resolveFallbackChain(planConfig, modelId));
+      return this.toProviderConfigs(modelRegistry.resolveFallbackChain(planConfig, modelId), planConfig.limits.maxTokensPerMessage);
     }
 
     // Capability-based routing: prefer models matching the task's capability tier
@@ -280,19 +361,23 @@ export class ProviderRouter {
     if (intent) {
       const tier = capabilities.resolveCapabilityTier(intent, capabilityContext);
       const ranked = capabilities.rankByCapability(allModels, tier);
-      return this.toProviderConfigs(ranked);
+      return this.toProviderConfigs(ranked, planConfig.limits.maxTokensPerMessage);
     }
 
-    return this.toProviderConfigs([...allModels]);
+    return this.toProviderConfigs([...allModels], planConfig.limits.maxTokensPerMessage);
   }
 
-  private toProviderConfigs(entries: readonly ModelEntry[]): ProviderConfig[] {
+  private toProviderConfigs(entries: readonly ModelEntry[], planMaxTokens?: number): ProviderConfig[] {
     return entries
-      .map((entry) => this.toProviderConfig(entry))
+      .map((entry) => this.toProviderConfig(entry, planMaxTokens))
       .filter((config) => providerHealthService.isProviderUsable(config.provider));
   }
 
-  private toProviderConfig(entry: ModelEntry): ProviderConfig {
+  private toProviderConfig(entry: ModelEntry, planMaxTokens?: number): ProviderConfig {
+    // Enforce plan-level token cap: never exceed the plan's maxTokensPerMessage
+    const maxTokens = planMaxTokens
+      ? Math.min(entry.maxTokens ?? Infinity, planMaxTokens)
+      : entry.maxTokens;
     return {
       id: entry.id,
       name: entry.displayName,
@@ -300,30 +385,47 @@ export class ProviderRouter {
       model: entry.modelId,
       temperature: entry.temperature,
       isFree: entry.tier === "free",
-      maxTokens: entry.maxTokens,
+      maxTokens,
     };
+  }
+
+  /**
+   * True for errors that should fail over to the next provider in the queue
+   * (rate/budget exhaustion, transient 5xx/network, auth or model rejections).
+   * Fatal/unknown errors rethrow and abort the whole queue.
+   */
+  private shouldFailOver(error: unknown): boolean {
+    return (
+      error instanceof ProviderRateLimitedError ||
+      isAuthError(error) ||
+      isModelGoneError(error) ||
+      this.isRetryable(error)
+    );
   }
 
   private isRetryable(error: unknown): boolean {
     if (error instanceof Error) {
       const msg = error.message.toLowerCase();
+      const status = httpStatus(error);
       return (
+        // 5xx / network errors should ride the failover queue too (audit A12)
+        (status !== undefined && status >= 500) ||
+        status === 429 ||
         msg.includes("rate limit") ||
         msg.includes("too many requests") ||
         msg.includes("429") ||
         msg.includes("timeout") ||
-        msg.includes("api key") ||
-        msg.includes("apikey") ||
-        msg.includes("unauthorized") ||
-        msg.includes("invalid key") ||
-        msg.includes("missing key") ||
-        // 5xx / network errors should ride the failover queue too (audit A12)
+        msg.includes("timed out") ||
+        msg.includes("deadline exceeded") ||
         msg.includes("500") ||
         msg.includes("502") ||
         msg.includes("503") ||
         msg.includes("network") ||
         msg.includes("fetch failed") ||
-        msg.includes("econnrefused")
+        msg.includes("econnrefused") ||
+        msg.includes("econnreset") ||
+        msg.includes("enotfound") ||
+        msg.includes("socket")
       );
     }
     return false;

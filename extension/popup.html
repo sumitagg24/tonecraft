@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>ToneCraft</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="brand">
+      <img src="icons/icon48.png" alt="" width="22" height="22" />
+      <div>
+        <h1>ToneCraft</h1>
+        <p>Rewrite anything, anywhere</p>
+      </div>
+      <a class="gear" href="options.html" title="Settings">⚙</a>
+    </header>
+
+    <label class="field-label" for="tool-select">Tool</label>
+    <select id="tool-select">
+      <option value="enhance">Rewrite with a new tone</option>
+      <option value="grammar-fix">Fix grammar &amp; polish</option>
+      <option value="professional-rewrite">Make it professional</option>
+      <option value="casual-rewrite">Make it casual</option>
+      <option value="friendly-rewrite">Make it friendly</option>
+      <option value="summarize">Summarize</option>
+      <option value="translate">Translate</option>
+      <option value="linkedin-reply">Reply on LinkedIn</option>
+      <option value="email-writer">Write an email</option>
+    </select>
+
+    <label class="field-label" for="text-input">Text</label>
+    <textarea id="text-input" rows="6" maxlength="4000" placeholder="Paste or type the text you want to rewrite…"></textarea>
+    <div class="counter"><span id="char-count">0</span> / 4000</div>
+
+    <button id="generate" class="primary">Open in ToneCraft ✦</button>
+    <button id="hub" class="secondary">Browse all tools</button>
+
+    <p class="foot">
+      Opens the ToneCraft tools page with your text pre-filled — press
+      <b>Generate</b> there. Free accounts get <b>5 generations per day</b>.
+    </p>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -7,7 +7,6 @@ import { Toaster } from "@/components/ui/sonner";
 import { ReducedMotionProvider } from "@/hooks/use-reduced-motion";
 import { GlobalEffects } from "@/components/shared/Effects";
 import { ServiceWorkerRegistration } from "@/components/shared/ServiceWorkerRegistration";
-import { PaddleCheckoutAutoOpen } from "@/components/shared/PaddleCheckoutAutoOpen";
 import { SITE_URL, SITE_NAME, SITE_TITLE, SITE_DESCRIPTION, OG_IMAGE } from "@/lib/site";
 import "@/lib/startup-validation";
 import "./globals.css";
@@ -116,7 +115,6 @@ export default function RootLayout({
                 {children}
                 <GlobalEffects />
                 <ServiceWorkerRegistration />
-                <PaddleCheckoutAutoOpen />
                 <Toaster position="bottom-right" />
               </ReducedMotionProvider>
             </ThemeProvider>

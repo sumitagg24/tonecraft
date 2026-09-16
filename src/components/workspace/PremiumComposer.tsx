@@ -21,6 +21,7 @@ import { TONES, PLATFORMS } from "@/lib/constants";
 import { duration, ease } from "@/styles/motion";
 import { toast } from "sonner";
 import { useRecentTools } from "@/hooks/use-recent-tools";
+import { useCredits } from "@/hooks/use-credits";
 import type { PendingAttachment } from "@/hooks/use-chat";
 
 interface PremiumComposerProps {
@@ -33,6 +34,9 @@ const MAX_PENDING_ATTACHMENTS = 10;
 const MAX_ATTACHMENT_SIZE_MB = 25;
 
 export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps) {
+  const { data: creditData } = useCredits();
+  const planTier = creditData?.plan?.toLowerCase() ?? "free";
+  const hasPersonas = planTier === "pro" || planTier === "enterprise";
   const [input, setInput] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [openPicker, setOpenPicker] = useState<"tone" | "platform" | "tool" | "persona" | "knowledge" | null>(null);
@@ -471,13 +475,19 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
                   </AnimatePresence>
                 </div>
 
-                {/* Persona picker */}
+                {/* Persona picker — Pro+ only */}
                 <div ref={personaRef} className="relative">
                   <ToolbarButton
-                    onClick={() => setOpenPicker(openPicker === "persona" ? null : "persona")}
+                    onClick={() => {
+                      if (!hasPersonas) {
+                        toast.info("Custom personas require Pro or Enterprise. Upgrade in Billing.");
+                        return;
+                      }
+                      setOpenPicker(openPicker === "persona" ? null : "persona");
+                    }}
                     active={openPicker === "persona"}
                     disabled={isLoading}
-                    label="Select persona"
+                    label={hasPersonas ? "Select persona" : "Pro feature"}
                     aria-expanded={openPicker === "persona"}
                   >
                     <Users className="w-4 h-4" />
@@ -485,7 +495,7 @@ export function PremiumComposer({ chatId, onSend, onStop }: PremiumComposerProps
                     <ChevronDown className={cn("w-3 h-3 opacity-50 transition-transform", openPicker === "persona" && "rotate-180")} />
                   </ToolbarButton>
                   <AnimatePresence>
-                    {openPicker === "persona" && (
+                    {openPicker === "persona" && hasPersonas && (
                       <PickerAnchor triggerRef={personaRef}>
                         <PersonaPicker onClose={() => setOpenPicker(null)} />
                       </PickerAnchor>

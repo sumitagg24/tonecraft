@@ -10,7 +10,7 @@ Every **intended subsystem** (determined from the Information Architecture, App-
 |---|---|---|---|
 | **Authentication** | ADR‑003, Architecture‑Evidence.md | `src/hooks/useAccount.ts`, `src/hooks/useAuth.ts`, `src/middleware/auth.ts`, `/app/(dashboard)/sign‑in`, `/app/(dashboard)/sign‑up` | Implemented |
 | **AI Engine** | ADR‑001, Architecture‑Evidence.md | `src/engine/AIEngine.ts`, `src/engine/ProviderRouter.ts`, `src/services/ModelRegistry.ts`, `src/lib/capabilities.ts` | Implemented |
-| **Billing** | ADR‑002, Architecture‑Evidence.md | `src/billing/providers/paddle/PaddleProvider.ts`, `src/billing/BillingService.ts`, `src/services/UsageGuard.ts` | Implemented |
+| **Billing** | ADR‑002, Architecture‑Evidence.md | `src/billing/providers/dodo/DodoProvider.ts`, `src/billing/BillingService.ts`, `src/services/UsageGuard.ts` | Implemented |
 | **Chat** | ADR‑006, Architecture‑Evidence.md | `src/app/(dashboard)/chat/` routes, `src/hooks/use-chat.ts`, `src/components/workspace/ChatInput.tsx`, `src/components/workspace/ChatList.tsx`, `src/components/workspace/ChatMessage.tsx` | Implemented |
 | **Projects** | ADR‑007, Architecture‑Evidence.md | `src/services/ProjectService.ts`, `src/repositories/ProjectRepository.ts`, `src/app/api/projects/...` | Implemented |
 | **Personas** | ADR‑003 (usage), Architecture‑Evidence.md | `prisma/schema.prisma (Persona model)`, `src/services/PersonaService.ts`, `src/app/api/personas/...` | Implemented |

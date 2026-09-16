@@ -74,6 +74,87 @@ export class AIEngineError extends Error {
   }
 }
 
+// ── HTTP surfacing ─────────────────────────────────────────────────────────
+// Maps an AIEngineError (thrown deep in the engine, including usageGuard's
+// uppercase DB codes) to a user-visible API failure with a proper status code.
+// Without this, every engine failure surfaced as a generic 500 "Internal
+// Server Error" regardless of the real cause (insufficient credits, daily
+// limit, provider outage…).
+
+export interface ApiFailureShape {
+  status: number;
+  code: string;
+  message: string;
+  details?: unknown;
+}
+
+const API_STATUS_BY_CODE: Record<string, number> = {
+  insufficient_credits: 402,
+  INSUFFICIENT_CREDITS: 402,
+  DAILY_LIMIT_REACHED: 429,
+  rate_limited: 429,
+  RATE_LIMITED: 429,
+  quota_exceeded: 429,
+  model_decommissioned: 503,
+  model_not_found: 503,
+  invalid_model: 503,
+  timeout: 504,
+  network_error: 502,
+  provider_unavailable: 503,
+  authentication_error: 503,
+  all_providers_exhausted: 503,
+  invalid_configuration: 500,
+  unknown: 500,
+};
+
+const PUBLIC_CODE_BY_ERROR_CODE: Record<string, string> = {
+  insufficient_credits: "INSUFFICIENT_CREDITS",
+  INSUFFICIENT_CREDITS: "INSUFFICIENT_CREDITS",
+  DAILY_LIMIT_REACHED: "DAILY_LIMIT_REACHED",
+  rate_limited: "RATE_LIMITED",
+  RATE_LIMITED: "RATE_LIMITED",
+  quota_exceeded: "RATE_LIMITED",
+  model_decommissioned: "AI_UNAVAILABLE",
+  model_not_found: "AI_UNAVAILABLE",
+  invalid_model: "AI_UNAVAILABLE",
+  timeout: "AI_UNAVAILABLE",
+  network_error: "AI_UNAVAILABLE",
+  provider_unavailable: "AI_UNAVAILABLE",
+  authentication_error: "AI_UNAVAILABLE",
+  all_providers_exhausted: "AI_UNAVAILABLE",
+  invalid_configuration: "AI_UNAVAILABLE",
+};
+
+/** Convert an AIEngineError into the response contract used by withApiHandler. */
+export function toApiFailure(err: AIEngineError): ApiFailureShape {
+  // Cast to string: usageGuard denials surface uppercase DB codes
+  // ("INSUFFICIENT_CREDITS", "DAILY_LIMIT_REACHED") that aren't part of the
+  // typed AIErrorCode union — they arrive via a runtime cast in AIEngine.
+  const code = err.errorCode as string;
+  const status =
+    API_STATUS_BY_CODE[code] ??
+    (err.status && err.status >= 400 && err.status < 600 ? err.status : 500);
+
+  let message = err.userMessage;
+  // usageGuard denials carry a precise, human reason on the cause ("You've used
+  // all 5 daily credits…") — prefer it over the generic fallback text.
+  if (
+    code === "insufficient_credits" ||
+    code === "INSUFFICIENT_CREDITS" ||
+    code === "DAILY_LIMIT_REACHED"
+  ) {
+    const reason = err.cause instanceof Error ? err.cause.message : undefined;
+    if (reason) message = reason;
+  }
+
+  return {
+    status,
+    code: PUBLIC_CODE_BY_ERROR_CODE[code] ?? "INTERNAL_ERROR",
+    message,
+    details: { requestId: err.requestId },
+  };
+}
+
 function getUserMessage(code: AIErrorCode): string {
   switch (code) {
     case "model_decommissioned":

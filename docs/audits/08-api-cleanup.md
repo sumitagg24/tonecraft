@@ -65,7 +65,7 @@ Created `src/lib/withApiHandler.ts` — a reusable higher-order function that co
 |---|---|---|
 | `/api/billing/checkout` | Custom OAuth flow | Yes |
 | `/api/billing/portal` | Custom redirect logic | Yes |
-| `/api/billing/webhook` | External webhook, idempotent | Yes |
+| `/api/webhooks/dodo` | External webhook, idempotent | Yes |
 | `/api/chats` | GET/POST have complex logic | Yes |
 | `/api/chats/[chatId]` | GET/PATCH/DELETE complex | Yes |
 | `/api/chats/[chatId]/messages` | Pre-stream setup | Yes |

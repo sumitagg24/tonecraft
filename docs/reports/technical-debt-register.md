@@ -10,7 +10,7 @@
 | T02 | No CI/CD (lint only; no tsc/build/migrate in CI) | audit 12 P1.1 | P0 | M | Broken builds/deploys land on main; no release discipline | 1.0.0 |
 | T03 | Sentry abstraction inactive (no DSN, no SDK swap) | audit 12 P0.6 | P0 | S | Blind in production; errors invisible to the team | 1.0.0 |
 | T04 | Upstash unconfigured in prod → rate limiting fails closed (product blocked) | audit 12 P0.8 | P0 | S | Free-tier spend abuse / product unavailable | 1.0.0 |
-| T05 | Paddle webhook never exercised end-to-end with a test event | audit 12 P0.2 | P0 | M | Subscriptions silently never activate (was blocked pre-8.17) | 1.0.0 |
+| T05 | Dodo webhook never exercised end-to-end with a sandbox checkout | audit 12 P0.2 | P0 | M | Subscriptions silently never activate (was blocked pre-8.17) | 1.0.0 |
 | T06 | Knowledge indexing + exports run synchronously in request handlers | audit 12 P1.4 | P1 | L | Slow uploads/blocking requests; poor UX at scale | 1.1 |
 | T07 | No retention job (UsageRecord/Notification growth unbounded) | audit 09 D2 | P1 | M | Unbounded table growth → cost + slow queries | 1.1 |
 | T08 | Upload counters cumulative, not daily buckets | audit 12 P0.4 note | P1 | M | Conservative caps wrong after a busy day; under-counts | 1.1 |
@@ -37,5 +37,5 @@
 1. **T01** (tests) — unblocks everything; audit 11 Milestone 1 is the plan.
 2. **T02** (CI) — pairs with T01; gate on PRs.
 3. **T03 + T09** (Sentry + uptime) — one afternoon, removes the blind spot.
-4. **T05** (Paddle e2e) — validates the revenue loop.
+4. **T05** (Dodo e2e) — validates the revenue loop.
 5. **T07** (retention job) — SQL already written; add a scheduler.

@@ -24,8 +24,8 @@ export class BillingService {
 
   /**
    * Resolved lazily (and cached by getProvider) on first use so the module-
-   * scope `billingService` singleton never constructs the Paddle client at
-   * import/build time. PADDLE_API_KEY is still required the moment any billing
+   * scope `billingService` singleton never constructs the provider at
+   * import/build time. DODO_PAYMENTS_API_KEY is still required the moment any billing
    * method actually executes.
    */
   private get provider(): PaymentProvider {
@@ -93,4 +93,4 @@ export class BillingService {
   }
 }
 
-export const billingService = new BillingService("paddle");
+export const billingService = new BillingService("dodo");

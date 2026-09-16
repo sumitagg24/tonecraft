@@ -367,10 +367,10 @@ model Subscription {
   currentPeriodStart     DateTime?
   currentPeriodEnd       DateTime?
   cancelAtPeriodEnd      Boolean   @default(false)
-  scheduledChange        DateTime? // When a cancel/pause takes effect (Paddle scheduledChange.effectiveAt)
+  scheduledChange        DateTime? // When a cancel/pause takes effect (provider scheduled change)
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
-  paymentProvider        String    @default("paddle")
+  paymentProvider        String    @default("dodo")
   providerCustomerId     String?
   providerSubscriptionId String?   @unique
   providerPriceId        String?

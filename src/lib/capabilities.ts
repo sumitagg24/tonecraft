@@ -122,7 +122,7 @@ export class CapabilityRegistry {
       const aMeets = aTierIndex >= requiredIndex ? 1 : -1;
       const bMeets = bTierIndex >= requiredIndex ? 1 : -1;
       if (aMeets !== bMeets) return bMeets - aMeets;
-      // Default routing favors provider priority (Groq Llama 3.3 70B first for
+      // Default routing favors provider priority (Groq GPT-OSS first for
       // general writing), not raw capability tier — a faster, cheaper model that
       // satisfies the tier wins over a heavier one. Capability tier remains the
       // gatekeeper (non-matching models above), only breaking ties after priority.

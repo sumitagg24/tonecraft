@@ -76,7 +76,7 @@ export const tools: ToolDefinition[] = [
 
   // Email
   { id: "email-writer", title: "Email Writer", description: "Professional email composition", icon: "Mail", category: "email", color: "#ea4335" },
-  { id: "cold-email", title: "Cold Email", description: "Outreach that gets replies", icon: "Send", category: "email", color: "#2563eb" },
+  { id: "cold-email", title: "Professional Email", description: "Personalized emails that get replies", icon: "Send", category: "email", color: "#2563eb" },
   { id: "cold-email-followup", title: "Email Follow-up", description: "Gentle, effective nudges", icon: "Send", category: "email", color: "#2563eb" },
   { id: "hr-email", title: "HR Email", description: "People operations messages", icon: "Briefcase", category: "email", color: "#7c3aed" },
   { id: "apology-email", title: "Apology Email", description: "Sincere, professional apologies", icon: "Heart", category: "email", color: "#ec4899" },

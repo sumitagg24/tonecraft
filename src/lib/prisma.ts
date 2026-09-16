@@ -13,11 +13,14 @@ function createPrismaClient() {
   // Prisma a stale socket and it reports P1017 "Server has closed the
   // connection" on the first query after idle.
   const connectionString =
-    process.env.DIRECT_URL ??
-    process.env.DATABASE_URL ??
-    (() => {
-      throw new Error("DIRECT_URL or DATABASE_URL environment variable is not set");
-    })();
+    process.env.DIRECT_URL ?? process.env.DATABASE_URL;
+
+  if (!connectionString) {
+    // Deferred: the client is only created on first use (see the lazy proxy
+    // below), so merely importing this module never throws — even on builds
+    // that run without the DB vars (Vercel Preview, GitHub Actions CI).
+    throw new Error("DIRECT_URL or DATABASE_URL environment variable is not set");
+  }
 
   const pool = new Pool({
     connectionString: normalizeSslMode(connectionString),
@@ -43,6 +46,31 @@ function normalizeSslMode(url: string): string {
   return url.replace(/sslmode=(prefer|require|verify-ca)(?=&|$)/gi, "sslmode=verify-full");
 }
 
-export const prisma = globalForPrisma.prisma ?? createPrismaClient();
+let localPrisma: PrismaClient | undefined;
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+function getPrisma(): PrismaClient {
+  const cached = globalForPrisma.prisma ?? localPrisma;
+  if (cached) return cached;
+  const created = createPrismaClient();
+  localPrisma = created;
+  if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = created;
+  return created;
+}
+
+/**
+ * Lazy proxy — the PrismaClient (and its pg Pool) is only constructed on the
+ * first property access, so module-scope imports never throw when the
+ * database env vars are absent. `next build` evaluates route modules during
+ * page-data collection; a hard throw at import used to break builds in
+ * env-starved environments (Vercel Preview, CI). Runtime still fails fast on
+ * the first real query. Method `this` binding is preserved via .bind().
+ */
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_target, prop: string | symbol) {
+    const client = getPrisma();
+    const value = (client as unknown as Record<string | symbol, unknown>)[prop];
+    return typeof value === "function"
+      ? (value as (...args: unknown[]) => unknown).bind(client)
+      : value;
+  },
+});

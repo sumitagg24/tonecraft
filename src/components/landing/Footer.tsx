@@ -30,6 +30,7 @@ const COLUMNS: { title: string; items: { label: string; href: string }[] }[] = [
       { label: "Contact", href: "mailto:support@tonecraft.ai" },
       { label: "Privacy Policy", href: "/privacy" },
       { label: "Terms of Service", href: "/terms" },
+      { label: "Refund Policy", href: "/refunds" },
     ],
   },
 ];

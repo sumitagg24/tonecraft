@@ -23,4 +23,4 @@ ToneCraft is an elite AI-powered voice & text tone transformation studio. It emp
 ## Key User Journey & Workflows
 1. **Landing Experience**: High-impact hero with live interactive playground, feature bento grid, workspace preview, and transparent pricing.
 2. **AI Studio Workspace**: Multi-pane resizable layout with prompt library, dynamic tone spectrum sliders, real-time message stream, and context inspector.
-3. **Dashboard & Tools**: Fast universal search, tool index cards, account usage analytics, and seamless Clerk/Paddle billing integration.
+3. **Dashboard & Tools**: Fast universal search, tool index cards, account usage analytics, and seamless Clerk/Dodo Payments billing integration.

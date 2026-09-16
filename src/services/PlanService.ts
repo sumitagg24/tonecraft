@@ -18,8 +18,14 @@ const cache = new Map<string, CacheEntry>();
 
 function tierFromString(s: string): PlanTier {
   switch (s) {
+    case "basic":
+      return PlanTier.BASIC;
     case "pro":
       return PlanTier.PRO;
+    // "advanced" is the UI-facing name for the ENTERPRISE grant (stored as
+    // "enterprise" by the Dodo webhook). Accept both so a row carrying the
+    // display name never degrades to FREE.
+    case "advanced":
     case "enterprise":
       return PlanTier.ENTERPRISE;
     default:
@@ -45,7 +51,7 @@ export class PlanService {
     });
 
     // Access helper: a subscription grants paid access while `active` or
-    // `trialing` — and also while `past_due`, because Paddle keeps retrying
+    // `trialing` — and also while `past_due`, because Dodo keeps retrying
     // payment for a grace period and the customer shouldn't lose features
     // mid-retry. Access is revoked only when the subscription is actually
     // canceled (or explicitly paused). A scheduled_change (cancel/pause at

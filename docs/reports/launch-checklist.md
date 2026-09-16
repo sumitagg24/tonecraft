@@ -10,11 +10,11 @@
 | # | Item | Area | Verify by |
 |---|---|---|---|
 | 1 | **Enable real rate limiting in prod** — set `UPSTASH_REDIS_REST_URL`/`TOKEN` (currently fails closed, which blocks the product) | Infra | `checkMessageLimit` returns real counters |
-| 2 | **Paddle webhook e2e test** — send a Paddle test `subscription.updated` event, confirm `Subscription` flips to active and `PlanService` cache invalidates | Billing | Test event → `/api/billing/webhook` → DB row |
+| 2 | **Dodo webhook e2e test** — pay the Dodo sandbox checkout (test card), confirm `Subscription` flips to active and `PlanService` cache invalidates | Billing | `scripts/dodo-sandbox/checkout-sandbox.cjs` → `/api/webhooks/dodo` → DB row |
 | 3 | **Activate Sentry** — set `SENTRY_DSN` (+ optional wizard SDK swap); confirm a forced `logger.error` arrives | Monitoring | Error visible in Sentry project |
 | 4 | **CI/CD** — GitHub Actions: lint + `tsc --noEmit` + `next build` on PR; `prisma migrate deploy` + build in release job | Infra | PR gates green; deploy succeeds |
 | 5 | **IDOR regression tests** — encode audit-06 C1–C3 (foreign message edit/delete/continue) as route tests | Testing | Tests fail on the pre-8.17 code |
-| 6 | **Prod env validation** — every var in `.env.example` set (DB, Clerk, Upstash, R2, Paddle, providers); boot passes fail-fast | Infra | `next start` boots without the startup error |
+| 6 | **Prod env validation** — every var in `.env.example` set (DB, Clerk, Upstash, R2, Dodo, providers); boot passes fail-fast | Infra | `next start` boots without the startup error |
 | 7 | **Backups enabled** — Neon PITR on; R2 lifecycle rule `retain-deleted-30d` created; restore drill run once | Infra | Runbook `docs/runbooks/backup-restore.md` followed |
 | 8 | **Security headers verified in prod** — CSP present, `frame-ancestors 'none'`, HSTS; no console/CSP violations on the landing + chat + checkout journeys | Security | Browser console clean on prod URL |
 | 9 | **Smoke journeys** — login → send + stream a chat → regenerate → tools → knowledge upload + grounded answer → search → export → share link → checkout (test mode) → notification bell | QA | All green on staging or prod |

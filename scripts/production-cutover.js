@@ -3,10 +3,9 @@
  *
  * Usage:
  *   node scripts/production-cutover.js            # audits .env.local (or current env)
- *   PADDLE_API_KEY=... node scripts/production-cutover.js --verify-paddle
  *
  * Checks every service for production readiness (key prefixes, placeholder
- * detection, live price existence) without ever printing secret values.
+ * detection, live product existence) without ever printing secret values.
  */
 const fs = require("fs");
 const https = require("https");
@@ -20,22 +19,22 @@ if (fs.existsSync(FILE)) {
   }
 }
 // Do NOT let ambient shell env shadow the file (a stale placeholder in the
-// shell environment would hide the real value in .env.local). Explicit
-// command-line overrides for --verify-paddle read process.env directly.
+// shell environment would hide the real value in .env.local).
 
 const prodRequired = [
   { key: "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", ok: (v) => /^pk_live_/.test(v), want: "pk_live_…" },
   { key: "CLERK_SECRET_KEY", ok: (v) => /^sk_live_/.test(v), want: "sk_live_…" },
   { key: "CLERK_WEBHOOK_SECRET", ok: (v) => /^whsec_/.test(v) && !/your-|placeholder/i.test(v), want: "whsec_… (production webhook)" },
-  { key: "PADDLE_API_KEY", ok: (v) => /^pdl_live_/.test(v), want: "pdl_live_…" },
-  { key: "PADDLE_WEBHOOK_SECRET", ok: (v) => /^pdl_ntfset_/.test(v), want: "pdl_ntfset_…" },
-  { key: "NEXT_PUBLIC_PADDLE_CLIENT_TOKEN", ok: (v) => !v.startsWith("test_") && v.length > 20, want: "live token (no test_ prefix)" },
-  { key: "PADDLE_CLIENT_TOKEN", ok: (v) => !v.startsWith("test_") && v.length > 20, want: "live token (no test_ prefix)" },
-  { key: "PADDLE_PRICE_PRO", ok: (v) => /^pri_/.test(v), want: "pri_… (live price)" },
-  { key: "PADDLE_PRICE_PRO_ANNUAL", ok: (v) => /^pri_/.test(v), want: "pri_… (live price)" },
-  { key: "PADDLE_PRICE_ENTERPRISE", ok: (v) => /^pri_/.test(v), want: "pri_… (live price)" },
-  { key: "PADDLE_PRICE_ENTERPRISE_ANNUAL", ok: (v) => /^pri_/.test(v), want: "pri_… (live price)" },
-  { key: "NEXT_PUBLIC_APP_URL", ok: (v) => /^https:\/\//.test(v), want: "https://tonecraft-psi.vercel.app" },
+  { key: "DODO_PAYMENTS_API_KEY", ok: (v) => /^pdl_live_|^dodo_live_/.test(v), want: "pdl_live_… (live Dodo key)" },
+  { key: "DODO_PAYMENTS_ENVIRONMENT", ok: (v) => v === "live_mode", want: "live_mode" },
+  { key: "DODO_PAYMENTS_WEBHOOK_KEY", ok: (v) => v.length > 20 && !/your-|placeholder/i.test(v), want: "webhook signing key" },
+  { key: "DODO_PRODUCT_BASIC", ok: (v) => /^pdt_/.test(v), want: "pdt_… (live product)" },
+  { key: "DODO_PRODUCT_PRO", ok: (v) => /^pdt_/.test(v), want: "pdt_… (live product)" },
+  { key: "DODO_PRODUCT_ADVANCED", ok: (v) => /^pdt_/.test(v), want: "pdt_… (live product)" },
+  { key: "DODO_PRODUCT_BASIC_ANNUAL", ok: (v) => /^pdt_/.test(v), want: "pdt_… (live annual product)" },
+  { key: "DODO_PRODUCT_PRO_ANNUAL", ok: (v) => /^pdt_/.test(v), want: "pdt_… (live annual product)" },
+  { key: "DODO_PRODUCT_ADVANCED_ANNUAL", ok: (v) => /^pdt_/.test(v), want: "pdt_… (live annual product)" },
+  { key: "NEXT_PUBLIC_APP_URL", ok: (v) => /^https:\/\//.test(v), want: "https://www.tonecraft.site" },
   { key: "DATABASE_URL", ok: (v) => /postgres(ql)?:\/\//.test(v), want: "Neon pooled connection string" },
   { key: "DIRECT_URL", ok: (v) => /postgres(ql)?:\/\//.test(v), want: "Neon direct connection string" },
   { key: "CRON_SECRET", ok: (v) => v.length >= 32, want: "random secret (≥32 chars)" },
@@ -44,15 +43,15 @@ const prodRequired = [
 ];
 
 const optional = [
-  "GROQ_API_KEY", "OPENROUTER_API_KEY", "GOOGLE_AI_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY",
+  "GROQ_API_KEY", "OPENROUTER_API_KEY", "GOOGLE_AI_API_KEY", "OPENAI_API_KEY",
+  "CUSTOM_AI_BASE_URL", "CUSTOM_AI_API_KEY", "CUSTOM_AI_MODEL",
   "SENTRY_DSN", "SENTRY_AUTH_TOKEN", "SENTRY_ORG", "SENTRY_PROJECT",
 ];
 
 function mask(v) {
-  // print only the class prefix (e.g. pdl_sdbx_, pk_test_, test_) + length —
-  // never any actual key material
+  // print only the class prefix + length — never any actual key material
   if (!v) return "(missing)";
-  const m = v.match(/^(pdl_(?:sdbx|live)_|pk_(?:test|live)_|sk_(?:test|live)_|whsec_|pri_|test_)/);
+  const m = v.match(/^(pdl_(?:sdbx|live)_|pk_(?:test|live)_|sk_(?:test|live)_|whsec_|pdt_)/);
   return (m ? m[1] + "…" : "set…") + "(" + v.length + ")";
 }
 
@@ -62,7 +61,7 @@ for (const c of prodRequired) {
   const v = env[c.key];
   const ok = !!v && c.ok(v);
   if (ok) pass++; else fail++;
-  console.log((ok ? "✅" : "❌") + " " + c.key.padEnd(36) + (ok ? "OK" : "NEEDS: " + c.want) + (v ? "  [" + mask(v) + "]" : ""));
+  console.log((ok ? "✅" : "❌") + " " + c.key.padEnd(40) + (ok ? "OK" : "NEEDS: " + c.want) + (v ? "  [" + mask(v) + "]" : ""));
 }
 console.log("\n=== OPTIONAL PROVIDERS (at least one LLM key required) ===");
 for (const k of optional) {
@@ -72,46 +71,3 @@ for (const k of optional) {
   console.log((placeholder ? "⚠️" : "✅") + " " + k.padEnd(32) + (placeholder ? (v ? "PLACEHOLDER: " + mask(v) : "MISSING") : "set"));
 }
 console.log("\nRESULT: " + pass + " ok, " + fail + " need attention");
-
-async function verifyLivePaddle() {
-  const apiKey = process.env.PADDLE_API_KEY || env.PADDLE_API_KEY;
-  if (!/^pdl_live_/.test(apiKey)) {
-    console.log("\n⚠️  --verify-paddle requires a LIVE Paddle API key (pdl_live_…).");
-    process.exit(1);
-  }
-  const base = "api.paddle.com";
-  const priceKeys = ["PADDLE_PRICE_PRO", "PADDLE_PRICE_PRO_ANNUAL", "PADDLE_PRICE_ENTERPRISE", "PADDLE_PRICE_ENTERPRISE_ANNUAL"];
-  console.log("\n=== LIVE PADDLE PRICE VERIFICATION (api.paddle.com) ===");
-  for (const k of priceKeys) {
-    const id = env[k];
-    if (!id) { console.log("⚠️ " + k + " not set"); continue; }
-    await new Promise((resolve) => {
-      const r = https.request(
-        { hostname: base, path: "/prices/" + id, method: "GET", headers: { Authorization: "Bearer " + apiKey, "Content-Type": "application/json" } },
-        (res) => {
-          let d = "";
-          res.on("data", (c) => (d += c));
-          res.on("end", () => {
-            try {
-              const j = JSON.parse(d);
-              const p = j.data;
-              if (p) console.log("✅ " + k.padEnd(32) + id + "  " + p.name + "  " + (p.unit_price ? p.unit_price.amount + " " + p.unit_price.currency_code : "") + "  [" + p.status + "]");
-              else console.log("❌ " + k.padEnd(32) + id + "  NOT FOUND in live account");
-            } catch {
-              console.log("❌ " + k.padEnd(32) + " error: " + d.slice(0, 120));
-            }
-            resolve();
-          });
-        }
-      );
-      r.on("error", (e) => { console.log("❌ " + k + " " + e.message); resolve(); });
-      r.end();
-    });
-  }
-}
-
-(async () => {
-  if (process.argv.includes("--verify-paddle")) {
-    await verifyLivePaddle();
-  }
-})();

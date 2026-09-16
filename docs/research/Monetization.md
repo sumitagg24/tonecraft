@@ -118,7 +118,7 @@ Analysis of SaaS pricing for AI writing assistants and recommended pricing model
 ## Implementation Considerations
 
 ### Billing Infrastructure
-- **Provider**: Stripe (primary) + Paddle (EU fallback)
+- **Provider**: Dodo Payments (global payments, tax handling, subscriptions)
 - **Metered billing**: Stripe Metered Billing for token usage
 - **Webhooks**: Handle subscription events, usage alerts, grace periods
 
@@ -133,7 +133,7 @@ Analysis of SaaS pricing for AI writing assistants and recommended pricing model
 - Export all data on cancellation
 
 ## Security & Compliance
-- **PCI DSS**: Handled by Stripe/Paddle
+- **PCI DSS**: Handled by Dodo Payments
 - **GDPR**: Data export/deletion APIs, EU data residency option
 - **SOC 2**: Target Type II by Year 2
 - **HIPAA**: Enterprise only, requires BAA

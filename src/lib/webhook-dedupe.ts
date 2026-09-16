@@ -16,7 +16,7 @@ import { prisma } from "@/lib/prisma";
 export type ClaimResult = "new" | "retry" | "duplicate";
 
 export async function claimWebhookEvent(
-  provider: "paddle" | "clerk",
+  provider: "clerk" | "dodo",
   eventId: string,
   type?: string | null
 ): Promise<ClaimResult> {
@@ -35,7 +35,7 @@ export async function claimWebhookEvent(
 }
 
 export async function markWebhookProcessed(
-  provider: "paddle" | "clerk",
+  provider: "clerk" | "dodo",
   eventId: string
 ): Promise<void> {
   await prisma.webhookEvent.updateMany({

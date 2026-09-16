@@ -43,7 +43,7 @@ Neon free tier keeps 7 days of PITR. For a hard snapshot baseline:
 ### Restore drill (test quarterly)
 
 1. Create a copy branch, restore it, and boot a staging deployment against it.
-2. Confirm auth (Clerk), billing (Paddle), and knowledge retrieval all work against the copy.
+2. Confirm auth (Clerk), billing (Dodo Payments), and knowledge retrieval all work against the copy.
 
 ---
 
