@@ -131,3 +131,10 @@ plans/
 
 # env files (catch-all after explicit ignores)
 .env*
+
+# Tool logs / one-off debug output
+jest-*.txt
+jest-out.txt
+jest-raw.json
+tsc-*.txt
+.mcp.json

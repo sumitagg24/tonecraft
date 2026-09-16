@@ -67,12 +67,20 @@ export class DodoProvider implements PaymentProvider {
       process.env.DODO_PAYMENTS_RETURN_URL ||
       `${process.env.NEXT_PUBLIC_APP_URL || ""}/welcome`;
 
+    const cancelUrl =
+      input.cancelUrl ||
+      process.env.DODO_PAYMENTS_CANCEL_URL ||
+      `${process.env.NEXT_PUBLIC_APP_URL || ""}/billing`;
+
     const session = await this.client.checkoutSessions.create({
       product_cart: [{ product_id: input.priceId, quantity: 1 }],
       customer: input.email
         ? { email: input.email, name: input.name || "" }
         : undefined,
       return_url: returnUrl,
+      // Without a cancel_url the hosted checkout hides its back button,
+      // stranding the customer on Dodo's page if they change their mind.
+      cancel_url: cancelUrl,
       metadata: input.metadata ?? undefined,
     });
 

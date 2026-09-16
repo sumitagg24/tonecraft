@@ -31,12 +31,12 @@ export function Pricing({ country = "OTHERS" }: Props) {
   const handleSubscribe = async (tier: (typeof PRICING_TIERS)[number]) => {
     // Free tier: just redirect to sign up
     if (tier.price === 0) {
-      window.location.href = "/sign-up";
+      window.location.assign("/sign-up");
       return;
     }
 
     if (!isSignedIn) {
-      window.location.href = "/sign-up?redirect_url=%2Fpricing";
+      window.location.assign("/sign-up?redirect_url=%2Fpricing");
       return;
     }
 
@@ -60,17 +60,35 @@ export function Pricing({ country = "OTHERS" }: Props) {
         }),
       });
 
-      const data = await res.json();
+      // Every JSON API route returns the envelope
+      // { success, data } | { success: false, error: { code, message } } —
+      // the checkout URL lives at `envelope.data.url`, NOT `envelope.url`.
+      // The old code read `data.url` on the raw envelope, which is always
+      // undefined, so successful checkouts silently did nothing. Unwrap the
+      // envelope here (or use the shared api() helper) so the redirect and
+      // error messages actually fire.
+      const envelope = (await res.json()) as
+        | { success: true; data: { url?: string } }
+        | { success: false; error?: { code?: string; message?: string } };
 
-      if (!res.ok) {
-        throw new Error(data.error || "Checkout failed");
+      if (!res.ok || envelope.success === false) {
+        const message =
+          envelope.success === false
+            ? envelope.error?.message
+            : "Checkout failed. Please try again.";
+        throw new Error(message || "Checkout failed. Please try again.");
       }
 
-      if (data.url) {
-        window.location.href = data.url;
+      const url = envelope.data?.url;
+      if (url) {
+        window.location.assign(url);
+      } else {
+        throw new Error("Checkout could not be created. Please try again.");
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Checkout failed");
+      toast.error(
+        err instanceof Error ? err.message : "Checkout failed. Please try again.",
+      );
       setLoading(null);
     }
   };
@@ -160,7 +178,9 @@ export function Pricing({ country = "OTHERS" }: Props) {
                       {formattedPrice}
                     </span>
                     {tier.price > 0 && (
-                      <span className="text-xs text-muted-foreground font-medium">{annual ? "/year" : "/month"}</span>
+                      <span className="text-xs text-muted-foreground font-medium">
+                        {annual ? (tier.priceYear > 0 ? "/year" : " billed monthly") : "/month"}
+                      </span>
                     )}
                   </div>
 

@@ -1,4 +1,4 @@
-const { prisma } = require('./src/lib/prisma');
+import { prisma } from './src/lib/prisma';
 
 async function checkRecentActivity() {
   try {

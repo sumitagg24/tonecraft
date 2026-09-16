@@ -3,49 +3,61 @@ import { billingService } from "@/billing/BillingService";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { auditLogService } from "@/services/AuditLogService";
+import { z } from "zod";
+import {
+  allConfiguredProductIds,
+  grantForProductId,
+  productIdForPlan,
+} from "@/billing/dodoProducts";
 
 const api = withApiHandler();
+
+const checkoutSchema = z.object({
+  plan: z.string().min(1).max(32).optional(),
+  interval: z.enum(["month", "year"]).optional(),
+  productId: z.string().min(1).max(64).optional(),
+});
 
 /**
  * POST /api/billing/checkout — create a Dodo Payments checkout session.
  *
- * Body: { plan?: string, productId?: string }
- * - plan: "pro" or "advanced" (maps to DODO_PRODUCT_* env vars)
- * - productId: direct Dodo product ID (e.g. "pdt_...")
+ * Body: { plan?: string, productId?: string, interval?: "month"|"year" }
+ * - plan: "basic" | "pro" | "advanced" (resolves to DODO_PRODUCT_* env vars)
+ * - productId: direct Dodo product id (validated server-side against the
+ *   configured catalog — client-supplied ids are never trusted)
  *
  * Returns: { url: string } — redirect the user to this URL.
+ *
+ * Amount/price is never accepted from the client: the checkout cart is built
+ * from a server-resolved product id, so Dodo prices it authoritatively.
  */
 export const POST = api.POST(async (ctx, body) => {
   try {
-    const raw = (body ?? {}) as {
-      plan?: string;
-      productId?: string;
-      interval?: string;
-    };
+    const parsed = checkoutSchema.safeParse(body ?? {});
+    if (!parsed.success) {
+      return fail("BAD_REQUEST", "Invalid checkout request.", 400);
+    }
+    const raw = parsed.data;
+    const plan = (raw.plan ?? "").toLowerCase();
+    const interval = raw.interval === "year" ? "year" : "month";
 
-    // Resolve product ID from plan name or direct ID
-    let productId = raw.productId;
-    if (!productId) {
-      const plan = (raw.plan ?? "").toLowerCase();
-      const interval = raw.interval === "year" ? "year" : "month";
-
-      if (plan === "pro") {
-        productId = interval === "year"
-          ? process.env.DODO_PRODUCT_PRO_ANNUAL
-          : process.env.DODO_PRODUCT_PRO;
-      } else if (plan === "basic") {
-        productId = interval === "year"
-          ? process.env.DODO_PRODUCT_BASIC_ANNUAL
-          : process.env.DODO_PRODUCT_BASIC;
-      } else if (plan === "enterprise" || plan === "advanced") {
-        productId = interval === "year"
-          ? process.env.DODO_PRODUCT_ADVANCED_ANNUAL
-          : process.env.DODO_PRODUCT_ADVANCED;
+    // Resolve the product server-side. A client-passed productId is only
+    // honored when it matches one of OUR configured products — never a
+    // product from outside the catalog (price/plan tampering).
+    let productId = raw.productId || "";
+    let grant: string | null = null;
+    if (productId) {
+      if (!allConfiguredProductIds().includes(productId)) {
+        return fail("BAD_REQUEST", "Invalid product ID.", 400);
       }
+      grant = grantForProductId(productId);
+    } else {
+      productId = productIdForPlan(plan, interval) ?? "";
+      grant = grantForProductId(productId);
 
-      // Never silently bill the monthly product for a "yearly" checkout — if
-      // the annual product id isn't configured, say so instead.
       if (interval === "year" && !productId && plan !== "") {
+        // Never silently bill the monthly product for a "yearly" checkout —
+        // if the annual product id isn't configured, say so instead.
         return fail(
           "BAD_REQUEST",
           "Annual billing isn't available for this plan yet. Please choose monthly billing.",
@@ -66,23 +78,31 @@ export const POST = api.POST(async (ctx, body) => {
       return fail("UNAUTHORIZED", "Authentication required.", 401);
     }
 
-    if (user.subscription?.status === "active" || user.subscription?.status === "trialing") {
+    if (
+      user.subscription?.status === "active" ||
+      user.subscription?.status === "trialing"
+    ) {
       return fail("CONFLICT", "Subscription already active.", 409);
     }
+
+    // The grant derived from the product id is what the webhook will persist;
+    // keep metadata consistent so any consumer of it sees the same plan.
+    const metadataPlan = grant ?? (plan || "pro");
 
     const checkout = await billingService.createCheckout({
       priceId: productId,
       userId: user.id,
       email: user.email ?? undefined,
       name: user.name ?? undefined,
-      metadata: { plan: raw.plan ?? "pro", userId: user.id },
+      metadata: { plan: metadataPlan, userId: user.id },
+      cancelUrl: `${process.env.NEXT_PUBLIC_APP_URL || ""}/billing`,
     });
 
     logger.info("Checkout created", { userId: user.id, productId });
 
     void auditLogService.record("billing.subscribe", "checkout", {
       actorId: ctx.user.id,
-      metadata: { productId, plan: raw.plan },
+      metadata: { productId, plan: metadataPlan },
     });
 
     return ok({ url: checkout.url });

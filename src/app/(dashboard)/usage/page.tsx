@@ -128,12 +128,24 @@ function SummaryCard({
 
 // ── Custom tooltip ──────────────────────────────────────────────────
 
-function DailyTooltip({ active, payload, label }: any) {
+interface TooltipEntry {
+  name: string;
+  value: string | number;
+  color?: string;
+}
+
+interface DailyTooltipProps {
+  active?: boolean;
+  payload?: TooltipEntry[];
+  label?: string;
+}
+
+function DailyTooltip({ active, payload, label }: DailyTooltipProps) {
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-lg border border-border/60 bg-background p-3 shadow-lg">
       <p className="text-xs font-medium text-muted-foreground mb-1">{label}</p>
-      {payload.map((entry: any, i: number) => (
+      {payload.map((entry, i) => (
         <p key={i} className="text-sm font-medium" style={{ color: entry.color }}>
           {entry.name}: {entry.value}
         </p>
@@ -142,13 +154,25 @@ function DailyTooltip({ active, payload, label }: any) {
   );
 }
 
-function OperationTooltip({ active, payload }: any) {
+interface OperationTooltipProps {
+  active?: boolean;
+  payload?: Array<{
+    payload?: {
+      operation?: string;
+      credits?: number | string;
+      count?: number | string;
+      color?: string;
+    };
+  }>;
+}
+
+function OperationTooltip({ active, payload }: OperationTooltipProps) {
   if (!active || !payload?.length) return null;
   const data = payload[0]?.payload;
   if (!data) return null;
   return (
     <div className="rounded-lg border border-border/60 bg-background p-3 shadow-lg">
-      <p className="text-xs font-medium mb-1">{opLabel(data.operation)}</p>
+      <p className="text-xs font-medium mb-1">{opLabel(data.operation ?? "")}</p>
       <p className="text-sm">{data.credits} credits</p>
       <p className="text-xs text-muted-foreground">{data.count} requests</p>
     </div>
@@ -470,7 +494,7 @@ export default function UsagePage() {
             {Math.max(
               0,
               Math.ceil(
-                (new Date(data.period.end).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+                (new Date(data.period.end).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24),
               ),
             )}{" "}
             days
