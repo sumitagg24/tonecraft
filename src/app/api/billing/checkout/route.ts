@@ -72,15 +72,30 @@ export const POST = api.POST(async (ctx, body) => {
 
     const user = await prisma.user.findUnique({
       where: { id: ctx.user.id },
-      select: { id: true, email: true, name: true, subscription: true },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        subscription: { select: { status: true, plan: true } },
+      },
     });
     if (!user) {
       return fail("UNAUTHORIZED", "Authentication required.", 401);
     }
 
+    // Only block checkout when the existing subscription actually grants paid
+    // access (active/trialing/past_due — mirrors PlanService.isAccessGranting
+    // Status). Legacy rows in transitional states (e.g. an "incomplete"
+    // checkout that never finished under a previous provider, or
+    // canceled/expired/paused subscriptions) must be able to check out again.
+    // Plan-free rows (plan="free", status="active") are also purchasable —
+    // checkout uses the product id to decide the grant, not the stored plan.
+    const blockingStatuses = new Set(["active", "trialing", "past_due"]);
+    const currentPlan = user.subscription?.plan?.toLowerCase() ?? "free";
     if (
-      user.subscription?.status === "active" ||
-      user.subscription?.status === "trialing"
+      user.subscription &&
+      blockingStatuses.has(user.subscription.status ?? "") &&
+      currentPlan !== "free"
     ) {
       return fail("CONFLICT", "Subscription already active.", 409);
     }
