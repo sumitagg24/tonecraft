@@ -1,0 +1,19 @@
+body { margin: 0; font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif; background: #f4f1f8; color: #1c1526; }
+@media (prefers-color-scheme: dark) { body { background: #14101b; color: #f3eefb; } }
+.tc-wrap { max-width: 560px; margin: 0 auto; padding: 28px 20px 60px; display: flex; flex-direction: column; gap: 16px; }
+.tc-head { display: flex; align-items: center; gap: 10px; }
+.tc-head h1 { font-size: 20px; margin: 0; }
+.tc-spark { color: #a855f7; font-size: 22px; }
+.tc-card { background: rgba(128,128,128,.08); border: 1px solid rgba(128,128,128,.25); border-radius: 12px; padding: 16px 18px; }
+.tc-card h2 { font-size: 14px; margin: 0 0 10px; }
+.tc-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; font-weight: 600; font-size: 13px; }
+.tc-input { color: inherit; background: rgba(128,128,128,.12); border: 1px solid rgba(128,128,128,.35); border-radius: 8px; padding: 9px 11px; font-size: 14px; font-family: inherit; }
+.tc-check { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px; cursor: pointer; }
+.tc-check input { margin-top: 3px; accent-color: #7c3aed; }
+.tc-hint { font-size: 12px; opacity: .75; }
+.tc-row { display: flex; gap: 10px; align-items: center; }
+.tc-primary { cursor: pointer; border: none; color: #fff; font-weight: 700; background: linear-gradient(135deg,#7c3aed,#a855f7); border-radius: 10px; padding: 10px 26px; font-size: 14px; font-family: inherit; }
+.tc-ghost { flex: 1; cursor: pointer; color: inherit; background: none; border: 1px solid rgba(128,128,128,.35); border-radius: 8px; padding: 9px; font-size: 13px; font-weight: 600; font-family: inherit; }
+.tc-status { font-size: 13px; }
+.tc-steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid #a855f7; outline-offset: 1px; }

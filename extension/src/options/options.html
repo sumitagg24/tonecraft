@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ToneCraft settings</title>
+<link rel="stylesheet" href="options.css" />
+</head>
+<body>
+<main class="tc-wrap">
+  <header class="tc-head"><span class="tc-spark" aria-hidden="true">✦</span><h1>ToneCraft extension settings</h1></header>
+  <div id="onboarding"></div>
+  <section class="tc-card" aria-label="Connection">
+    <h2>Connection</h2>
+    <label class="tc-field"><span>ToneCraft site URL</span>
+      <input id="base-url" class="tc-input" inputmode="url" autocomplete="off" spellcheck="false" />
+    </label>
+    <p class="tc-hint">Production default. Only change for local development.</p>
+  </section>
+  <section class="tc-card" aria-label="Behavior">
+    <h2>Behavior</h2>
+    <label class="tc-check"><input id="floating" type="checkbox" /> Show the floating ToneCraft button on text selection</label>
+    <label class="tc-check"><input id="menus" type="checkbox" /> Show ToneCraft in the right-click menu</label>
+    <label class="tc-field"><span>Default tone</span><select id="tone" class="tc-input"></select></label>
+  </section>
+  <section class="tc-card" aria-label="Privacy">
+    <h2>Privacy</h2>
+    <p class="tc-hint">ToneCraft sends text to your ToneCraft account only when you invoke an action (button, menu, shortcut, popup). It never records keystrokes, never uploads pages in the background, and never touches password or payment fields. See the full policy on the ToneCraft site.</p>
+    <div class="tc-row">
+      <button id="privacy" class="tc-ghost">Privacy policy</button>
+      <button id="account" class="tc-ghost">My account</button>
+    </div>
+  </section>
+  <div class="tc-row">
+    <button id="save" class="tc-primary">Save</button>
+    <span id="status" class="tc-status" role="status" aria-live="polite"></span>
+  </div>
+</main>
+<script src="options.js"></script>
+</body>
+</html>

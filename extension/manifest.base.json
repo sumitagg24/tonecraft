@@ -1,0 +1,23 @@
+{
+  "version": "1.0.0",
+  "name": "ToneCraft — Rewrite Anywhere",
+  "shortName": "ToneCraft",
+  "description": "Rewrite any text anywhere with ToneCraft — tones, grammar, summaries. Uses your ToneCraft account.",
+  "author": "ToneCraft",
+  "homepage": "https://www.tonecraft.site",
+  "permissions": ["storage", "contextMenus", "cookies", "sidePanel"],
+  "hostPermissions": ["https://www.tonecraft.site/*", "https://tonecraft.site/*"],
+  "contentMatches": ["https://*/*", "http://*/*"],
+  "commands": {
+    "tc-open-panel": {
+      "suggested_key": "Alt+T",
+      "description": "Open the ToneCraft side panel"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

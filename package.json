@@ -22,7 +22,17 @@
     "db:studio": "prisma studio",
     "db:generate": "prisma generate",
     "db:seed": "node prisma/seed.js",
-    "icons": "node scripts/generate-pwa-icons.js"
+    "icons": "node scripts/generate-pwa-icons.js",
+    "extension:typecheck": "tsc --noEmit -p extension/tsconfig.json",
+    "extension:build": "node extension/scripts/build.mjs all",
+    "extension:build:chrome": "node extension/scripts/build.mjs chrome",
+    "extension:build:firefox": "node extension/scripts/build.mjs firefox",
+    "extension:build:edge": "node extension/scripts/build.mjs edge",
+    "extension:build:safari": "node extension/scripts/build.mjs safari",
+    "extension:dev": "node extension/scripts/build.mjs all --dev",
+    "extension:validate": "node extension/scripts/validate.mjs all",
+    "extension:package": "node extension/scripts/package.mjs all",
+    "extension:release": "npm run extension:build && npm run extension:validate && npm run extension:package"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.20",
@@ -76,6 +86,7 @@
   "devDependencies": {
     "@playwright/test": "^1.62.1",
     "@tailwindcss/typography": "^0.5.20",
+    "@types/chrome": "^0.3.0",
     "@types/jest": "^29.5.0",
     "@types/node": "^20.19.43",
     "@types/nodemailer": "^8.0.1",
@@ -83,6 +94,7 @@
     "@types/react-dom": "^19",
     "@types/web-push": "^3.6.4",
     "autoprefixer": "^10.5.4",
+    "esbuild": "^0.25.9",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
     "jest": "^29.7.0",
