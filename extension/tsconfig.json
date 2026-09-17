@@ -1,0 +1,14 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["chrome", "node", "jest"],
+    "noEmit": true,
+    "plugins": [],
+    "paths": {
+      "@/*": ["../src/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "scripts/**/*.mjs", "__tests__/**/*.ts"]
+}

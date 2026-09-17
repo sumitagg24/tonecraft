@@ -193,6 +193,28 @@ Sign in with Clerk, and you're on `/chat`. The shell rail + ⌘K palette navigat
 | `npm run db:generate` | Regenerate Prisma client |
 | `npm run db:seed` | Seed the database (marketplace demo data) |
 | `npm run icons` | Regenerate PWA icons |
+| `npm run extension:dev` | Extension dev build (readable + sourcemaps) |
+| `npm run extension:build` | Extension production builds (chrome/firefox/edge/safari) |
+| `npm run extension:typecheck` | TypeScript check for `extension/` |
+| `npm run extension:validate` | Extension manifest/permission/secret validation |
+| `npm run extension:package` | Store ZIPs → `release/<browser>/` |
+| `npm run extension:release` | Extension build + validate + package |
+
+---
+
+## 🧩 Browser Extension
+
+AI writing assistance everywhere you type — Chrome, Edge, Firefox (and other
+Chromium browsers), with Safari prepared via Xcode conversion. Select text on
+any site for Rewrite/Improve/Shorten/Expand/tones, or compose from the popup
+and side panel. Same Clerk account, plan, and limits as the website; AI keys
+stay server-side.
+
+Development: `npm run extension:dev`, then load `dist/extension-chrome`
+unpacked at `chrome://extensions`. Testing: `npx jest extension` (unit) and
+`npx playwright test e2e/extension.spec.ts --project=chromium` (browser E2E).
+Production release: `npm run extension:release`, then follow
+`docs/chrome-web-store-deployment.md`. Full docs: `docs/browser-extension.md`.
 
 ---
 

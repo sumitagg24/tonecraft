@@ -1,0 +1,34 @@
+/* ToneCraft popup — mirrors the web design language (brand violet, dark card). */
+:root { color-scheme: light dark; }
+* { box-sizing: border-box; }
+body { margin: 0; width: 360px; font: 13px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif; }
+.tc-app { background: #16121d; color: #f3eefb; min-height: 200px; }
+@media (prefers-color-scheme: light) { .tc-app { background: #fff; color: #1c1526; } }
+.tc-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid rgba(128,128,128,.2); }
+.tc-brand { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+.tc-spark { color: #c084fc; }
+.tc-plan { font-size: 11px; opacity: .8; background: rgba(168,85,247,.15); border-radius: 999px; padding: 3px 10px; }
+#main { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.tc-footer { display: flex; gap: 4px; padding: 8px 14px 12px; border-top: 1px solid rgba(128,128,128,.2); }
+.tc-link { flex: 1; background: none; border: none; color: inherit; opacity: .75; font-size: 12px; cursor: pointer; padding: 6px; border-radius: 6px; font-family: inherit; }
+.tc-link:hover { opacity: 1; background: rgba(128,128,128,.15); }
+.tc-link:focus-visible, button:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid #a855f7; outline-offset: 1px; }
+.tc-sel { font-size: 12px; opacity: .85; background: rgba(128,128,128,.12); border-radius: 8px; padding: 8px 10px; max-height: 64px; overflow: hidden; }
+.tc-label { font-size: 11px; font-weight: 700; opacity: .7; text-transform: uppercase; letter-spacing: .04em; }
+.tc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tc-tool { cursor: pointer; text-align: left; color: inherit; background: rgba(128,128,128,.12); border: 1px solid transparent; border-radius: 10px; padding: 8px 10px; font-family: inherit; }
+.tc-tool:hover { border-color: #a855f7; }
+.tc-tool b { display: block; font-size: 12px; }
+.tc-tool span { font-size: 11px; opacity: .7; }
+.tc-area, .tc-select { width: 100%; color: inherit; background: rgba(128,128,128,.12); border: 1px solid rgba(128,128,128,.3); border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: inherit; }
+.tc-area { min-height: 64px; resize: vertical; }
+.tc-primary { cursor: pointer; border: none; color: #fff; font-weight: 700; background: linear-gradient(135deg,#7c3aed,#a855f7); border-radius: 10px; padding: 10px; font-size: 13px; font-family: inherit; }
+.tc-primary:hover { filter: brightness(1.1); }
+.tc-primary:disabled { opacity: .6; cursor: wait; }
+.tc-row { display: flex; gap: 8px; }
+.tc-ghost { flex: 1; cursor: pointer; color: inherit; background: none; border: 1px solid rgba(128,128,128,.35); border-radius: 8px; padding: 8px; font-size: 12px; font-weight: 600; font-family: inherit; }
+.tc-ghost:hover { background: rgba(128,128,128,.15); }
+.tc-result { white-space: pre-wrap; background: rgba(128,128,128,.1); border-radius: 8px; padding: 10px; max-height: 180px; overflow: auto; }
+.tc-err { background: rgba(220,38,38,.12); border: 1px solid rgba(220,38,38,.4); border-radius: 8px; padding: 10px; font-size: 12px; }
+.tc-recent { font-size: 12px; opacity: .75; }
+.tc-signin { text-align: center; padding: 12px 4px; display: flex; flex-direction: column; gap: 10px; }

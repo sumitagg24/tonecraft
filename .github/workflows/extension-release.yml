@@ -1,0 +1,109 @@
+# .github/workflows/extension-release.yml
+#
+# ToneCraft browser-extension release pipeline.
+#
+# Trigger: push a tag like `ext-v1.0.0` (must match extension/manifest.base.json).
+# Performs: install → lint → typecheck → unit tests → extension build →
+# validate → package → secret scan → upload artifacts (NOT published to any
+# store automatically — a human submits the zip per
+# docs/chrome-web-store-deployment.md).
+#
+# No publishing secrets are used or needed. Nothing here touches Vercel.
+
+name: Extension release
+
+on:
+  push:
+    tags:
+      - "ext-v*"
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint (site; extension/ is typechecked + validated separately)
+        run: npm run lint
+
+      - name: Site typecheck
+        run: npm run typecheck
+
+      - name: Extension typecheck
+        run: npm run extension:typecheck
+
+      - name: Unit tests (site + extension)
+        run: npm test -- --ci
+
+      - name: Extension build (all browsers)
+        run: npm run extension:build
+
+      - name: Extension validate (manifests, permissions, secret scan)
+        run: npm run extension:validate
+
+      - name: Extension package (store zips)
+        run: npm run extension:package
+
+      - name: Verify tag matches manifest version
+        run: |
+          MANIFEST_VERSION=$(node -e "console.log(require('./extension/manifest.base.json').version)")
+          if [ "ext-v${MANIFEST_VERSION}" != "${{ github.ref_name }}" ]; then
+            echo "Tag ${{ github.ref_name }} does not match manifest version ext-v${MANIFEST_VERSION}"
+            exit 1
+          fi
+
+      - name: Upload store zips
+        uses: actions/upload-artifact@v4
+        with:
+          name: tonecraft-extension-${{ github.ref_name }}
+          path: release/*/*.zip
+          if-no-files-found: error
+          retention-days: 90
+
+  browser-e2e:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Extension build (chrome)
+        run: npm run extension:build:chrome
+
+      - name: Extension browser E2E (xvfb, stubbed backend)
+        run: xvfb-run -a npx playwright test e2e/extension.spec.ts --project=chromium
+
+      - name: Upload E2E report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: extension-e2e-report
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: warn
+          retention-days: 14

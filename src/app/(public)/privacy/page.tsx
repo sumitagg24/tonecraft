@@ -66,6 +66,22 @@ export default function PrivacyPage() {
           </div>
 
           <div className="glass-panel rounded-2xl p-8">
+            <h2 className="text-2xl font-bold mb-4">Browser Extension</h2>
+            <p className="text-muted-foreground leading-relaxed">
+              The ToneCraft browser extension processes text only when you
+              explicitly invoke an action (selecting text and choosing a
+              ToneCraft action, or typing into its compose box): the selected
+              or composed text, your chosen tool and options, and your login
+              credential are sent to our API to produce the result under your
+              account&apos;s plan limits. The extension never records
+              keystrokes, never uploads pages in the background, and never
+              touches password or payment fields. Extension settings stay on
+              your device; the session token is kept in memory only and is
+              cleared when the browser closes.
+            </p>
+          </div>
+
+          <div className="glass-panel rounded-2xl p-8">
             <h2 className="text-2xl font-bold mb-4">Contact Us</h2>
             <p className="text-muted-foreground leading-relaxed">
               If you have questions about this Privacy Policy, please email us at{" "}

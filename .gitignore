@@ -21,6 +21,10 @@ src/.next/
 # production
 /build
 
+# browser extension build outputs + store packages (generated, never committed)
+/dist/
+/release/
+
 # misc
 .DS_Store
 Thumbs.db
