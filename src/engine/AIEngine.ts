@@ -329,43 +329,21 @@ export class AIEngine {
   }
 
   private async trackUsage(userId: string, data: { content?: string; model: string; provider: string; tokens: number; latency: number }) {
-    const now = new Date();
-    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-
-    await Promise.all([
-      prisma.usageRecord.create({
-        data: {
-          userId,
-          provider: data.provider || "unknown",
-          model: data.model || "unknown",
-          tokens: data.tokens,
-          latency: data.latency,
-          success: true,
-        },
-      }),
-      prisma.usage.upsert({
-        where: { userId },
-        create: {
-          userId,
-          messagesSent: 1,
-          tokensUsed: data.tokens,
-          monthlyMessages: 1,
-          dailyTokens: data.tokens,
-          monthlyTokens: data.tokens,
-          lastDailyReset: dayStart,
-          lastMonthlyReset: monthStart,
-          resetDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        },
-        update: {
-          messagesSent: { increment: 1 },
-          tokensUsed: { increment: data.tokens },
-          monthlyMessages: { increment: 1 },
-          dailyTokens: { increment: data.tokens },
-          monthlyTokens: { increment: data.tokens },
-        },
-      }),
-    ]);
+    // UsageGuard.record already atomically updates the Usage table (creditsUsed,
+    // dailyMessages, periodStart) with SELECT FOR UPDATE for concurrency safety.
+    // trackUsage is called AFTER record and must NOT upsert Usage again — that
+    // would double-count dailyMessages and race with the guarded transaction.
+    // This method only creates the audit UsageRecord.
+    await prisma.usageRecord.create({
+      data: {
+        userId,
+        provider: data.provider || "unknown",
+        model: data.model || "unknown",
+        tokens: data.tokens,
+        latency: data.latency,
+        success: true,
+      },
+    });
   }
 }
 
